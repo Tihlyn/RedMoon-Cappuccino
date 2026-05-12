@@ -7,8 +7,16 @@
     "Description": "Connects to your FC's WebSocket server to display the lowest market tax rate and location, as well as upcoming and past FC events with event images.",
     "RepoUrl": "https://github.com/Tihlyn/RedMoon-Cappuccino",
     "ApplicableVersion": "any",
-    "Tags": ["fc", "market", "tax", "events", "utility"],
-    "CategoryTags": ["utility"],
+    "Tags": [
+      "fc",
+      "market",
+      "tax",
+      "events",
+      "utility"
+    ],
+    "CategoryTags": [
+      "utility"
+    ],
     "IconUrl": "https://raw.githubusercontent.com/Tihlyn/RedMoon-Cappuccino/main/Data/icon.png",
     "AcceptsFeedback": true,
     "FeedbackMessage": "Open an issue on GitHub.",
@@ -17,7 +25,7 @@
     "DownloadLinkUpdate": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
     "DownloadLinkTesting": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
     "DownloadCount": 0,
-    "LastUpdate": 0,
+    "LastUpdate": 1778580018,
     "IsHide": false,
     "IsTestingExclusive": false
   }

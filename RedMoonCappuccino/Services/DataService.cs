@@ -24,6 +24,9 @@ public class DataService : IDisposable
     // eventId -> local file path (thread-safe dict)
     private readonly ConcurrentDictionary<string, string> cachedImages = new();
 
+    // eventId -> UpdatedAt of the image we have on disk
+    private readonly ConcurrentDictionary<string, DateTime> cachedImageTimestamps = new();
+
     // eventId -> true while we're waiting for an image response
     private readonly ConcurrentDictionary<string, bool> pendingImageRequests = new();
 
@@ -87,14 +90,34 @@ public class DataService : IDisposable
 
     public void UpdateSnapshot(SnapshotMessage snapshot)
     {
+        List<ImageManifest> newManifests;
         lock (stateLock)
         {
             tax = snapshot.Tax;
             events = snapshot.Events ?? new();
             imageManifests = snapshot.Images ?? new();
             lastUpdated = snapshot.UpdatedAt;
+            newManifests = imageManifests;
         }
-        // Images are fetched lazily when the user expands an event in the UI.
+
+        // Invalidate cached images whose server-side UpdatedAt is newer than what we have on disk.
+        foreach (var manifest in newManifests)
+        {
+            if (cachedImages.ContainsKey(manifest.EventId))
+            {
+                var knownTimestamp = cachedImageTimestamps.GetValueOrDefault(manifest.EventId, DateTime.MinValue);
+                if (manifest.UpdatedAt > knownTimestamp)
+                {
+                    if (cachedImages.TryRemove(manifest.EventId, out var stalePath))
+                    {
+                        cachedImageTimestamps.TryRemove(manifest.EventId, out _);
+                        pendingImageRequests.TryRemove(manifest.EventId, out _);
+                        try { File.Delete(stalePath); } catch { /* best-effort */ }
+                        log.Debug($"[RedMoonCappuccino] Invalidated stale image for event {manifest.EventId} (server: {manifest.UpdatedAt:u}, local: {knownTimestamp:u})");
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -134,6 +157,7 @@ public class DataService : IDisposable
 
             File.WriteAllBytes(resolvedPath, bytes);
             cachedImages[response.EventId] = resolvedPath;
+            cachedImageTimestamps[response.EventId] = response.Image.UpdatedAt;
             log.Information($"[RedMoonCappuccino] Cached image for event {response.EventId}");
         }
         catch (Exception ex)
@@ -157,7 +181,12 @@ public class DataService : IDisposable
         {
             var eventId = Path.GetFileNameWithoutExtension(file);
             if (!string.IsNullOrEmpty(eventId))
+            {
                 cachedImages[eventId] = file;
+                // No stored UpdatedAt on disk — use MinValue so the next snapshot comparison
+                // will re-validate against the manifest and re-fetch if the server has a newer image.
+                cachedImageTimestamps[eventId] = DateTime.MinValue;
+            }
         }
     }
 

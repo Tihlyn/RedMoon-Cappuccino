@@ -69,6 +69,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Guard: the tag must point to the current tip of origin/main.
+          # This prevents a tag created on an off-branch commit from silently
+          # advancing main and bypassing branch-protection rules.
+          git fetch origin main
+          TAG_COMMIT=$(git rev-parse HEAD)
+          MAIN_COMMIT=$(git rev-parse origin/main)
+          if [ "$TAG_COMMIT" != "$MAIN_COMMIT" ]; then
+            echo "Error: tag commit ($TAG_COMMIT) does not match origin/main ($MAIN_COMMIT)."
+            echo "Release tags must be created from the tip of the main branch."
+            exit 1
+          fi
+
           git add pluginmaster.json
           git diff --cached --quiet || git commit -m "chore: update manifest to ${{ github.ref_name }}"
           git push origin HEAD:refs/heads/main

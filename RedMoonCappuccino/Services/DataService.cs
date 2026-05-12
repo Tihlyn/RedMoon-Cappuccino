@@ -87,14 +87,45 @@ public class DataService : IDisposable
 
     public void UpdateSnapshot(SnapshotMessage snapshot)
     {
+        var manifests = snapshot.Images ?? new();
+        // Collect entries that have a cached image so we can check staleness outside the lock.
+        var toCheck = new List<(string eventId, string cachedPath, DateTime updatedAt)>();
+
         lock (stateLock)
         {
             tax = snapshot.Tax;
             events = snapshot.Events ?? new();
-            imageManifests = snapshot.Images ?? new();
+            imageManifests = manifests;
             lastUpdated = snapshot.UpdatedAt;
+
+            foreach (var manifest in manifests)
+            {
+                if (cachedImages.TryGetValue(manifest.EventId, out var cachedPath))
+                    toCheck.Add((manifest.EventId, cachedPath, manifest.UpdatedAt));
+            }
         }
-        // Images are fetched lazily when the user expands an event in the UI.
+
+        // Perform file I/O and re-fetch outside the lock to keep the critical section short.
+        foreach (var (eventId, cachedPath, updatedAt) in toCheck)
+        {
+            try
+            {
+                var info = new FileInfo(cachedPath);
+                if (!info.Exists || info.LastWriteTimeUtc < updatedAt)
+                {
+                    if (info.Exists)
+                        File.Delete(cachedPath);
+                    cachedImages.TryRemove(eventId, out _);
+                    RequestImageIfNeeded(eventId);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warning($"[RedMoonCappuccino] Could not check cached image for {eventId}: {ex.Message}");
+                cachedImages.TryRemove(eventId, out _);
+                RequestImageIfNeeded(eventId);
+            }
+        }
     }
 
     /// <summary>

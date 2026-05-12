@@ -14,7 +14,8 @@ jobs:
     
     env:
       CI: true
-
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +29,7 @@ jobs:
         run: dotnet restore
 
       - name: Build (Release)
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore -p:Platform=x64
 
       - name: Copy release artifact
         run: Copy-Item RedMoonCappuccino/bin/x64/Release/RedMoonCappuccino/latest.zip RedMoonCappuccino.zip

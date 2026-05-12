@@ -33,10 +33,12 @@ jobs:
       - name: Setup Dalamud
         uses: goatcorp/dalamud-distrib@stable
 
+      
       - name: Build
         run: |
           dotnet restore
-          dotnet build --configuration Release --nologo --property:OutputPath=D:/build
+          dotnet build --configuration Release --nologo --property:OutputPath=D:/build -p:DalamudLibPath="$env:DALAMUD_HOME"
+        shell: pwsh
         env:
           DOTNET_CLI_TELEMETRY_OUTPUT: true
 

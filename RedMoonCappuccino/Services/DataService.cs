@@ -168,6 +168,7 @@ public class DataService : IDisposable
 
     public void Dispose()
     {
-        CleanupOldImages();
+        // Run cleanup on a background thread to avoid blocking the main thread during unload.
+        _ = System.Threading.Tasks.Task.Run(CleanupOldImages);
     }
 }

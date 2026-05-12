@@ -226,7 +226,8 @@ public class WebSocketService : IDisposable
         if (disposed) return;
         disposed = true;
         cts.Cancel();
-        try { connectionTask?.Wait(TimeSpan.FromSeconds(5)); } catch { }
+        try { connectionTask?.Wait(TimeSpan.FromSeconds(5)); }
+        catch (Exception ex) { log.Warning($"[RedMoonCappuccino] Exception during dispose wait: {ex.Message}"); }
         cts.Dispose();
     }
 }

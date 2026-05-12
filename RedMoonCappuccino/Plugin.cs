@@ -1,4 +1,3 @@
-using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -43,7 +42,6 @@ public sealed class Plugin : IDalamudPlugin
         WsService.Start();
 
         // Windows
-        var iconPath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "icon.png");
         mainWindow   = new MainWindow(this, DataService);
         configWindow = new ConfigWindow(this);
         WindowSystem.AddWindow(mainWindow);

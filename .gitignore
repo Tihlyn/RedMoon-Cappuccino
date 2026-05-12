@@ -1,5 +1,8 @@
 # Build outputs
-bin/
+# Step-by-step un-ignore so git can recurse into bin/x64/Release/
+bin/*
+!bin/x64/
+bin/x64/*
 !bin/x64/Release/
 obj/
 *.user

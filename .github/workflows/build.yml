@@ -28,6 +28,7 @@ jobs:
           name: ${{ env.PLUGIN_NAME }} ${{ steps.tag.outputs.tag }}
           tag_name: ${{ steps.tag.outputs.tag }}
           files: RedMoonCappuccino/bin/x64/Release/${{ env.PLUGIN_NAME }}.zip
+          fail_on_unmatched_files: true
 
       - name: Update pluginmaster.json
         run: |

@@ -1,5 +1,4 @@
 # Build outputs
-# Step-by-step un-ignore so git can recurse into bin/x64/Release/
 bin/*
 !bin/x64/
 bin/x64/*
@@ -14,9 +13,9 @@ obj/
 .idea/
 *.DS_Store
 
-# Packed plugin zips (exclude all except the release artifact)
+# Zips - ignore all except the Dalamud plugin release artifact
 *.zip
-!/RedMoonCappuccino.zip
+!bin/x64/Release/RedMoonCappuccino.zip
 
 # Logs / temp
 *.log

@@ -382,7 +382,7 @@ public class MainWindow : Window, IDisposable
 
     private static void OpenExternalLink(string url)
     {
-        if (!TryGetSafeExternalUri(url, out var safeUri))
+        if (!TryGetSafeExternalUri(url, out var safeUri) || safeUri == null)
         {
             Plugin.Log.Warning("Blocked external link with invalid or unsafe URL: {Url}", url);
             return;
@@ -460,9 +460,9 @@ public class MainWindow : Window, IDisposable
         return Path.Combine(pluginDirectory, "Resources", fileName);
     }
 
-    private static bool TryGetSafeExternalUri(string? url, out Uri safeUri)
+    private static bool TryGetSafeExternalUri(string? url, out Uri? safeUri)
     {
-        safeUri = null!;
+        safeUri = null;
         if (string.IsNullOrWhiteSpace(url)) return false;
 
         var trimmed = url.Trim();

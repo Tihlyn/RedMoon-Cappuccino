@@ -1,89 +1,53 @@
-name: Build
+name: Release
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
     tags:
       - '*'
-  pull_request:
-    branches: [main]
 
 env:
-  PROJECT_NAME: RedMoon Cappuccino
+  PLUGIN_NAME: RedMoonCappuccino
 
 jobs:
-  build:
-    runs-on: windows-latest
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Download Dalamud
-        run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
-          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
-
-      - name: Setup Dalamud
-        uses: goatcorp/dalamud-distrib@stable
-
-      
-      - name: Build
-        run: |
-          dotnet restore
-          dotnet build --configuration Release --nologo --property:OutputPath=D:/build -p:DalamudLibPath="$env:DALAMUD_HOME"
-        shell: pwsh
-        env:
-          DOTNET_CLI_TELEMETRY_OUTPUT: true
-
-      - name: Create artifact
-        run: |
-          Compress-Archive -Path "D:/build/*" -DestinationPath D:/build/RedMoonCappuccino.zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: RedMoon Cappuccino
-          path: D:/build/RedMoonCappuccino.zip
-          if-no-files-found: error
-
-  release:
-    needs: build
-    runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-
-    steps:
-      - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: RedMoon Cappuccino
 
       - name: Get tag name
         id: tag
-        uses: WyriHaximus/github-action-get-previous-tag@v1
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Create release
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ env.PROJECT_NAME }} ${{ steps.tag.outputs.tag }}
+          name: ${{ env.PLUGIN_NAME }} ${{ steps.tag.outputs.tag }}
           tag_name: ${{ steps.tag.outputs.tag }}
-          body: ${{ github.events.commits[0].message }}
-          files: RedMoonCappuccino.zip
+          files: ${{ env.PLUGIN_NAME }}.zip
 
-      - name: Trigger plugin repo update
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.PAT }}
-          repository: Tihlyn/RedMoon-Cappuccino
-          event-type: new-release
+      - name: Update pluginmaster.json
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          # Pad to 4-part version (x.x.x.x) as required by AssemblyVersion
+          PARTS=$(echo "$VERSION" | tr '.' '\n' | wc -l)
+          while [ "$PARTS" -lt 4 ]; do
+            VERSION="${VERSION}.0"
+            PARTS=$((PARTS + 1))
+          done
+          TIMESTAMP=$(date +%s)
+          jq --arg ver "$VERSION" --argjson ts "$TIMESTAMP" \
+            '.[0].AssemblyVersion = $ver | .[0].LastUpdate = $ts' \
+            pluginmaster.json > tmp.json && mv tmp.json pluginmaster.json
+
+      - name: Commit pluginmaster.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pluginmaster.json
+          git diff --staged --quiet || git commit -m "chore: bump pluginmaster.json to ${{ steps.tag.outputs.tag }}"
+          git push origin HEAD:main

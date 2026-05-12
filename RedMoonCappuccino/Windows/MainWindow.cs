@@ -130,7 +130,7 @@ public class MainWindow : Window, IDisposable
     private void DrawUpcomingPatchesSection()
     {
         using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-            ImGui.TextUnformatted("Upcoming Patches (7.4 – 8.0)");
+            ImGui.TextUnformatted("Upcoming Patches (7.4 - 8.0)");
 
         ImGui.Spacing();
 

@@ -1,0 +1,13 @@
+{
+  "Name": "__MYPLUGIN__",
+  "Author": "__USER__",
+  "Punchline": "A short one-liner shown in /xlplugins.",
+  "Description": "A longer description explaining what the plugin does.\n\nList major slash-commands and behaviors so users know what to expect.",
+  "RepoUrl": "https://github.com/__USER__/__MYPLUGIN__",
+  "ApplicableVersion": "any",
+  "Tags": ["party", "ui"],
+  "CategoryTags": ["other"],
+  "IconUrl": "https://raw.githubusercontent.com/__USER__/__MYPLUGIN__/main/images/icon.png",
+  "AcceptsFeedback": true,
+  "FeedbackMessage": "Open an issue on GitHub or ping the author in the Dalamud Discord."
+}

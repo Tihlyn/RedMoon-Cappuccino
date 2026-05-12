@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.0.0.1</Version>
+    <Description>A Dalamud plugin.</Description>
+    <PackageProjectUrl>https://github.com/__USER__/__MYPLUGIN__</PackageProjectUrl>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    The Dalamud.NET.Sdk implicitly references:
+      - Dalamud.dll (from %AppData%\XIVLauncher\addon\Hooks\dev)
+      - DalamudPackager
+      - Dalamud.Bindings.ImGui
+      - FFXIVClientStructs
+      - Lumina, Lumina.Excel
+      - InteropGenerator.Runtime
+    Do NOT add <HintPath> references for these. Do NOT set <TargetFramework>
+    (the SDK pins it). Do NOT use timestamp-based <Version> — Plogon rejects it.
+
+    Manifest fields (Name, Author, Punchline, Description, RepoUrl, Tags,
+    CategoryTags, ApplicableVersion, IconUrl, ImageUrls, Changelog, etc.) can
+    be added directly to this <PropertyGroup> in v14+. The companion
+    MyPlugin.json file is kept as the source of truth here for clarity, but
+    you can collapse it into this csproj if you prefer a single place.
+  -->
+
+  <ItemGroup>
+    <Content Include="..\Data\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+</Project>

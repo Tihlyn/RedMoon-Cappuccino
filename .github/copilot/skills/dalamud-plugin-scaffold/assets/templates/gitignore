@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.DS_Store
+
+# DalamudPackager output (the SDK puts the packed plugin into bin/, but
+# some setups also drop a top-level zip — ignore both).
+*.zip
+
+# packages.lock.json should be COMMITTED (Plogon requires it). Do not
+# add it here.
+
+# Local build artifacts
+*.log
+*.tmp

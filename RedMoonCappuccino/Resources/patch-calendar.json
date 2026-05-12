@@ -1,10 +1,10 @@
 {
   "_meta": {
     "source": "https://ffxiv.consolegameswiki.com/wiki/Patches",
-    "lastUpdated": "2026-04-11",
+    "lastUpdated": "2026-05-12",
     "currentPatch": "7.45",
     "nextPatch": "7.5",
-    "nextPatchDate": "2026-04-28"
+    "nextPatchDate": "2026-06-09"
   },
   "patches": [
     {
@@ -30,34 +30,34 @@
       "expansion": "dt",
       "type": "final_major",
       "releaseDate": "2026-04-28",
-      "note": "17 days away as of 2026-04-11. High urgency window active NOW.",
+      "note": "",
       "subPatches": [
         {
           "version": "7.51",
           "releaseDate": "2026-06-09",
-          "releaseIsProjected": true
+          "releaseIsProjected": false
         },
         {
           "version": "7.55",
           "releaseDate": "2026-07-28",
-          "releaseIsProjected": true
+          "releaseIsProjected": false
         },
         {
           "version": "7.56",
           "releaseDate": "2026-09-08",
-          "releaseIsProjected": true
+          "releaseIsProjected": false
         },
         {
           "version": "7.58",
           "releaseDate": "2026-10-06",
-          "releaseIsProjected": true
+          "releaseIsProjected": false
         }
       ]
     },
     {
       "version": "8.0",
-      "name": "Next Expansion (unannounced)",
-      "expansion": "nx",
+      "name": "Evercold",
+      "expansion": "EC",
       "type": "expansion",
       "releaseDate": "2027-01-27",
       "releaseIsProjected": true,

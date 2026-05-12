@@ -21,6 +21,7 @@ public class MainWindow : Window, IDisposable
     private readonly DataService dataService;
     private readonly List<PatchCalendarEntry> upcomingPatches;
     private readonly List<MountGuideEntry> mountGuides;
+    private bool _usefulLinksTabActive;
 
     public MainWindow(Plugin plugin, DataService dataService)
         : base("Red Moon Cappuccino##MainWindow",
@@ -45,6 +46,17 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        if (_usefulLinksTabActive)
+        {
+            Flags         = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize;
+            SizeCondition = ImGuiCond.None;
+        }
+        else
+        {
+            Flags         = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+            SizeCondition = ImGuiCond.None;
+        }
+
         if (ImGui.BeginTabBar("##mainTabs"))
         {
             DrawOverviewTab();
@@ -178,6 +190,7 @@ public class MainWindow : Window, IDisposable
     private void DrawUsefulLinksTab()
     {
         using var tab = ImRaii.TabItem("Useful Links");
+        _usefulLinksTabActive = tab;
         if (!tab) return;
 
         using var child = ImRaii.Child("##usefulLinksScroll", new Vector2(0, 0), false);
@@ -411,10 +424,29 @@ public class MainWindow : Window, IDisposable
         try
         {
             var root = JsonSerializer.Deserialize<PatchCalendarRoot>(File.ReadAllText(path));
-            return root?.Patches?
-                .Where(p => p.Version is "7.4" or "7.5" or "8.0")
-                .ToList()
-                ?? [];
+            var patches = root?.Patches ?? [];
+
+            var result = new List<PatchCalendarEntry>();
+            foreach (var patch in patches.Where(p => p.Version is "7.4" or "7.5" or "8.0"))
+            {
+                result.Add(patch);
+
+                if (patch.SubPatches is { Count: > 0 } && patch.Version is "7.5")
+                {
+                    foreach (var sub in patch.SubPatches)
+                    {
+                        result.Add(new PatchCalendarEntry
+                        {
+                            Version          = sub.Version,
+                            Name             = "-",
+                            Type             = "minor",
+                            ReleaseDate      = sub.ReleaseDate,
+                            ReleaseIsProjected = sub.ReleaseIsProjected,
+                        });
+                    }
+                }
+            }
+            return result;
         }
         catch (Exception ex)
         {
@@ -501,6 +533,21 @@ public class MainWindow : Window, IDisposable
 
         [JsonPropertyName("note")]
         public string? Note { get; set; }
+
+        [JsonPropertyName("subPatches")]
+        public List<SubPatchEntry>? SubPatches { get; set; }
+    }
+
+    private sealed class SubPatchEntry
+    {
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = string.Empty;
+
+        [JsonPropertyName("releaseDate")]
+        public string ReleaseDate { get; set; } = string.Empty;
+
+        [JsonPropertyName("releaseIsProjected")]
+        public bool ReleaseIsProjected { get; set; }
     }
 
     private sealed class LinksRoot

@@ -382,23 +382,30 @@ public class MainWindow : Window, IDisposable
 
     private static void OpenExternalLink(string url)
     {
+        if (!TryGetSafeExternalUri(url, out var safeUri))
+        {
+            Plugin.Log.Warning("Blocked external link with invalid or unsafe URL: {Url}", url);
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = url,
+                FileName = safeUri.AbsoluteUri,
                 UseShellExecute = true,
             });
         }
         catch (Exception ex)
         {
-            Plugin.Log.Warning(ex, "Failed to open URL: {Url}", url);
+            Plugin.Log.Warning(ex, "Failed to open URL: {Url}", safeUri.AbsoluteUri);
         }
     }
 
     private static List<PatchCalendarEntry> LoadPatchCalendar()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "patch-calendar.json");
+        var path = GetPluginResourcePath("patch-calendar.json");
+        if (path == null) return [];
         if (!File.Exists(path)) return [];
 
         try
@@ -418,7 +425,8 @@ public class MainWindow : Window, IDisposable
 
     private static List<MountGuideEntry> LoadMountGuides()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "links.json");
+        var path = GetPluginResourcePath("links.json");
+        if (path == null) return [];
         if (!File.Exists(path)) return [];
 
         try
@@ -431,6 +439,41 @@ public class MainWindow : Window, IDisposable
             Plugin.Log.Warning(ex, "Failed to load links data.");
             return [];
         }
+    }
+
+    private static string? GetPluginResourcePath(string fileName)
+    {
+        var assemblyLocation = Plugin.PluginInterface.AssemblyLocation;
+        if (string.IsNullOrWhiteSpace(assemblyLocation))
+        {
+            Plugin.Log.Warning("Plugin assembly location is unavailable.");
+            return null;
+        }
+
+        var pluginDirectory = Path.GetDirectoryName(assemblyLocation);
+        if (string.IsNullOrWhiteSpace(pluginDirectory))
+        {
+            Plugin.Log.Warning("Failed to determine plugin directory from assembly location.");
+            return null;
+        }
+
+        return Path.Combine(pluginDirectory, "Resources", fileName);
+    }
+
+    private static bool TryGetSafeExternalUri(string? url, out Uri safeUri)
+    {
+        safeUri = null!;
+        if (string.IsNullOrWhiteSpace(url)) return false;
+
+        var trimmed = url.Trim();
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var parsedUri)) return false;
+
+        if (!string.Equals(parsedUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(parsedUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        safeUri = parsedUri;
+        return true;
     }
 
     private sealed class PatchCalendarRoot

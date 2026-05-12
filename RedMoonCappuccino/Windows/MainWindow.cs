@@ -228,7 +228,9 @@ public class MainWindow : Window, IDisposable
         }
         else if (dataService.HasImageManifest(eventId))
         {
-            ImGui.TextUnformatted("(Image available)");
+            // Trigger lazy download — safe to call every frame, no-ops once a request is in flight.
+            dataService.RequestImageIfNeeded(eventId);
+            ImGui.TextUnformatted("(Downloading image...)");
         }
         else
         {

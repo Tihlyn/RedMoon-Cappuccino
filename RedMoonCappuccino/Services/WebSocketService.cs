@@ -16,6 +16,7 @@ public class WebSocketService : IDisposable
     private const int ReconnectDelayMs = 5000;
     private const int PingIntervalMs = 30000;
     private const int ReceiveBufferSize = 1024 * 128;
+    private const int MaxMessageSizeBytes = 10 * 1024 * 1024; // 10 MB hard cap per message
 
     private readonly DataService dataService;
     private readonly IPluginLog log;
@@ -120,49 +121,69 @@ public class WebSocketService : IDisposable
         await ws.ConnectAsync(new Uri(WsUrl), cts.Token);
         log.Information("[RedMoonCappuccino] Connected.");
 
-        // Start keepalive ping task
+        // Per-connection CTS so the ping loop is always stopped when the
+        // receive loop exits, regardless of the reason (close frame, error,
+        // global cancellation, etc.).
+        using var connectionCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+        var connectionToken = connectionCts.Token;
+
         var pingTask = Task.Run(async () =>
         {
-            while (!cts.Token.IsCancellationRequested && ws.State == WebSocketState.Open)
+            while (!connectionToken.IsCancellationRequested && ws.State == WebSocketState.Open)
             {
                 try
                 {
-                    await Task.Delay(PingIntervalMs, cts.Token);
+                    await Task.Delay(PingIntervalMs, connectionToken);
                     if (ws.State == WebSocketState.Open)
-                        await SendAsync(ws, new { type = "ping" }, cts.Token);
+                        await SendAsync(ws, new { type = "ping" }, connectionToken);
                 }
                 catch (OperationCanceledException) { break; }
                 catch { break; }
             }
         });
 
-        var buffer = new byte[ReceiveBufferSize];
-        using var messageBuffer = new MemoryStream();
-
-        while (!cts.Token.IsCancellationRequested && ws.State == WebSocketState.Open)
+        try
         {
-            messageBuffer.SetLength(0);
-            WebSocketReceiveResult result;
+            var buffer = new byte[ReceiveBufferSize];
+            using var messageBuffer = new MemoryStream();
 
-            do
+            while (!connectionToken.IsCancellationRequested && ws.State == WebSocketState.Open)
             {
-                result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                messageBuffer.SetLength(0);
+                WebSocketReceiveResult result;
 
-                if (result.MessageType == WebSocketMessageType.Close)
+                do
                 {
-                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                    return;
+                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), connectionToken);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                        return;
+                    }
+
+                    if (messageBuffer.Length + result.Count > MaxMessageSizeBytes)
+                    {
+                        log.Warning($"[RedMoonCappuccino] Message exceeds {MaxMessageSizeBytes / 1024 / 1024} MB limit — closing connection.");
+                        await ws.CloseAsync(WebSocketCloseStatus.MessageTooBig, "Message too large", CancellationToken.None);
+                        return;
+                    }
+
+                    messageBuffer.Write(buffer, 0, result.Count);
                 }
+                while (!result.EndOfMessage);
 
-                messageBuffer.Write(buffer, 0, result.Count);
+                var text = Encoding.UTF8.GetString(messageBuffer.GetBuffer(), 0, (int)messageBuffer.Length);
+                HandleMessage(text);
             }
-            while (!result.EndOfMessage);
-
-            var text = Encoding.UTF8.GetString(messageBuffer.GetBuffer(), 0, (int)messageBuffer.Length);
-            HandleMessage(text);
         }
-
-        await pingTask;
+        finally
+        {
+            // Guarantee the ping loop stops and is awaited before we return,
+            // even if we returned early (close frame, exception, cancellation).
+            connectionCts.Cancel();
+            try { await pingTask; } catch { }
+        }
     }
 
     private void HandleMessage(string text)

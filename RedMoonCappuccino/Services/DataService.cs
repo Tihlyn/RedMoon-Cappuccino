@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using RedMoonCappuccino.Models;
@@ -86,26 +87,28 @@ public class DataService : IDisposable
 
     public void UpdateSnapshot(SnapshotMessage snapshot)
     {
-        List<string> toFetch;
         lock (stateLock)
         {
             tax = snapshot.Tax;
             events = snapshot.Events ?? new();
             imageManifests = snapshot.Images ?? new();
             lastUpdated = snapshot.UpdatedAt;
-
-            toFetch = imageManifests
-                .Where(m => !cachedImages.ContainsKey(m.EventId)
-                         && !pendingImageRequests.ContainsKey(m.EventId))
-                .Select(m => m.EventId)
-                .ToList();
         }
+        // Images are fetched lazily when the user expands an event in the UI.
+    }
 
-        foreach (var eventId in toFetch)
-        {
-            pendingImageRequests[eventId] = true;
+    /// <summary>
+    /// Called by the UI when an event row is expanded and an image is needed
+    /// but has not yet been fetched or cached. Safe to call every frame —
+    /// it no-ops if a request is already in flight or the image is on disk.
+    /// </summary>
+    public void RequestImageIfNeeded(string eventId)
+    {
+        if (cachedImages.ContainsKey(eventId) || pendingImageRequests.ContainsKey(eventId))
+            return;
+
+        if (pendingImageRequests.TryAdd(eventId, true))
             OnImageNeeded?.Invoke(eventId);
-        }
     }
 
     public void UpdateImage(ImageResponseMessage response)
@@ -118,10 +121,19 @@ public class DataService : IDisposable
         try
         {
             var bytes = Convert.FromBase64String(response.Image.Data);
-            var ext = response.Image.MimeType == "image/png" ? "png" : "jpg";
-            var filePath = Path.Combine(imageCacheDir, $"{response.EventId}.{ext}");
-            File.WriteAllBytes(filePath, bytes);
-            cachedImages[response.EventId] = filePath;
+            var safeFileName = SanitizeEventId(response.EventId) + ".png";
+            var filePath = Path.Combine(imageCacheDir, safeFileName);
+
+            // Guard against path traversal: ensure the resolved path stays inside the cache dir.
+            var resolvedPath = Path.GetFullPath(filePath);
+            if (!resolvedPath.StartsWith(Path.GetFullPath(imageCacheDir) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                log.Warning($"[RedMoonCappuccino] Rejected unsafe image path for event {response.EventId}");
+                return;
+            }
+
+            File.WriteAllBytes(resolvedPath, bytes);
+            cachedImages[response.EventId] = resolvedPath;
             log.Information($"[RedMoonCappuccino] Cached image for event {response.EventId}");
         }
         catch (Exception ex)
@@ -131,6 +143,13 @@ public class DataService : IDisposable
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns a filesystem-safe version of an event ID by keeping only
+    /// alphanumeric characters, hyphens, and underscores.
+    /// </summary>
+    private static string SanitizeEventId(string eventId)
+        => Regex.Replace(eventId, @"[^A-Za-z0-9_\-]", "_");
 
     private void LoadExistingCachedImages()
     {

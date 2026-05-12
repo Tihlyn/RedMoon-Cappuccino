@@ -443,7 +443,7 @@ public class MainWindow : Window, IDisposable
 
     private static string? GetPluginResourcePath(string fileName)
     {
-        var assemblyLocation = Plugin.PluginInterface.AssemblyLocation;
+        var assemblyLocation = Plugin.PluginInterface.AssemblyLocation.FullName;
         if (string.IsNullOrWhiteSpace(assemblyLocation))
         {
             Plugin.Log.Warning("Plugin assembly location is unavailable.");

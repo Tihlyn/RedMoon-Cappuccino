@@ -7,7 +7,7 @@ A Dalamud plugin for Final Fantasy XIV via [XIVLauncher](https://github.com/goat
 
 ## What it does
 
-Connects to a WebSocket server at `ws://78.116.140.30:3100` and displays:
+Connects to a WebSocket server at `ws://IP:3100` and displays:
 
 - **Overview tab** — lowest market tax rate and the city offering it.
 - **Events tab** — upcoming FC events with expandable details and event images.

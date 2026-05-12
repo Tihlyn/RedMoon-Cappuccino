@@ -21,7 +21,6 @@ public class MainWindow : Window, IDisposable
     private readonly DataService dataService;
     private readonly List<PatchCalendarEntry> upcomingPatches;
     private readonly List<MountGuideEntry> mountGuides;
-    private bool _usefulLinksTabActive;
 
     public MainWindow(Plugin plugin, DataService dataService)
         : base("Red Moon Cappuccino##MainWindow",
@@ -46,17 +45,6 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (_usefulLinksTabActive)
-        {
-            Flags         = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize;
-            SizeCondition = ImGuiCond.None;
-        }
-        else
-        {
-            Flags         = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-            SizeCondition = ImGuiCond.None;
-        }
-
         if (ImGui.BeginTabBar("##mainTabs"))
         {
             DrawOverviewTab();
@@ -190,7 +178,6 @@ public class MainWindow : Window, IDisposable
     private void DrawUsefulLinksTab()
     {
         using var tab = ImRaii.TabItem("Useful Links");
-        _usefulLinksTabActive = tab;
         if (!tab) return;
 
         using var child = ImRaii.Child("##usefulLinksScroll", new Vector2(0, 0), false);

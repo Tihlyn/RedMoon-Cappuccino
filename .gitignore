@@ -1,5 +1,6 @@
 # Build outputs
 bin/
+!bin/x64/Release/
 obj/
 *.user
 *.suo
@@ -10,8 +11,9 @@ obj/
 .idea/
 *.DS_Store
 
-# Packed plugin zips
+# Packed plugin zips (exclude all except the release artifact)
 *.zip
+!/RedMoonCappuccino.zip
 
 # Logs / temp
 *.log

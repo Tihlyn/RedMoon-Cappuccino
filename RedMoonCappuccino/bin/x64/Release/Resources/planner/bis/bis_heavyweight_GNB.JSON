@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "tier": "heavyweight",
+    "job": "GNB",
+    "patch": "7.4",
+    "notes": "gnb bis set"
+  },
+  "slots": {
+    "WRISTS": {
+      "item_id": 49648,
+      "name": "Unknown (ID 49648)"
+    },
+    "RING_R": {
+      "item_id": 49653,
+      "name": "Unknown (ID 49653)"
+    },
+    "LEGS": {
+      "item_id": 49683,
+      "name": "Unknown (ID 49683)"
+    },
+    "HEAD": {
+      "item_id": 49680,
+      "name": "Unknown (ID 49680)"
+    },
+    "RING_L": {
+      "item_id": 49730,
+      "name": "Unknown (ID 49730)"
+    },
+    "NECK": {
+      "item_id": 49643,
+      "name": "Unknown (ID 49643)"
+    },
+    "BODY": {
+      "item_id": 49604,
+      "name": "Unknown (ID 49604)"
+    },
+    "HANDS": {
+      "item_id": 49682,
+      "name": "Unknown (ID 49682)"
+    },
+    "EARS": {
+      "item_id": 49715,
+      "name": "Unknown (ID 49715)"
+    },
+    "WEAPON": {
+      "item_id": 49673,
+      "name": "Unknown (ID 49673)"
+    },
+    "FEET": {
+      "item_id": 49607,
+      "name": "Unknown (ID 49607)"
+    }
+  }
+}

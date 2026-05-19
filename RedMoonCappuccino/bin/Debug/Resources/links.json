@@ -1,0 +1,208 @@
+{
+  "mount_guides": [
+    {
+      "mount": "Eden",
+      "source": "Eden's Promise: Eternity (Savage)",
+      "creator": "Hector Lectures",
+      "video_title": "E12S  Guide",
+      "link": "https://www.youtube.com/watch?v=VesxqvRXrh8"
+    },
+    {
+      "mount": "Ramuh",
+      "source": "Eden's Verse: Refulgence (Savage)",
+      "creator": "Hector Lectures",
+      "video_title": "E8S  Guide",
+      "link": "https://www.youtube.com/watch?v=a2y_i2PfqDI"
+    },
+    {
+      "mount": "Skyslipper",
+      "source": "Eden's Gate: Sepulture (Savage)",
+      "creator": "Hector Lectures",
+      "video_title": "E4S  Guide",
+      "link": "https://www.youtube.com/watch?v=cyNChd9dEm0"
+    },
+    {
+      "mount": "Fae Gwiber",
+      "source": "The Dancing Plague (Extreme)",
+      "creator": "Lycona Dacheechee",
+      "video_title": "Titania Extreme Guide (Lycona Dacheechee Style)",
+      "link": "https://www.youtube.com/watch?v=THYv-QN8n5s",
+      "note": "Retroactive guide for Shadowbringers farm"
+    },
+    {
+      "mount": "Innocent Gwiber",
+      "source": "The Crown of the Immaculate (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Innocence Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=u3hXWbxvluY"
+    },
+    {
+      "mount": "Shadow Gwiber",
+      "source": "The Minstrel's Ballad: Hades's Elegy",
+      "creator": "MTQ Capture",
+      "video_title": "Hades Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=6CkgNEe4u3o"
+    },
+    {
+      "mount": "Ruby Gwiber",
+      "source": "Cinder Drift (Extreme)",
+      "creator": "MTQ Capture",
+      "video_title": "Ruby Weapon Extreme Guide",
+      "link": "https://youtu.be/tO3jau5upVg"
+    },
+    {
+      "mount": "Gwiber of Light",
+      "source": "The Seat of Sacrifice (Extreme)",
+      "creator": "MTQ Capture",
+      "video_title": "Warrior of Light Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=1Pkkb0iwK7A"
+    },
+    {
+      "mount": "Emerald Gwiber",
+      "source": "Castrum Marinum (Extreme)",
+      "creator": "MTQ Capture",
+      "video_title": "Emerald Weapon Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=J5QWZRewiyQ"
+    },
+    {
+      "mount": "Diamond Gwiber",
+      "source": "The Cloud Deck (Extreme)",
+      "creator": "MTQ Capture",
+      "video_title": "Diamond Weapon Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=_xjA5JWyzKg"
+    },
+    {
+      "mount": "Lynx of Eternal Darkness",
+      "source": "The Minstrel's Ballad: Zodiark's Fall",
+      "creator": "Lycona Dacheechee",
+      "video_title": "Zodiark Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=Yd3Z7yito_I"
+    },
+    {
+      "mount": "Lynx of Divine Light",
+      "source": "The Minstrel's Ballad: Hydaelyn's Call",
+      "creator": "MTQ Capture",
+      "video_title": "Hydaelyn Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=HuMNEyruE6k"
+    },
+    {
+      "mount": "Lynx of Blue Abyss",
+      "source": "The Minstrel's Ballad: Endsinger's Aria",
+      "creator": "MTQ Capture",
+      "video_title": "Endsinger Extreme Guide",
+      "link": "https://youtu.be/2kXwfM9vVTA"
+    },
+    {
+      "mount": "Lynx of Imperious Wind",
+      "source": "Storm's Crown (Extreme)",
+      "creator": "MTQ Capture",
+      "video_title": "Barbariccia Extreme Guide",
+      "link": "https://youtu.be/zxtYTfWw5K0"
+    },
+    {
+      "mount": "Lynx of Righteous Fire",
+      "source": "Mount Ordeals (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Rubicante Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=1_v6v2nmVJ0"
+    },
+    {
+      "mount": "Lynx of Fallen Shadow",
+      "source": "The Voidcast Dais (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Golbez Extreme Guide",
+      "link": "https://youtu.be/DD6yi5qC7ws"
+    },
+    {
+      "mount": "Lynx of Abyssal Grief",
+      "source": "The Abyssal Fracture (Extreme)",
+      "creator": "Big Kobe",
+      "video_title": "Zeromus Extreme Guide",
+      "link": "https://www.youtube.com/watch?v=3bWCM5cSxZM"
+    },
+    {
+      "mount": "Demi-Phoinix",
+      "source": "Asphodelos: The Fourth Circle (Savage)",
+      "creator": "Big Kobe",
+      "video_title": "P4S Savage Guide (Part 1 & 2)",
+      "link": "https://youtu.be/mQjFrW4ekfA"
+    },
+    {
+      "mount": "Sunforged",
+      "source": "Abyssos: The Eighth Circle (Savage)",
+      "creator": "Big Kobe",
+      "video_title": "P8S Savage Guide (Part 1 & 2)",
+      "link": "https://youtu.be/gWk1p8-Zohk"
+    },
+    {
+      "mount": "Megaloambystoma",
+      "source": "Anabaseios: The Twelfth Circle (Savage)",
+      "creator": "Big Kobe",
+      "video_title": "P12S Savage Guide (Part 1 & 2)",
+      "link": "https://www.youtube.com/watch?v=za4v4mJz9m8"
+    },
+    {
+      "mount": "Wings of Ruin",
+      "source": "Worqor Lar Dor (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Valigarmanda Extreme Visual Guide",
+      "link": "https://youtu.be/8HV2dk3jvNo"
+    },
+    {
+      "mount": "Wings of Resolve",
+      "source": "Everkeep (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Zoraal Ja Extreme Visual Guide",
+      "link": "https://youtu.be/Du3QNaUkIt0"
+    },
+    {
+      "mount": "Wings of Eternity",
+      "source": "The Minstrel's Ballad: Sphene's Burden",
+      "creator": "Hector Lectures",
+      "video_title": "Sphene Extreme (Minstrel's Ballad) Visual Guide",
+      "link": "https://youtu.be/yfvfhuEEMCY"
+    },
+    {
+      "mount": "Wings of the Knighthood",
+      "source": "Recollection (Extreme)",
+      "creator": "Hector Lectures",
+      "video_title": "Zelenia Extreme Visual Guide",
+      "link": "https://youtu.be/AFaiOZK78tM"
+    },
+    {
+      "mount": "Wings of Mist",
+      "source": "Hell on Rails (Extreme)",
+      "creator": "Hector Hectorson",
+      "video_title": "Doomtrain Extreme Visual Guide",
+      "link": "https://www.youtube.com/watch?v=fGGI8MM-wKM"
+    },
+    {
+      "mount": "Wings of Death",
+      "source": "The Minstrel's Ballad: Necron's Embrace",
+      "creator": "Hector Hectorson",
+      "video_title": "Necron Extreme Visual Guide",
+      "link": "https://www.youtube.com/watch?v=2RsWkk8bxyk"
+    },
+    {
+      "mount": "Wings of Nihility",
+      "source": "The Unmaking (Extreme)",
+      "creator": "Hector Hectorson",
+      "video_title": "Ueno EX visual guide",
+      "link": "https://youtu.be/cA_WHJyXzyE"
+    },
+    {
+      "mount": "Felyne Support Team Cart",
+      "source": "The Windward Wilds (Extreme)",
+      "creator": "Big Kobe",
+      "video_title": "Guardian Arkveld (Monster Hunter) Guide",
+      "link": "https://youtu.be/g6Y2SKxF8as"
+    },
+    {
+      "mount": "Silkie",
+      "source": "The Sil'dihn Subterrane",
+      "creator": "Big Kobe",
+      "video_title": "Sil'dihn Subterrane Variant Dungeon Routes",
+      "link": "https://www.youtube.com/watch?v=LqT_6V0Z89A"
+    }
+  ]
+}

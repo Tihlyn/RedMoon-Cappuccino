@@ -1,0 +1,426 @@
+{
+  "_meta": {
+    "source": "https://github.com/xiv-gear-planner/gear-planner (packages/xivmath)",
+    "dataApiSource": "https://data.xivgear.app/Jobs",
+    "extractedDate": "2026-04-13",
+    "notes": "Formulas are normalized to 1.0 (no impact = 1.0, +50% = 1.5). Uses fl() (floor with floating-point tolerance) throughout. Caster/Healer non-AA damage uses a different formula order than physical jobs."
+  },
+
+  "constants": {
+    "normalGcd": 2.5,
+    "maxGcd": 2.5,
+    "standardAnimationLock": 0.6,
+    "castSnapshotPre": 0.5,
+    "casterTax": 0.1,
+    "standardApplicationDelay": 0.6,
+    "autoAttackApplicationDelay": 0.6,
+    "meleeAutoPotency": 90,
+    "rangedAutoPotency": 80,
+    "directHitMultiplier": 1.25,
+    "damageVarianceRange": { "min": 0.95, "max": 1.05 },
+    "damageVarianceStdDev": "sqrt(0.01 / 12) * finalDamage",
+    "maxPartyBonus": 5,
+    "currentMaxLevel": 100,
+    "supportedLevels": [70, 80, 90, 100],
+    "materiaSlotMax": 5,
+    "materiaLevelMaxNormal": 12,
+    "materiaLevelMaxOvermeld": 11,
+    "materiaAcceptableOvercapLoss": 2
+  },
+
+  "levelStats": {
+    "70": {
+      "level": 70,
+      "baseMainStat": 292,
+      "baseSubStat": 364,
+      "levelDiv": 900,
+      "hp": 1700,
+      "hpScalar": { "Tank": 18.8, "other": 14 },
+      "mainStatPowerMod": { "Tank": 105, "other": 125 }
+    },
+    "80": {
+      "level": 80,
+      "baseMainStat": 340,
+      "baseSubStat": 380,
+      "levelDiv": 1300,
+      "hp": 2000,
+      "hpScalar": { "Tank": 26.6, "other": 18.8 },
+      "mainStatPowerMod": { "Tank": 115, "other": 165 }
+    },
+    "90": {
+      "level": 90,
+      "baseMainStat": 390,
+      "baseSubStat": 400,
+      "levelDiv": 1900,
+      "hp": 3000,
+      "hpScalar": { "Tank": 34.6, "other": 24.3 },
+      "mainStatPowerMod": { "Tank": 156, "other": 195 }
+    },
+    "100": {
+      "level": 100,
+      "baseMainStat": 440,
+      "baseSubStat": 420,
+      "levelDiv": 2780,
+      "hp": 4000,
+      "hpScalar": { "Tank": 43, "other": 30.1 },
+      "mainStatPowerMod": { "Tank": 190, "other": 237 }
+    }
+  },
+
+  "formulas": {
+    "_formulaNotation": {
+      "fl": "floor() with floating-point tolerance (if fractional part >= 0.99999995, round up)",
+      "cl": "ceil() with floating-point tolerance (if fractional distance >= 0.99999995, round down)",
+      "flp(n, x)": "floor x to n decimal places using fl()",
+      "trunc": "truncate toward zero (fl for positive, -fl(-x) for negative)",
+      "baseSub": "levelStats.baseSubStat",
+      "baseMain": "levelStats.baseMainStat",
+      "div": "levelStats.levelDiv",
+      "apMod": "mainStatPowerMod[role] ?? mainStatPowerMod.other"
+    },
+
+    "critChance": {
+      "description": "Critical hit stat → crit rate (0.0–1.0)",
+      "formula": "fl(200 * (crit - baseSub) / div + 50) / 1000",
+      "coefficients": { "numeratorScale": 200, "divisor": 1000, "baseOffset": 50 }
+    },
+    "critDamage": {
+      "description": "Critical hit stat → crit damage multiplier (F(CRIT))",
+      "formula": "(1400 + fl(200 * (crit - baseSub) / div)) / 1000",
+      "coefficients": { "base": 1400, "numeratorScale": 200, "divisor": 1000 }
+    },
+    "dhitChance": {
+      "description": "Direct hit stat → DH rate (0.0–1.0)",
+      "formula": "fl(550 * (dhit - baseSub) / div) / 1000",
+      "coefficients": { "numeratorScale": 550, "divisor": 1000 }
+    },
+    "dhitDamage": {
+      "description": "Direct hit damage multiplier (currently fixed)",
+      "formula": "1.25",
+      "notes": "Fixed value. Function exists in case SE changes this."
+    },
+    "determination": {
+      "description": "Determination stat → damage multiplier (F(DET))",
+      "formula": "(1000 + fl(140 * (det - baseMain) / div)) / 1000",
+      "coefficients": { "base": 1000, "numeratorScale": 140, "divisor": 1000 },
+      "notes": "Uses baseMainStat, not baseSubStat"
+    },
+    "tenacityDamage": {
+      "description": "Tenacity stat → outgoing damage multiplier (F(TNC)). Tanks only.",
+      "formula": "(1000 + fl(112 * (tenacity - baseSub) / div)) / 1000",
+      "coefficients": { "base": 1000, "numeratorScale": 112, "divisor": 1000 }
+    },
+    "tenacityIncomingDamage": {
+      "description": "Tenacity stat → incoming damage multiplier (mitigation)",
+      "formula": "(1000 - fl(200 * (tenacity - baseSub) / div)) / 1000",
+      "coefficients": { "base": 1000, "numeratorScale": 200, "divisor": 1000 }
+    },
+    "defenseIncomingDamage": {
+      "description": "Defense/Magic Defense → incoming damage ratio",
+      "formula": "max(0, (100 - fl(15 * defense / div)) / 100)",
+      "coefficients": { "numeratorScale": 15 }
+    },
+    "speedToGcd": {
+      "description": "Skill/Spell speed stat → GCD recast time. Same formula for SKS and SPS.",
+      "formula": "max(0, fl(fl((1000 - fl(130 * (speed - baseSub) / div)) * baseGcd) * (100 - haste)) / 1000) / 100)",
+      "coefficients": { "base": 1000, "numeratorScale": 130 },
+      "params": {
+        "baseGcd": "Base GCD time (typically 2.5)",
+        "speed": "SKS or SPS stat value",
+        "haste": "Haste percentage (0 = none, 15 = 15%)"
+      }
+    },
+    "speedDotMultiplier": {
+      "description": "Skill/Spell speed → DoT/HoT tick multiplier (F(SPD))",
+      "formula": "(1000 + fl(130 * (speed - baseSub) / div)) / 1000",
+      "coefficients": { "base": 1000, "numeratorScale": 130, "divisor": 1000 }
+    },
+    "mainStatMultiplier": {
+      "description": "Main stat → damage multiplier (F(AP) / F(ATK))",
+      "formula": "max(0, (trunc(apMod * (mainstat - baseMain) / baseMain) + 100) / 100)",
+      "notes": "apMod comes from mainStatPowerMod: Tank=190, other=237 at level 100"
+    },
+    "weaponDamageMultiplier": {
+      "description": "Weapon damage → damage multiplier (F(WD))",
+      "formula": "fl(baseMain * jobMainStatMod / 1000 + wd) / 100",
+      "notes": "jobMainStatMod is the job's stat multiplier for its main stat. For pet actions, jobMainStatMod is always 100."
+    },
+    "autoAttackMultiplier": {
+      "description": "Auto-attack damage multiplier (f(AUTO))",
+      "formula": "fl(fl(baseMain * jobAAStat / 1000 + weaponDamage) * (weaponDelay / 3)) / 100",
+      "notes": "jobAAStat is the job's stat multiplier for its autoAttackStat"
+    },
+    "autoDhitBonusDamage": {
+      "description": "Extra damage from DH stat on auto-DH abilities",
+      "formula": "fl(140 * ((dhit - baseSub) / div)) / 1000",
+      "coefficients": { "numeratorScale": 140, "divisor": 1000 }
+    },
+    "mpPerTick": {
+      "description": "Piety stat → MP regen per tick",
+      "formula": "200 + fl(150 * (piety - baseMain) / div)",
+      "coefficients": { "base": 200, "numeratorScale": 150 },
+      "notes": "Uses baseMainStat"
+    },
+    "vitToHp": {
+      "description": "Vitality → HP",
+      "formula": "fl(hp * jobHpMod / 100) + fl((vitality - baseMain) * hpScalar)",
+      "notes": "hp is levelStats.hp; hpScalar is Tank-specific or 'other' per level"
+    },
+    "partyBonus": {
+      "description": "Party bonus applied to main stat, AA stat, and vitality",
+      "formula": "fl(stat * (1 + 0.01 * partyBonus))",
+      "notes": "partyBonus is 0–5 representing unique roles"
+    },
+    "foodBonus": {
+      "description": "Food stat bonus calculation",
+      "formula": "min(food.max, floor(gearStatValue * food.percentage / 100))",
+      "notes": "Applied on pre-party-bonus gear stat values"
+    }
+  },
+
+  "damageCalculation": {
+    "physicalMelee": {
+      "description": "Standard damage formula for Melee/Ranged/Tank (non-caster, non-AA)",
+      "steps": [
+        "basePotency = fl(potency * mainStatMulti)",
+        "afterDet    = fl(basePotency * detMulti)  [or detAutoDhMulti if auto-DH]",
+        "afterTnc    = fl(afterDet * tncMulti)",
+        "afterWd     = fl(afterTnc * wdMulti)",
+        "afterSpd    = fl(afterWd * spdMulti)      [spdMulti = 1.0 unless DoT]",
+        "final       = fl(afterSpd * traitMulti) + (potency < 100 ? 1 : 0)"
+      ]
+    },
+    "casterHealer": {
+      "description": "Caster/Healer damage formula (non-AA). Potency multiplied into WD first.",
+      "steps": [
+        "apDet       = flp(2, mainStatMulti * detMulti)  [or detAutoDhMulti if auto-DH]",
+        "basePotency = fl(apDet * fl(wdMulti * potency))",
+        "afterTnc    = fl(basePotency * tncMulti)",
+        "afterSpd    = fl(afterTnc * spdMulti)     [spdMulti = 1.0 unless DoT]",
+        "final       = fl(afterSpd * traitMulti) + (potency < 100 ? 1 : 0)"
+      ],
+      "notes": "Key difference: potency is multiplied into wdMulti and floored, then combined with ap*det (floored to 2 decimal places)."
+    },
+    "autoAttack": {
+      "description": "Auto-attack damage. Uses aaStatMulti and aaMulti instead of mainStatMulti/wdMulti. spdMulti = sksDotMulti.",
+      "steps": [
+        "Same as physicalMelee but with aaStatMulti, aaMulti, and sksDotMulti for speed"
+      ]
+    },
+    "expectedDamageWithCritDh": {
+      "description": "Expected damage factoring in crit/DH RNG",
+      "formula": "baseDamage * (1 + dhitChance * (dhitMulti - 1)) * (1 + critChance * (critMulti - 1))"
+    },
+    "healing": {
+      "description": "Base healing formula (no variance, can crit but not DH)",
+      "steps": [
+        "basePotency = fl(potency * mainStatMulti * 100) / 100",
+        "afterDet    = fl(basePotency * detMulti * 100) / 100",
+        "afterTnc    = fl(afterDet * tncMulti * 100) / 100",
+        "afterWd     = fl(afterTnc * wdMulti)",
+        "afterTrait  = fl(fl(afterAutoCrit * traitMulti) / 100)"
+      ]
+    }
+  },
+
+  "hasteCalculation": {
+    "description": "Combining multiple haste sources. Each haste type is converted to a speed multiplier, multiplied together, then converted back.",
+    "formula": "fl((1 - flp(2, clp(2, flp(2, buffMult * traitMult) * gaugeMult) * gearMult)) * 100)",
+    "multiplierConversion": "(100 - hastePercent) / 100",
+    "combineBuffs": "fl(100 * (1 - flp(2, existingMult * nextMult)))"
+  },
+
+  "jobData": {
+    "PLD":  { "role": "Tank",   "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "tenacity",      "aaPotency": 90, "offhand": true, "traitMulti": null },
+    "WAR":  { "role": "Tank",   "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "tenacity",      "aaPotency": 90, "traitMulti": null },
+    "DRK":  { "role": "Tank",   "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "tenacity",      "aaPotency": 90, "traitMulti": null },
+    "GNB":  { "role": "Tank",   "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "tenacity",      "aaPotency": 90, "traitMulti": null },
+    "WHM":  { "role": "Healer", "mainStat": "mind",         "autoAttackStat": "strength",     "secondaryStat": "piety",         "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "SCH":  { "role": "Healer", "mainStat": "mind",         "autoAttackStat": "strength",     "secondaryStat": "piety",         "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "AST":  { "role": "Healer", "mainStat": "mind",         "autoAttackStat": "strength",     "secondaryStat": "piety",         "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "SGE":  { "role": "Healer", "mainStat": "mind",         "autoAttackStat": "strength",     "secondaryStat": "piety",         "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "MNK":  { "role": "Melee",  "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null, "traitHaste": [{"minLevel":1,"maxLevel":19,"amount":5},{"minLevel":20,"maxLevel":39,"amount":10},{"minLevel":40,"maxLevel":75,"amount":15},{"minLevel":76,"amount":20}] },
+    "DRG":  { "role": "Melee",  "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null },
+    "NIN":  { "role": "Melee",  "mainStat": "dexterity",    "autoAttackStat": "dexterity",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null, "traitHaste": [{"amount":15}] },
+    "SAM":  { "role": "Melee",  "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null },
+    "RPR":  { "role": "Melee",  "mainStat": "strength",     "autoAttackStat": "strength",     "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null },
+    "VPR":  { "role": "Melee",  "mainStat": "dexterity",    "autoAttackStat": "dexterity",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": null },
+    "BRD":  { "role": "Ranged", "mainStat": "dexterity",    "autoAttackStat": "dexterity",    "secondaryStat": "dhit",          "aaPotency": 80, "traitMulti": { "Auto-attack": 1.0, "other": 1.2 } },
+    "MCH":  { "role": "Ranged", "mainStat": "dexterity",    "autoAttackStat": "dexterity",    "secondaryStat": "dhit",          "aaPotency": 80, "traitMulti": { "Auto-attack": 1.0, "other": 1.2 } },
+    "DNC":  { "role": "Ranged", "mainStat": "dexterity",    "autoAttackStat": "dexterity",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.2 } },
+    "BLM":  { "role": "Caster", "mainStat": "intelligence",  "autoAttackStat": "strength",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "SMN":  { "role": "Caster", "mainStat": "intelligence",  "autoAttackStat": "strength",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "RDM":  { "role": "Caster", "mainStat": "intelligence",  "autoAttackStat": "strength",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "PCT":  { "role": "Caster", "mainStat": "intelligence",  "autoAttackStat": "strength",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.3 } },
+    "BLU":  { "role": "Caster", "mainStat": "intelligence",  "autoAttackStat": "strength",    "secondaryStat": "dhit",          "aaPotency": 90, "traitMulti": { "Auto-attack": 1.0, "other": 1.5 }, "maxLevel": 80 }
+  },
+
+  "jobStatMultipliers": {
+    "_description": "From FFXIV game data (ClassJob table). Used in F(WD), f(AUTO), vitToHp, and base stat calculations. Values are percentages (100 = 1x).",
+    "PLD":  { "strength": 100, "dexterity":  95, "intelligence":  60, "mind": 100, "vitality": 110, "hp": 140 },
+    "WAR":  { "strength": 105, "dexterity":  95, "intelligence":  40, "mind":  55, "vitality": 110, "hp": 145 },
+    "DRK":  { "strength": 105, "dexterity":  95, "intelligence":  60, "mind":  40, "vitality": 110, "hp": 140 },
+    "GNB":  { "strength": 100, "dexterity":  95, "intelligence":  60, "mind": 100, "vitality": 110, "hp": 140 },
+    "WHM":  { "strength":  55, "dexterity": 105, "intelligence": 105, "mind": 115, "vitality": 100, "hp": 105 },
+    "SCH":  { "strength":  90, "dexterity": 100, "intelligence": 105, "mind": 115, "vitality": 100, "hp": 105 },
+    "AST":  { "strength":  50, "dexterity": 100, "intelligence": 105, "mind": 115, "vitality": 100, "hp": 105 },
+    "SGE":  { "strength":  60, "dexterity": 100, "intelligence": 115, "mind": 115, "vitality": 100, "hp": 105 },
+    "MNK":  { "strength": 110, "dexterity": 105, "intelligence":  50, "mind":  90, "vitality": 100, "hp": 110 },
+    "DRG":  { "strength": 115, "dexterity": 100, "intelligence":  45, "mind":  65, "vitality": 105, "hp": 115 },
+    "NIN":  { "strength":  85, "dexterity": 110, "intelligence":  65, "mind":  75, "vitality": 100, "hp": 108 },
+    "SAM":  { "strength": 112, "dexterity": 108, "intelligence":  60, "mind":  50, "vitality": 100, "hp": 109 },
+    "RPR":  { "strength": 115, "dexterity": 100, "intelligence":  80, "mind":  40, "vitality": 105, "hp": 115 },
+    "VPR":  { "strength": 100, "dexterity": 110, "intelligence":  45, "mind":  55, "vitality": 100, "hp": 111 },
+    "BRD":  { "strength":  90, "dexterity": 115, "intelligence":  85, "mind":  80, "vitality": 100, "hp": 105 },
+    "MCH":  { "strength":  85, "dexterity": 115, "intelligence":  80, "mind":  85, "vitality": 100, "hp": 105 },
+    "DNC":  { "strength":  90, "dexterity": 115, "intelligence":  85, "mind":  80, "vitality": 100, "hp": 105 },
+    "BLM":  { "strength":  45, "dexterity": 100, "intelligence": 115, "mind":  75, "vitality": 100, "hp": 105 },
+    "SMN":  { "strength":  90, "dexterity": 100, "intelligence": 115, "mind":  80, "vitality": 100, "hp": 105 },
+    "RDM":  { "strength":  55, "dexterity": 105, "intelligence": 115, "mind": 110, "vitality": 100, "hp": 105 },
+    "PCT":  { "strength":  50, "dexterity": 110, "intelligence": 115, "mind":  80, "vitality": 100, "hp": 105 },
+    "BLU":  { "strength":  70, "dexterity": 110, "intelligence": 115, "mind": 105, "vitality": 100, "hp": 105 }
+  },
+
+  "jobIds": {
+    "PLD": 19, "MNK": 20, "WAR": 21, "DRG": 22, "BRD": 23, "WHM": 24, "BLM": 25,
+    "SMN": 27, "SCH": 28, "NIN": 30, "MCH": 31, "DRK": 32, "AST": 33, "SAM": 34,
+    "RDM": 35, "BLU": 36, "GNB": 37, "DNC": 38, "RPR": 39, "SGE": 40, "VPR": 41, "PCT": 42
+  },
+
+  "raceStats": {
+    "_description": "Additive modifiers to base stats per clan. Omitted stats are +0.",
+    "Duskwight":         { "strength":  0, "dexterity":  0, "vitality": -1, "intelligence":  3, "mind":  1 },
+    "Wildwood":          { "strength":  0, "dexterity":  3, "vitality": -1, "intelligence":  2, "mind": -1 },
+    "Seekers of the Sun":{ "strength":  2, "dexterity":  3, "vitality":  0, "intelligence": -1, "mind": -1 },
+    "Keepers of the Moon":{"strength": -1, "dexterity":  2, "vitality": -2, "intelligence":  1, "mind":  3 },
+    "Sea Wolf":          { "strength":  2, "dexterity": -1, "vitality":  3, "intelligence": -2, "mind":  1 },
+    "Hellsguard":        { "strength":  0, "dexterity": -2, "vitality":  3, "intelligence":  0, "mind":  2 },
+    "The Lost":          { "strength":  3, "dexterity": -3, "vitality":  3, "intelligence": -3, "mind":  3 },
+    "Helion":            { "strength":  3, "dexterity": -3, "vitality":  3, "intelligence": -3, "mind":  3 },
+    "Highlander":        { "strength":  3, "dexterity":  0, "vitality":  2, "intelligence": -2, "mind":  0 },
+    "Midlander":         { "strength":  2, "dexterity": -1, "vitality":  0, "intelligence":  3, "mind": -1 },
+    "Plainsfolk":        { "strength": -1, "dexterity":  3, "vitality": -1, "intelligence":  2, "mind":  0 },
+    "Dunesfolk":         { "strength": -1, "dexterity":  1, "vitality": -2, "intelligence":  2, "mind":  3 },
+    "Rava":              { "strength":  0, "dexterity":  3, "vitality": -2, "intelligence":  1, "mind":  1 },
+    "Veena":             { "strength": -1, "dexterity":  0, "vitality": -1, "intelligence":  3, "mind":  2 },
+    "Xaela":             { "strength":  3, "dexterity":  0, "vitality":  2, "intelligence":  0, "mind": -2 },
+    "Raen":              { "strength": -1, "dexterity":  2, "vitality": -1, "intelligence":  0, "mind":  3 }
+  },
+
+  "statIds": {
+    "strength": 1, "dexterity": 2, "vitality": 3, "intelligence": 4, "mind": 5,
+    "piety": 6, "hp": 7, "wdPhys": 12, "wdMag": 13, "weaponDelay": 14,
+    "tenacity": 19, "defensePhys": 21, "dhit": 22, "defenseMag": 24,
+    "crit": 27, "determination": 44, "skillspeed": 45, "spellspeed": 46, "gearHaste": 47,
+    "extraMainStat": 55, "extraSecondaryStat": 56
+  },
+
+  "statNames": {
+    "crit": { "full": "Critical Hit",          "abbr": "CRT" },
+    "dhit": { "full": "Direct Hit",            "abbr": "DHT" },
+    "determination": { "full": "Determination", "abbr": "DET" },
+    "skillspeed": { "full": "Skill Speed",     "abbr": "SkS" },
+    "spellspeed": { "full": "Spell Speed",     "abbr": "SpS" },
+    "tenacity": { "full": "Tenacity",          "abbr": "TNC" },
+    "piety": { "full": "Piety",               "abbr": "PIE" },
+    "strength": { "full": "Strength",          "abbr": "STR" },
+    "dexterity": { "full": "Dexterity",        "abbr": "DEX" },
+    "vitality": { "full": "Vitality",          "abbr": "VIT" },
+    "intelligence": { "full": "Intelligence",  "abbr": "INT" },
+    "mind": { "full": "Mind",                  "abbr": "MND" },
+    "wdPhys": { "full": "Weapon Damage (Physical)", "abbr": "WDp" },
+    "wdMag": { "full": "Weapon Damage (Magical)",   "abbr": "WDm" },
+    "weaponDelay": { "full": "Auto-Attack Delay",   "abbr": "Dly" },
+    "hp": { "full": "Hit Points",             "abbr": "HP" },
+    "defensePhys": { "full": "Defense",        "abbr": "DEF" },
+    "defenseMag": { "full": "Magic Defense",   "abbr": "MD" },
+    "gearHaste": { "full": "Gear Haste",       "abbr": "Hst" },
+    "extraMainStat": { "full": "Extra Main Stat", "abbr": "MA" },
+    "extraSecondaryStat": { "full": "Extra Secondary Stat", "abbr": "SA" }
+  },
+
+  "statCategories": {
+    "mainStats": ["strength", "dexterity", "intelligence", "mind", "vitality"],
+    "fakeMainStats": ["determination", "piety"],
+    "specialSubStats": ["crit", "dhit", "spellspeed", "skillspeed", "tenacity"],
+    "materiaSubstats": ["crit", "dhit", "determination", "spellspeed", "skillspeed", "piety", "tenacity"],
+    "defaultMateriaFillPriority": ["spellspeed", "skillspeed", "crit", "dhit", "determination", "piety", "tenacity"]
+  },
+
+  "irrelevantSubstats": {
+    "Tank":   ["spellspeed", "piety"],
+    "Healer": ["skillspeed", "tenacity"],
+    "Melee":  ["spellspeed", "tenacity", "piety"],
+    "Ranged": ["spellspeed", "tenacity", "piety"],
+    "Caster": ["skillspeed", "tenacity", "piety"]
+  },
+
+  "excludedRelicSubstats": {
+    "_description": "Substats that cannot be placed on custom relics, beyond the already-irrelevant ones",
+    "Tank":   ["dhit"],
+    "Healer": ["dhit"],
+    "Melee":  [],
+    "Ranged": [],
+    "Caster": []
+  },
+
+  "gcdDisplayOverrides": {
+    "_description": "Jobs with non-standard GCD display columns due to permanent buffs",
+    "WHM": [
+      { "label": "GCD",     "baseGcd": 2.5, "attackType": "Spell",       "buffHaste": 0,  "basis": "sps" },
+      { "label": "PoM GCD", "baseGcd": 2.5, "attackType": "Spell",       "buffHaste": 20, "basis": "sps" }
+    ],
+    "SAM": [
+      { "label": "GCD w/ Fuka", "baseGcd": 2.5, "attackType": "Weaponskill", "buffHaste": 13, "basis": "sks", "notes": "Enhanced Fugetsu and Fuka at lvl78+. Pre-78 uses buffHaste=10." }
+    ],
+    "VPR": [
+      { "label": "GCD w/ Swiftscaled", "baseGcd": 2.5, "attackType": "Weaponskill", "buffHaste": 15, "basis": "sks" }
+    ]
+  },
+
+  "traitHaste": {
+    "_description": "Passive haste traits. Applied to Weaponskill, Spell, and Auto-attack types.",
+    "MNK": [
+      { "minLevel": 1,  "maxLevel": 19, "amount": 5 },
+      { "minLevel": 20, "maxLevel": 39, "amount": 10 },
+      { "minLevel": 40, "maxLevel": 75, "amount": 15 },
+      { "minLevel": 76, "amount": 20 }
+    ],
+    "NIN": [
+      { "amount": 15 }
+    ]
+  },
+
+  "livingShadow": {
+    "description": "DRK's Living Shadow pet. Uses 'other' mainStatPowerMod, not Tank. Has a fixed racial bonus of 2.",
+    "strengthFormula": "rawStrength - playerBaseMainStat + baseMainStat + 2",
+    "mainStatMultiFormula": "max(0, (trunc(mainStatPowerMod.other * (livingShadowStrength - baseMainStat) / baseMainStat) + 100) / 100)"
+  },
+
+  "bluMageWeaponDamage": {
+    "_description": "BLU has a special INT-to-WD lookup table instead of normal weapon damage. Format: [minIntThreshold, weaponDamage].",
+    "lookupTable": [
+      [0,12],[9,13],[10,14],[11,15],[12,16],[13,18],[14,20],[16,21],
+      [17,22],[18,23],[19,24],[20,26],[21,27],[23,28],[24,29],[26,30],
+      [29,31],[30,32],[32,33],[34,34],[36,35],[38,36],[40,37],[44,38],
+      [46,39],[49,40],[52,41],[54,42],[58,43],[61,44],[62,46],[65,47],
+      [66,48],[67,49],[70,50],[72,51],[73,52],[74,53],[77,54],[78,55],
+      [79,56],[81,57],[94,58],[140,59],[160,60],[180,61],[230,62],
+      [250,63],[280,64],[320,65],[350,66],[360,67],[380,68],[400,69],
+      [420,70],[440,71],[460,72],[480,73],[500,74],[510,75],[530,76],
+      [550,77],[570,78],[590,79],[620,80],[650,81],[680,82],[710,83],
+      [740,84],[750,85],[770,86],[790,87],[810,88],[830,89],[860,90],
+      [880,91],[900,92],[930,93],[960,94],[990,95],[1030,96],[1060,97],
+      [1080,98],[1110,99],[1140,100],[1170,101],[1200,102],[1230,103],
+      [1260,104],[1290,105],
+      [1340,106],[1360,107],[1390,111],[1510,113],[1590,115],[1680,117],
+      [1780,119],[1880,121],[1980,123],[2090,125],[2200,127],[2320,129],
+      [2410,131]
+    ],
+    "notes": "Entries after 1290 are predicted values for lvl90 BLU, not yet verified."
+  },
+
+  "raidTierIlvls": [340, 370, 400, 470, 500, 530, 600, 630, 660, 730, 760, 790],
+  "artifactItemLevels": [290, 430, 560, 690],
+  "basicTomeGearIlvls": [310, 440, 570, 700]
+}

@@ -361,13 +361,10 @@ public sealed class GearPlannerService
     {
         try
         {
-            var localPlayer = Plugin.ClientState.LocalPlayer;
-            if (localPlayer == null)
+            if (!Plugin.ClientState.IsLoggedIn)
                 return null;
 
-            var classJob = localPlayer.GetType().GetProperty("ClassJob")?.GetValue(localPlayer);
-            var value = classJob?.GetType().GetProperty("Value")?.GetValue(classJob);
-            var abbreviation = value?.GetType().GetProperty("Abbreviation")?.GetValue(value)?.ToString();
+            var abbreviation = Plugin.PlayerState.ClassJob.Value.Abbreviation.ToString();
 
             if (string.IsNullOrWhiteSpace(abbreviation))
                 return null;

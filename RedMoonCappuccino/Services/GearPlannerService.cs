@@ -7,12 +7,33 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects.Types;  // ICharacter
+using Dalamud.Game.Inventory;  
 
 namespace RedMoonCappuccino.Services;
 
 public sealed class GearPlannerService
 {
     private static readonly IReadOnlyDictionary<string, int> EmptyStats = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+    // Maps EquippedItems container slot indices to the slot-key strings used in BiS JSON.
+    // Slot 5 (waist/belt) was removed in Shadowbringers and is intentionally absent.
+    private static readonly IReadOnlyDictionary<int, string> EquipSlotIndexToKey =
+        new Dictionary<int, string>
+        {
+            [0]  = "WEAPON",
+            [1]  = "OFFHAND",
+            [2]  = "HEAD",
+            [3]  = "BODY",
+            [4]  = "HANDS",
+            [6]  = "LEGS",
+            [7]  = "FEET",
+            [8]  = "EARS",
+            [9]  = "NECK",
+            [10] = "WRISTS",
+            [11] = "RING_L",
+            [12] = "RING_R",
+        };
     private readonly PlannerData data;
 
     public GearPlannerService(IDalamudPluginInterface pluginInterface, IPluginLog log)
@@ -72,6 +93,8 @@ public sealed class GearPlannerService
         var current = new Dictionary<string, GearItem?>(StringComparer.Ordinal);
         var targetGear = new Dictionary<string, GearItem>(StringComparer.Ordinal);
 
+        var equipped = BuildEquippedMap();
+
         foreach (var slotTarget in target.Slots.OrderBy(s => s.Key, StringComparer.Ordinal))
         {
             var slot = slotTarget.Key;
@@ -81,8 +104,14 @@ public sealed class GearPlannerService
                 continue;
 
             targetGear[slot] = desiredItem;
-            current[slot] = null;
+            equipped.TryGetValue(slot, out var equippedItem);
+            current[slot] = equippedItem;
         }
+
+        var matchingSlots = current.Count(kvp =>
+            kvp.Value != null &&
+            targetGear.TryGetValue(kvp.Key, out var tgt) &&
+            kvp.Value.Id == tgt.Id);
 
         var currentStats = SumStats(current.Values.Where(x => x != null).Cast<GearItem>());
         var targetStats = SumStats(targetGear.Values);
@@ -94,10 +123,35 @@ public sealed class GearPlannerService
             TargetGear = targetGear,
             CurrentStats = currentStats,
             TargetStats = targetStats,
-            MatchingSlots = 0,
+            MatchingSlots = matchingSlots,
             TotalTargetSlots = targetGear.Count,
-            HasKnownCurrentGear = false,
+            HasKnownCurrentGear = Plugin.ClientState.IsLoggedIn && equipped.Count > 0,
         };
+    }
+
+    /// <summary>
+    /// Reads the player's currently equipped items from the game inventory and returns
+    /// a map of slot-key -> GearItem (null value means slot is occupied but item is not in the gear DB).
+    /// Returns an empty dictionary when the player is not logged in or the container is unavailable.
+    /// </summary>
+    private Dictionary<string, GearItem?> BuildEquippedMap()
+    {
+        var result = new Dictionary<string, GearItem?>(StringComparer.Ordinal);
+        try
+        {
+            var items = Plugin.GameInventory.GetInventoryItems(GameInventoryType.EquippedItems);
+            foreach (var invItem in items)
+            {
+                if (invItem.IsEmpty || invItem.ItemId == 0)
+                    continue;
+
+                var slotIndex = (int)invItem.InventorySlot;
+                if (EquipSlotIndexToKey.TryGetValue(slotIndex, out var slotKey))
+                    result[slotKey] = data.GetItemById((int)invItem.ItemId);
+            }
+        }
+        catch { /* Best-effort: return whatever was collected before the failure. */ }
+        return result;
     }
 
     private List<PlannerPathRecommendation> ComputeBestPaths(PlannerSnapshot snapshot)
@@ -364,8 +418,11 @@ public sealed class GearPlannerService
             if (!Plugin.ClientState.IsLoggedIn)
                 return null;
 
-            var abbreviation = Plugin.PlayerState.ClassJob.Value.Abbreviation.ToString();
+            var player = Plugin.ObjectTable.LocalPlayer as ICharacter;
+            if (player == null)
+                return null;
 
+            var abbreviation = player.ClassJob.ValueNullable?.Abbreviation.ExtractText();
             if (string.IsNullOrWhiteSpace(abbreviation))
                 return null;
 

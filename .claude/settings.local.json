@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "WebFetch(domain:dalamud.dev)"
+      "WebFetch(domain:dalamud.dev)",
+      "Bash(ildasm Dalamud.dll /text)",
+      "Bash(monodis Dalamud.dll)",
+      "Bash(dotnet tool *)"
     ]
   }
 }

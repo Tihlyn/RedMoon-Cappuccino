@@ -23,6 +23,7 @@ public sealed class Plugin : IDalamudPlugin
     public Configuration Configuration { get; init; }
 
     public readonly DataService       DataService;
+    public readonly GearPlannerService GearPlannerService;
     public readonly WebSocketService  WsService;
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
@@ -34,6 +35,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Services
         DataService = new DataService(PluginInterface, Log);
+        GearPlannerService = new GearPlannerService(PluginInterface, Log);
         WsService   = new WebSocketService(DataService, Log);
 
         // Wire image-fetch callback before starting the WS connection so no
@@ -42,7 +44,7 @@ public sealed class Plugin : IDalamudPlugin
         WsService.Start();
 
         // Windows
-        mainWindow   = new MainWindow(this, DataService);
+        mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);

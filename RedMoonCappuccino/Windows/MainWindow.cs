@@ -19,15 +19,19 @@ public class MainWindow : Window, IDisposable
 {
     private readonly Plugin plugin;
     private readonly DataService dataService;
+    private readonly GearPlannerService gearPlannerService;
     private readonly List<PatchCalendarEntry> upcomingPatches;
     private readonly List<MountGuideEntry> mountGuides;
+    private PlannerRunResult? plannerResult;
+    private string? plannerSelectedJob;
 
-    public MainWindow(Plugin plugin, DataService dataService)
+    public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService)
         : base("Red Moon Cappuccino##MainWindow",
                ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         this.plugin      = plugin;
         this.dataService = dataService;
+        this.gearPlannerService = gearPlannerService;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -39,6 +43,7 @@ public class MainWindow : Window, IDisposable
 
         upcomingPatches = LoadPatchCalendar();
         mountGuides     = LoadMountGuides();
+        plannerSelectedJob = gearPlannerService.AvailableJobs.FirstOrDefault();
     }
 
     public void Dispose() { }
@@ -48,6 +53,7 @@ public class MainWindow : Window, IDisposable
         if (ImGui.BeginTabBar("##mainTabs"))
         {
             DrawOverviewTab();
+            DrawGearPlannerTab();
             DrawUsefulLinksTab();
             DrawEventsTab();
             DrawPastEventsTab();
@@ -251,6 +257,108 @@ public class MainWindow : Window, IDisposable
             OpenExternalLink(visualPlanUrl);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Open link");
+    }
+
+    private void DrawGearPlannerTab()
+    {
+        using var tab = ImRaii.TabItem("gear planner");
+        if (!tab) return;
+
+        ImGui.Spacing();
+
+        var availableJobs = gearPlannerService.AvailableJobs;
+        if (availableJobs.Count == 0)
+        {
+            ImGui.TextUnformatted("Gear planner data is unavailable. Ensure local JSON planner resources are present.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(plannerSelectedJob) ||
+            !availableJobs.Contains(plannerSelectedJob, StringComparer.OrdinalIgnoreCase))
+            plannerSelectedJob = availableJobs[0];
+
+        if (ImGui.BeginCombo("Job", plannerSelectedJob))
+        {
+            foreach (var job in availableJobs)
+            {
+                var isSelected = string.Equals(job, plannerSelectedJob, StringComparison.OrdinalIgnoreCase);
+                if (ImGui.Selectable(job, isSelected))
+                {
+                    plannerSelectedJob = job;
+                    plannerResult = null;
+                }
+                if (isSelected)
+                    ImGui.SetItemDefaultFocus();
+            }
+            ImGui.EndCombo();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("solve"))
+            plannerResult = gearPlannerService.Solve(plannerSelectedJob);
+
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        if (plannerResult == null)
+        {
+            ImGui.TextUnformatted("Manual planner is idle. Press solve to compute progression paths.");
+            return;
+        }
+
+        if (!plannerResult.IsReady)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0044FFu))
+                ImGui.TextUnformatted(plannerResult.Error ?? "Planner is not ready.");
+            return;
+        }
+
+        ImGui.TextUnformatted($"Job: {plannerResult.SelectedJob}");
+        ImGui.TextUnformatted($"Data version: {plannerResult.DataVersion}  |  Game patch: {plannerResult.GamePatch}  |  BiS patch: {plannerResult.BisPatch}");
+        ImGui.TextUnformatted($"Snapshot generated: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        ImGui.TextUnformatted($"BiS tracked slots: {plannerResult.Snapshot.MatchingSlots}/{plannerResult.Snapshot.TotalTargetSlots}");
+        if (!plannerResult.Snapshot.HasKnownCurrentGear)
+            ImGui.TextUnformatted("Current gear source: unknown (planning from empty baseline until equipped-gear reader is integrated).");
+        ImGui.TextUnformatted(plannerResult.SupportsBranching
+            ? "Branching-ready search graph enabled (contingency support planned)."
+            : "Single-path mode.");
+
+        var currentTotal = plannerResult.Snapshot.CurrentStats.Values.Sum();
+        var targetTotal = plannerResult.Snapshot.TargetStats.Values.Sum();
+        ImGui.TextUnformatted($"Current weighted stat sum: {currentTotal} → Target: {targetTotal} (Δ {targetTotal - currentTotal})");
+
+        ImGui.Spacing();
+
+        if (plannerResult.RecommendedPaths.Count == 0)
+        {
+            ImGui.TextUnformatted("No upgrade path was generated.");
+            return;
+        }
+
+        using var child = ImRaii.Child("##gearPlannerResults", new Vector2(0, 0), false);
+        if (!child) return;
+
+        foreach (var path in plannerResult.RecommendedPaths)
+        {
+            var title = $"Path #{path.Rank} · Utility {path.TotalUtility:F1}";
+            var open = ImGui.CollapsingHeader(title, ImGuiTreeNodeFlags.DefaultOpen);
+            if (!open) continue;
+
+            using var indent = ImRaii.PushIndent(14f);
+            ImGui.TextWrapped(path.Summary);
+
+            for (var i = 0; i < path.Upgrades.Count; i++)
+            {
+                var step = path.Upgrades[i];
+                ImGui.Spacing();
+                using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+                    ImGui.TextUnformatted($"Step {i + 1}: {step.Slot} — {step.TargetItemName} (i{step.TargetItemLevel})");
+
+                ImGui.TextWrapped($"Replaces {step.CurrentItemName} (i{step.CurrentItemLevel}) · Source: {step.SourceType} · Tomes: {step.EstimatedTomeCost} · Books: {step.EstimatedBookCost} · Breakpoint bonus: {step.BreakpointBonus} · Utility: {step.UtilityScore:F1}");
+                foreach (var reason in step.Reasons)
+                    ImGui.BulletText(reason);
+            }
+        }
     }
 
     // ── Events ───────────────────────────────────────────────────────────────

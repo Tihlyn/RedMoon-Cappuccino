@@ -10,6 +10,7 @@ A Dalamud plugin for Final Fantasy XIV via [XIVLauncher](https://github.com/goat
 Connects to a WebSocket server at `ws://IP:3100` and displays:
 
 - **Overview tab** — lowest market tax rate and the city offering it, plus upcoming patch highlights for 7.4–8.0.
+- **gear planner tab** — manually triggered progression solver (`solve`) that loads offline JSON gear/math/BiS data and recommends deterministic next upgrades with explanations and alternate paths.
 - **Useful Links tab** — mount guide links in a table layout, plus a Visual Plans link section.
 - **Events tab** — upcoming FC events with expandable details and event images.
 - **Past Events tab** — FC events that ended within the last 24 hours, with their cached images.

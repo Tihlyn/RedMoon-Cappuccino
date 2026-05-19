@@ -283,7 +283,10 @@ public class MainWindow : Window, IDisposable
             {
                 var isSelected = string.Equals(job, plannerSelectedJob, StringComparison.OrdinalIgnoreCase);
                 if (ImGui.Selectable(job, isSelected))
+                {
                     plannerSelectedJob = job;
+                    plannerResult = null;
+                }
                 if (isSelected)
                     ImGui.SetItemDefaultFocus();
             }
@@ -314,6 +317,8 @@ public class MainWindow : Window, IDisposable
         ImGui.TextUnformatted($"Data version: {plannerResult.DataVersion}  |  Game patch: {plannerResult.GamePatch}  |  BiS patch: {plannerResult.BisPatch}");
         ImGui.TextUnformatted($"Snapshot generated: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
         ImGui.TextUnformatted($"BiS tracked slots: {plannerResult.Snapshot.MatchingSlots}/{plannerResult.Snapshot.TotalTargetSlots}");
+        if (!plannerResult.Snapshot.HasKnownCurrentGear)
+            ImGui.TextUnformatted("Current gear source: unknown (planning from empty baseline until equipped-gear reader is integrated).");
         ImGui.TextUnformatted(plannerResult.SupportsBranching
             ? "Branching-ready search graph enabled (contingency support planned)."
             : "Single-path mode.");

@@ -12,6 +12,7 @@ namespace RedMoonCappuccino.Services;
 
 public sealed class GearPlannerService
 {
+    private static readonly IReadOnlyDictionary<string, int> EmptyStats = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     private readonly PlannerData data;
 
     public GearPlannerService(IDalamudPluginInterface pluginInterface, IPluginLog log)
@@ -33,7 +34,10 @@ public sealed class GearPlannerService
         if (!data.BisTargets.TryGetValue(job, out var target))
             return PlannerRunResult.FromError($"No BiS target is available for job {job}.");
 
-        var snapshot = BuildSnapshot(job, target);
+        var snapshot = BuildSnapshot(target);
+        if (snapshot.TotalTargetSlots > 64)
+            return PlannerRunResult.FromError($"Planner currently supports up to 64 tracked slots; found {snapshot.TotalTargetSlots}.");
+
         var pathResult = ComputeBestPaths(snapshot);
 
         return new PlannerRunResult
@@ -63,9 +67,9 @@ public sealed class GearPlannerService
         return data.AvailableJobs.FirstOrDefault();
     }
 
-    private PlannerSnapshot BuildSnapshot(string job, BisTarget target)
+    private PlannerSnapshot BuildSnapshot(BisTarget target)
     {
-        var current = new Dictionary<string, GearItem>(StringComparer.Ordinal);
+        var current = new Dictionary<string, GearItem?>(StringComparer.Ordinal);
         var targetGear = new Dictionary<string, GearItem>(StringComparer.Ordinal);
 
         foreach (var slotTarget in target.Slots.OrderBy(s => s.Key, StringComparer.Ordinal))
@@ -77,23 +81,22 @@ public sealed class GearPlannerService
                 continue;
 
             targetGear[slot] = desiredItem;
-
-            var fallbackCurrent = data.FindBestCurrentItem(job, slot, desiredItemId);
-            current[slot] = fallbackCurrent ?? desiredItem;
+            current[slot] = null;
         }
 
-        var currentStats = SumStats(current.Values);
+        var currentStats = SumStats(current.Values.Where(x => x != null).Cast<GearItem>());
         var targetStats = SumStats(targetGear.Values);
 
         return new PlannerSnapshot
         {
-            Job = job,
+            Job = target.Job,
             CurrentGear = current,
             TargetGear = targetGear,
             CurrentStats = currentStats,
             TargetStats = targetStats,
-            MatchingSlots = current.Count(kvp => targetGear.TryGetValue(kvp.Key, out var targetItem) && targetItem.Id == kvp.Value.Id),
+            MatchingSlots = 0,
             TotalTargetSlots = targetGear.Count,
+            HasKnownCurrentGear = false,
         };
     }
 
@@ -109,14 +112,14 @@ public sealed class GearPlannerService
             var slot = orderedSlots[i];
             if (snapshot.CurrentGear.TryGetValue(slot, out var current) &&
                 snapshot.TargetGear.TryGetValue(slot, out var target) &&
-                current.Id == target.Id)
+                current?.Id == target.Id)
                 initialMask |= 1UL << i;
         }
 
         var allMask = orderedSlots.Length >= 64 ? ulong.MaxValue : (1UL << orderedSlots.Length) - 1;
         var bestByMask = new Dictionary<ulong, double> { [initialMask] = 0.0 };
         var queue = new PriorityQueue<SearchNode, double>();
-        queue.Enqueue(new SearchNode(initialMask, 0.0, []), 0.0);
+        queue.Enqueue(new SearchNode(initialMask, 0.0, [], new Dictionary<string, int>(snapshot.CurrentStats, StringComparer.OrdinalIgnoreCase)), 0.0);
 
         var completePaths = new List<SearchNode>();
         var expansions = 0;
@@ -146,7 +149,7 @@ public sealed class GearPlannerService
                     !snapshot.CurrentGear.TryGetValue(slot, out var currentItem))
                     continue;
 
-                var action = BuildAction(slot, currentItem, targetItem, snapshot.CurrentStats);
+                var action = BuildAction(slot, currentItem, targetItem, node.CurrentStats);
                 var nextScore = node.Score + action.UtilityScore;
                 var nextMask = node.Mask | bit;
 
@@ -158,10 +161,11 @@ public sealed class GearPlannerService
                 var nextActions = new List<PlannerUpgradeAction>(node.Actions.Count + 1);
                 nextActions.AddRange(node.Actions);
                 nextActions.Add(action);
+                var nextStats = BuildNextStats(node.CurrentStats, currentItem, targetItem);
 
-                var heuristic = RemainingPotential(snapshot, orderedSlots, nextMask);
+                var heuristic = RemainingPotential(snapshot, orderedSlots, nextMask, nextStats);
                 var priority = -(nextScore + heuristic);
-                queue.Enqueue(new SearchNode(nextMask, nextScore, nextActions), priority);
+                queue.Enqueue(new SearchNode(nextMask, nextScore, nextActions, nextStats), priority);
             }
         }
 
@@ -181,17 +185,17 @@ public sealed class GearPlannerService
             .ToList();
     }
 
-    private PlannerUpgradeAction BuildAction(string slot, GearItem current, GearItem target, IReadOnlyDictionary<string, int> baselineStats)
+    private PlannerUpgradeAction BuildAction(string slot, GearItem? current, GearItem target, IReadOnlyDictionary<string, int> baselineStats)
     {
-        var statGain = SumPrimaryCombatStats(target.Stats) - SumPrimaryCombatStats(current.Stats);
-        var itemLevelGain = target.ItemLevel - current.ItemLevel;
+        var statGain = SumPrimaryCombatStats(target.Stats) - SumPrimaryCombatStats(current?.Stats ?? EmptyStats);
+        var itemLevelGain = target.ItemLevel - (current?.ItemLevel ?? 0);
 
         var tomeCost = EstimateTomeCost(slot, target.SourceType);
         var bookCost = EstimateBookCost(slot, target.SourceType);
         var sourcePenalty = EstimateSourcePenalty(target.SourceType);
 
         var baselineSpeed = baselineStats.GetValueOrDefault("sks") + baselineStats.GetValueOrDefault("sps");
-        var targetSpeed = baselineSpeed - current.Stats.GetValueOrDefault("sks") - current.Stats.GetValueOrDefault("sps")
+        var targetSpeed = baselineSpeed - (current?.Stats.GetValueOrDefault("sks") ?? 0) - (current?.Stats.GetValueOrDefault("sps") ?? 0)
                           + target.Stats.GetValueOrDefault("sks") + target.Stats.GetValueOrDefault("sps");
 
         var breakpointBonus = EstimateBreakpointBonus(baselineSpeed, targetSpeed);
@@ -215,8 +219,8 @@ public sealed class GearPlannerService
         return new PlannerUpgradeAction
         {
             Slot = slot,
-            CurrentItemName = current.Name,
-            CurrentItemLevel = current.ItemLevel,
+            CurrentItemName = current?.Name ?? "Unknown equipped item",
+            CurrentItemLevel = current?.ItemLevel ?? 0,
             TargetItemName = target.Name,
             TargetItemLevel = target.ItemLevel,
             SourceType = target.SourceType,
@@ -228,9 +232,11 @@ public sealed class GearPlannerService
         };
     }
 
-    private static double RemainingPotential(PlannerSnapshot snapshot, IReadOnlyList<string> orderedSlots, ulong mask)
+    private static double RemainingPotential(PlannerSnapshot snapshot, IReadOnlyList<string> orderedSlots, ulong mask, IReadOnlyDictionary<string, int> currentStats)
     {
         double potential = 0;
+        var speed = currentStats.GetValueOrDefault("sks") + currentStats.GetValueOrDefault("sps");
+
         for (var i = 0; i < orderedSlots.Count; i++)
         {
             var bit = 1UL << i;
@@ -242,12 +248,27 @@ public sealed class GearPlannerService
                 !snapshot.CurrentGear.TryGetValue(slot, out var current))
                 continue;
 
-            var delta = SumPrimaryCombatStats(target.Stats) - SumPrimaryCombatStats(current.Stats);
+            var delta = SumPrimaryCombatStats(target.Stats) - SumPrimaryCombatStats(current?.Stats ?? EmptyStats);
             if (delta > 0)
-                potential += delta;
+                potential += delta + Math.Max(0, target.Stats.GetValueOrDefault("sks") + target.Stats.GetValueOrDefault("sps") - speed) * 0.05;
         }
 
         return potential;
+    }
+
+    private static Dictionary<string, int> BuildNextStats(IReadOnlyDictionary<string, int> currentStats, GearItem? current, GearItem target)
+    {
+        var next = new Dictionary<string, int>(currentStats, StringComparer.OrdinalIgnoreCase);
+        if (current != null)
+            AddStats(next, current.Stats, -1);
+        AddStats(next, target.Stats, +1);
+        return next;
+    }
+
+    private static void AddStats(Dictionary<string, int> target, IReadOnlyDictionary<string, int> delta, int sign)
+    {
+        foreach (var stat in delta)
+            target[stat.Key] = target.GetValueOrDefault(stat.Key) + (stat.Value * sign);
     }
 
     private static string BuildPathSummary(SearchNode path)
@@ -362,8 +383,6 @@ public sealed class GearPlannerService
     private sealed class PlannerData
     {
         private readonly Dictionary<int, GearItem> itemsById;
-        private readonly Dictionary<(string Job, string Slot), List<GearItem>> slotIndex;
-
         public bool IsReady { get; }
         public string DataVersion { get; }
         public string GamePatch { get; }
@@ -377,7 +396,6 @@ public sealed class GearPlannerService
             string gamePatch,
             int breakpointStep,
             Dictionary<int, GearItem> itemsById,
-            Dictionary<(string Job, string Slot), List<GearItem>> slotIndex,
             Dictionary<string, BisTarget> bisTargets,
             IReadOnlyList<string> availableJobs)
         {
@@ -386,7 +404,6 @@ public sealed class GearPlannerService
             GamePatch = gamePatch;
             BreakpointStep = breakpointStep;
             this.itemsById = itemsById;
-            this.slotIndex = slotIndex;
             BisTargets = bisTargets;
             AvailableJobs = availableJobs;
         }
@@ -459,13 +476,6 @@ public sealed class GearPlannerService
                     };
                 }
 
-                var index = items.Values
-                    .SelectMany(item => item.Jobs.Select(job => (job, item.Slot, item)))
-                    .GroupBy(x => (x.job, x.Slot), x => x.item)
-                    .ToDictionary(
-                        x => (x.Key.job, x.Key.Slot),
-                        x => x.OrderByDescending(i => i.ItemLevel).ThenBy(i => i.Id).ToList());
-
                 var breakStep = Math.Max(1, (mathRoot?.LevelStats?.Level100?.LevelDiv ?? 2780) / 130);
 
                 var dataVersion = gearRoot.Metadata?.DataVersion ?? "unknown";
@@ -479,7 +489,6 @@ public sealed class GearPlannerService
                     gamePatch: gamePatch,
                     breakpointStep: breakStep,
                     itemsById: items,
-                    slotIndex: index,
                     bisTargets: bisTargets,
                     availableJobs: availableJobs);
             }
@@ -493,14 +502,6 @@ public sealed class GearPlannerService
         public GearItem? GetItemById(int id)
             => itemsById.GetValueOrDefault(id);
 
-        public GearItem? FindBestCurrentItem(string job, string slot, int targetItemId)
-        {
-            if (!slotIndex.TryGetValue((job, slot), out var options) || options.Count == 0)
-                return null;
-
-            return options.FirstOrDefault(i => i.Id != targetItemId) ?? options[0];
-        }
-
         private static PlannerData Empty()
             => new(
                 isReady: false,
@@ -508,16 +509,16 @@ public sealed class GearPlannerService
                 gamePatch: "unknown",
                 breakpointStep: 21,
                 itemsById: new Dictionary<int, GearItem>(),
-                slotIndex: new Dictionary<(string Job, string Slot), List<GearItem>>(),
                 bisTargets: new Dictionary<string, BisTarget>(StringComparer.OrdinalIgnoreCase),
                 availableJobs: []);
     }
 
-    private sealed class SearchNode(ulong mask, double score, List<PlannerUpgradeAction> actions)
+    private sealed class SearchNode(ulong mask, double score, List<PlannerUpgradeAction> actions, Dictionary<string, int> currentStats)
     {
         public ulong Mask { get; } = mask;
         public double Score { get; } = score;
         public List<PlannerUpgradeAction> Actions { get; } = actions;
+        public Dictionary<string, int> CurrentStats { get; } = currentStats;
     }
 
     private sealed class GearDatabaseRoot
@@ -638,12 +639,13 @@ public sealed class PlannerRunResult
 public sealed class PlannerSnapshot
 {
     public string Job { get; init; } = string.Empty;
-    public IReadOnlyDictionary<string, GearItem> CurrentGear { get; init; } = new Dictionary<string, GearItem>(StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, GearItem?> CurrentGear { get; init; } = new Dictionary<string, GearItem?>(StringComparer.Ordinal);
     public IReadOnlyDictionary<string, GearItem> TargetGear { get; init; } = new Dictionary<string, GearItem>(StringComparer.Ordinal);
     public IReadOnlyDictionary<string, int> CurrentStats { get; init; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     public IReadOnlyDictionary<string, int> TargetStats { get; init; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     public int MatchingSlots { get; init; }
     public int TotalTargetSlots { get; init; }
+    public bool HasKnownCurrentGear { get; init; }
 }
 
 public sealed class PlannerPathRecommendation

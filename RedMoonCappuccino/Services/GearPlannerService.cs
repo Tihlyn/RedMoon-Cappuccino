@@ -108,6 +108,8 @@ public sealed class GearPlannerService
             current[slot] = equippedItem;
         }
 
+        NormalizeRingSlots(current, targetGear);
+
         var matchingSlots = current.Count(kvp =>
             kvp.Value != null &&
             targetGear.TryGetValue(kvp.Key, out var tgt) &&
@@ -127,6 +129,26 @@ public sealed class GearPlannerService
             TotalTargetSlots = targetGear.Count,
             HasKnownCurrentGear = Plugin.ClientState.IsLoggedIn && equipped.Count > 0,
         };
+    }
+
+    // Rings are interchangeable between RING_L and RING_R.
+    // Swap the equipped assignment if doing so produces more matches against the target.
+    private static void NormalizeRingSlots(Dictionary<string, GearItem?> current, Dictionary<string, GearItem> target)
+    {
+        if (!target.TryGetValue("RING_L", out var targetL) || !target.TryGetValue("RING_R", out var targetR))
+            return;
+
+        current.TryGetValue("RING_L", out var equippedL);
+        current.TryGetValue("RING_R", out var equippedR);
+
+        var matchesNormal  = (equippedL?.Id == targetL.Id ? 1 : 0) + (equippedR?.Id == targetR.Id ? 1 : 0);
+        var matchesSwapped = (equippedR?.Id == targetL.Id ? 1 : 0) + (equippedL?.Id == targetR.Id ? 1 : 0);
+
+        if (matchesSwapped > matchesNormal)
+        {
+            current["RING_L"] = equippedR;
+            current["RING_R"] = equippedL;
+        }
     }
 
     /// <summary>
@@ -268,11 +290,27 @@ public sealed class GearPlannerService
         var reasons = new List<string>
         {
             $"{slot}: +{itemLevelGain} item level, +{statGain} weighted stat gain",
-            breakpointBonus > 0 ? "Crosses a speed breakpoint tier" : "Maintains current speed tier without regression",
+            breakpointBonus > 0 ? "Crosses a speed breakpoint" : "No speed breakpoint crossed",
             tomeCost > 0 ? $"Estimated tome spend: {tomeCost}" : "No tome spend required",
             bookCost > 0 ? $"Estimated savage books: {bookCost}" : "No savage book requirement",
-            "Targets final BiS slot directly to avoid dead-end purchases",
         };
+
+        if (target.SourceType == "AllianceRaid" && target.ItemLevel == 780)
+        {
+            var (rain, certs) = AllianceRaidAugmentCost(slot);
+            reasons.Add($"Augment from i770 Courtly Lover: {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate");
+        }
+        else if (current?.SourceType == "AllianceRaid" && current.ItemLevel == 770)
+        {
+            var (rain, certs) = AllianceRaidAugmentCost(slot);
+            reasons.Add($"Current piece upgradeable to i780: {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate");
+        }
+
+        if (current?.SourceType == "Tome" && current.ItemLevel == 780 &&
+            target.SourceType == "Tome" && target.ItemLevel == 790)
+        {
+            reasons.Add(TomeAugmentNote(slot));
+        }
 
         return new PlannerUpgradeAction
         {
@@ -357,6 +395,24 @@ public sealed class GearPlannerService
 
         return totals;
     }
+
+    private static (int Rain, int Certs) AllianceRaidAugmentCost(string slot) => slot switch
+    {
+        "WEAPON"                                     => (7, 17),
+        "BODY" or "LEGS"                             => (5, 17),
+        "HEAD" or "HANDS" or "FEET" or "OFFHAND"     => (3, 11),
+        _                                            => (2, 7),  // EARS, NECK, WRISTS, RING_L, RING_R
+    };
+
+    private static string TomeAugmentNote(string slot) => slot switch
+    {
+        "WEAPON" =>
+            "Direct augment: Thundersteeped Solvent (4 M11S books or M12S loot)",
+        "BODY" or "HEAD" or "HANDS" or "LEGS" or "FEET" or "OFFHAND" =>
+            "Direct augment: Thundersteeped Twine (4 M11S books, 3000 Nuts, or M11S loot)",
+        _ =>
+            "Direct augment: Thundersteeped Glaze (3 M10S books, 2000 Nuts, or M10S loot)",
+    };
 
     private int EstimateBreakpointBonus(int baselineSpeed, int upgradedSpeed)
     {

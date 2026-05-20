@@ -306,8 +306,7 @@ public sealed class GearPlannerService
             reasons.Add($"Current piece upgradeable to i780: {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate");
         }
 
-        if (current?.SourceType == "Tome" && current.ItemLevel == 780 &&
-            target.SourceType == "Tome" && target.ItemLevel == 790)
+        if (target.SourceType == "Tome" && target.ItemLevel == 790)
         {
             reasons.Add(TomeAugmentNote(slot));
         }

@@ -35,7 +35,8 @@
         {
           "version": "7.51",
           "releaseDate": "2026-06-09",
-          "releaseIsProjected": false
+          "releaseIsProjected": false,
+          "note": "Ultimate"
         },
         {
           "version": "7.55",
@@ -45,7 +46,8 @@
         {
           "version": "7.56",
           "releaseDate": "2026-09-08",
-          "releaseIsProjected": false
+          "releaseIsProjected": false,
+          "note": "MSQ + Beastmaster"
         },
         {
           "version": "7.58",

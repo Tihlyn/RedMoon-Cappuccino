@@ -147,7 +147,11 @@ public sealed class GearPlannerService
 
                 var slotIndex = (int)invItem.InventorySlot;
                 if (EquipSlotIndexToKey.TryGetValue(slotIndex, out var slotKey))
-                    result[slotKey] = data.GetItemById((int)invItem.ItemId);
+                {
+                    var rawId = (int)invItem.ItemId;
+                    var baseId = rawId >= 1_000_000 ? rawId - 1_000_000 : rawId;
+                    result[slotKey] = data.GetItemById(baseId);
+                }
             }
         }
         catch { /* Best-effort: return whatever was collected before the failure. */ }

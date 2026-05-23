@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -17,6 +18,15 @@ namespace RedMoonCappuccino.Windows;
 
 public class MainWindow : Window, IDisposable
 {
+    private static readonly string[] ParticipantRoles = { "tank", "healer", "dps", "blue_mage", "rider", "flex" };
+    private static readonly HashSet<string> RolesRequiringClass = new(StringComparer.OrdinalIgnoreCase) { "tank", "healer", "dps" };
+    private static readonly string[] AllJobs =
+    {
+        "AST", "BLM", "BLU", "BRD", "DNC", "DRG", "DRK", "GNB",
+        "MCH", "MNK", "NIN", "PCT", "PLD", "RDM", "RPR", "SAM",
+        "SCH", "SGE", "SMN", "VPR", "WAR", "WHM",
+    };
+
     private readonly Plugin plugin;
     private readonly DataService dataService;
     private readonly GearPlannerService gearPlannerService;
@@ -24,6 +34,10 @@ public class MainWindow : Window, IDisposable
     private readonly List<MountGuideEntry> mountGuides;
     private PlannerRunResult? plannerResult;
     private string? plannerSelectedJob;
+
+    // Per-event participation state (keyed by event id)
+    private readonly Dictionary<string, int> eventRoleIndex = new();
+    private readonly Dictionary<string, int> eventJobIndex = new();
 
     public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService)
         : base("Red Moon Cappuccino##MainWindow",
@@ -382,7 +396,7 @@ public class MainWindow : Window, IDisposable
         if (!child) return;
 
         foreach (var ev in upcomingEvents)
-            DrawEventEntry(ev, $"ev_{ev.Id}");
+            DrawEventEntry(ev, $"ev_{ev.Id}", allowParticipate: true);
     }
 
     // ── Past Events ──────────────────────────────────────────────────────────
@@ -406,12 +420,12 @@ public class MainWindow : Window, IDisposable
         if (!child) return;
 
         foreach (var ev in pastEvents)
-            DrawEventEntry(ev, $"past_{ev.Id}");
+            DrawEventEntry(ev, $"past_{ev.Id}", allowParticipate: false);
     }
 
     // ── Shared event entry ───────────────────────────────────────────────────
 
-    private void DrawEventEntry(EventSummary ev, string uniqueId)
+    private void DrawEventEntry(EventSummary ev, string uniqueId, bool allowParticipate)
     {
         var headerLabel = $"[{ev.Date.ToLocalTime():MM/dd HH:mm}]  {ev.Type}  —  {ev.Description}##{uniqueId}";
         var expanded = ImGui.CollapsingHeader(headerLabel);
@@ -447,6 +461,86 @@ public class MainWindow : Window, IDisposable
         else
         {
             ImGui.TextUnformatted("Participants: (none)");
+        }
+
+        if (allowParticipate)
+        {
+            ImGui.Spacing();
+            ImGui.Separator();
+            ImGui.Spacing();
+
+            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+                ImGui.TextUnformatted("Participate");
+            ImGui.Spacing();
+
+            if (!eventRoleIndex.ContainsKey(ev.Id)) eventRoleIndex[ev.Id] = 0;
+            if (!eventJobIndex.ContainsKey(ev.Id))  eventJobIndex[ev.Id]  = 0;
+
+            var roleIdx = eventRoleIndex[ev.Id];
+            ImGui.SetNextItemWidth(120f * ImGuiHelpers.GlobalScale);
+            if (ImGui.BeginCombo($"Role##role_{uniqueId}", ParticipantRoles[roleIdx]))
+            {
+                for (var i = 0; i < ParticipantRoles.Length; i++)
+                {
+                    var selected = roleIdx == i;
+                    if (ImGui.Selectable(ParticipantRoles[i], selected))
+                        eventRoleIndex[ev.Id] = i;
+                    if (selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+
+            var currentRole = ParticipantRoles[roleIdx];
+            var needsClass  = RolesRequiringClass.Contains(currentRole);
+
+            if (needsClass)
+            {
+                ImGui.SameLine();
+                var jobIdx = eventJobIndex[ev.Id];
+                ImGui.SetNextItemWidth(80f * ImGuiHelpers.GlobalScale);
+                if (ImGui.BeginCombo($"Job##job_{uniqueId}", AllJobs[jobIdx]))
+                {
+                    for (var i = 0; i < AllJobs.Length; i++)
+                    {
+                        var selected = jobIdx == i;
+                        if (ImGui.Selectable(AllJobs[i], selected))
+                            eventJobIndex[ev.Id] = i;
+                        if (selected)
+                            ImGui.SetItemDefaultFocus();
+                    }
+                    ImGui.EndCombo();
+                }
+            }
+
+            ImGui.Spacing();
+
+            var playerName = (Plugin.ObjectTable.LocalPlayer as ICharacter)?.Name.ToString();
+            var canSubmit  = !string.IsNullOrWhiteSpace(playerName) && plugin.WsService.IsConnected;
+
+            using (ImRaii.Disabled(!canSubmit))
+            {
+                if (ImGui.Button($"Participate##submit_{uniqueId}"))
+                {
+                    var jobClass = needsClass ? AllJobs[eventJobIndex[ev.Id]] : null;
+                    plugin.WsService.SubmitEventParticipant(ev.Id, playerName!, currentRole, jobClass);
+                }
+            }
+
+            if (!plugin.WsService.IsConnected)
+            {
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                    ImGui.TextUnformatted("(not connected)");
+            }
+            else if (string.IsNullOrWhiteSpace(playerName))
+            {
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                    ImGui.TextUnformatted("(log in to participate)");
+            }
+
+            ImGui.Spacing();
         }
 
         ImGui.Spacing();

@@ -74,6 +74,32 @@ public class WebSocketService : IDisposable
         });
     }
 
+    public void SubmitEventParticipant(string eventId, string ingameName, string role, string? jobClass)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var ws = activeWs;
+                if (ws?.State != WebSocketState.Open)
+                {
+                    log.Warning("[RedMoonCappuccino] SubmitEventParticipant: not connected.");
+                    return;
+                }
+
+                object input = string.IsNullOrWhiteSpace(jobClass)
+                    ? new { eventId, ingameName, role }
+                    : new { eventId, ingameName, role, @class = jobClass };
+
+                await SendAsync(ws, new { type = "submit_event_participant", input }, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                log.Warning($"[RedMoonCappuccino] SubmitEventParticipant failed: {ex.Message}");
+            }
+        });
+    }
+
     // ── Connection loop ──────────────────────────────────────────────────────
 
     private async Task RunConnectionLoop()

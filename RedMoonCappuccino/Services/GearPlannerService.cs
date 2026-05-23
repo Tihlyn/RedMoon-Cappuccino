@@ -43,6 +43,10 @@ public sealed class GearPlannerService
 
     public IReadOnlyList<string> AvailableJobs => data.AvailableJobs;
 
+    /// Returns the abbreviation (e.g. "WAR") of the job the local player currently has equipped,
+    /// or null when not logged in or the data is unavailable.
+    public string? GetCurrentJob() => TryReadCurrentPlayerJob();
+
     public PlannerRunResult Solve(string? requestedJob)
     {
         if (!data.IsReady)

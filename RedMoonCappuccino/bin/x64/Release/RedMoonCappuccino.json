@@ -2,7 +2,7 @@
   "Author": "Tihlyn",
   "Name": "RedMoonCappuccino",
   "InternalName": "RedMoonCappuccino",
-  "AssemblyVersion": "3.0.0.0",
+  "AssemblyVersion": "3.1.0.0",
   "Description": "Connects to your FC's WebSocket server to display the lowest market tax rate and location, as well as upcoming and past FC events with event images.",
   "ApplicableVersion": "any",
   "RepoUrl": "https://github.com/Tihlyn/RedMoon-Cappuccino",

@@ -22,9 +22,11 @@ public class MainWindow : Window, IDisposable
     private static readonly HashSet<string> RolesRequiringClass = new(StringComparer.OrdinalIgnoreCase) { "tank", "healer", "dps" };
     private static readonly string[] AllJobs =
     {
-        "AST", "BLM", "BLU", "BRD", "DNC", "DRG", "DRK", "GNB",
-        "MCH", "MNK", "NIN", "PCT", "PLD", "RDM", "RPR", "SAM",
-        "SCH", "SGE", "SMN", "VPR", "WAR", "WHM",
+        "Astrologian", "Black Mage", "Blue Mage", "Bard", "Dancer",
+        "Dragoon", "Dark Knight", "Gunbreaker", "Machinist", "Monk",
+        "Ninja", "Pictomancer", "Paladin", "Red Mage", "Reaper",
+        "Samurai", "Scholar", "Sage", "Summoner", "Viper",
+        "Warrior", "White Mage",
     };
 
     private readonly Plugin plugin;
@@ -38,6 +40,10 @@ public class MainWindow : Window, IDisposable
     // Per-event participation state (keyed by event id)
     private readonly Dictionary<string, int> eventRoleIndex = new();
     private readonly Dictionary<string, int> eventJobIndex = new();
+
+    private enum SubmitState { None, Pending, Confirmed }
+    private readonly Dictionary<string, SubmitState> eventSubmitState    = new();
+    private readonly Dictionary<string, int>          eventSubmitBaseCount = new();
 
     public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService)
         : base("Red Moon Cappuccino##MainWindow",
@@ -291,6 +297,10 @@ public class MainWindow : Window, IDisposable
             !availableJobs.Contains(plannerSelectedJob, StringComparer.OrdinalIgnoreCase))
             plannerSelectedJob = availableJobs[0];
 
+        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+            ImGui.TextUnformatted("\u26a0 Make sure your character is on the same job as the one selected below before solving.");
+        ImGui.Spacing();
+
         if (ImGui.BeginCombo("Job", plannerSelectedJob))
         {
             foreach (var job in availableJobs)
@@ -305,6 +315,27 @@ public class MainWindow : Window, IDisposable
                     ImGui.SetItemDefaultFocus();
             }
             ImGui.EndCombo();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("auto detect"))
+        {
+            var detected = gearPlannerService.GetCurrentJob();
+            if (detected != null)
+            {
+                var match = availableJobs.FirstOrDefault(j =>
+                    string.Equals(j, detected, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    plannerSelectedJob = match;
+                    plannerResult = null;
+                }
+            }
+        }
+        if (ImGui.IsItemHovered())
+        {
+            var detected = gearPlannerService.GetCurrentJob();
+            ImGui.SetTooltip(detected != null ? $"Currently playing: {detected}" : "Not logged in or job undetectable");
         }
 
         ImGui.SameLine();
@@ -518,26 +549,69 @@ public class MainWindow : Window, IDisposable
             var playerName = (Plugin.ObjectTable.LocalPlayer as ICharacter)?.Name.ToString();
             var canSubmit  = !string.IsNullOrWhiteSpace(playerName) && plugin.WsService.IsConnected;
 
-            using (ImRaii.Disabled(!canSubmit))
+            // Resolve and auto-advance submit state from latest snapshot data
+            if (!eventSubmitState.TryGetValue(ev.Id, out var submitState))
+                submitState = SubmitState.None;
+
+            if (submitState == SubmitState.Pending &&
+                ev.Participants.Count > eventSubmitBaseCount.GetValueOrDefault(ev.Id))
             {
-                if (ImGui.Button($"Participate##submit_{uniqueId}"))
-                {
-                    var jobClass = needsClass ? AllJobs[eventJobIndex[ev.Id]] : null;
-                    plugin.WsService.SubmitEventParticipant(ev.Id, playerName!, currentRole, jobClass);
-                }
+                eventSubmitState[ev.Id] = SubmitState.Confirmed;
+                submitState = SubmitState.Confirmed;
             }
 
-            if (!plugin.WsService.IsConnected)
+            if (submitState == SubmitState.Confirmed)
             {
+                using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.15f, 0.55f, 0.15f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.08f, 0.35f, 0.08f, 1.0f)))
+                {
+                    if (ImGui.Button($"\u2713 Participating##submit_{uniqueId}"))
+                    {
+                        // Click confirmed button to reset and allow re-submission
+                        eventSubmitState.Remove(ev.Id);
+                        eventSubmitBaseCount.Remove(ev.Id);
+                    }
+                }
                 ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
-                    ImGui.TextUnformatted("(not connected)");
+                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF00CC00u))
+                    ImGui.TextUnformatted("Confirmed by server");
             }
-            else if (string.IsNullOrWhiteSpace(playerName))
+            else if (submitState == SubmitState.Pending)
             {
-                ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
-                    ImGui.TextUnformatted("(log in to participate)");
+                using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
+                using (ImRaii.Disabled(true))
+                {
+                    ImGui.Button($"Submitting...##submit_{uniqueId}");
+                }
+            }
+            else
+            {
+                using (ImRaii.Disabled(!canSubmit))
+                {
+                    if (ImGui.Button($"Participate##submit_{uniqueId}"))
+                    {
+                        var jobClass = needsClass ? AllJobs[eventJobIndex[ev.Id]] : null;
+                        eventSubmitState[ev.Id]    = SubmitState.Pending;
+                        eventSubmitBaseCount[ev.Id] = ev.Participants.Count;
+                        plugin.WsService.SubmitEventParticipant(ev.Id, playerName!, currentRole, jobClass);
+                    }
+                }
+
+                if (!plugin.WsService.IsConnected)
+                {
+                    ImGui.SameLine();
+                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                        ImGui.TextUnformatted("(not connected)");
+                }
+                else if (string.IsNullOrWhiteSpace(playerName))
+                {
+                    ImGui.SameLine();
+                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                        ImGui.TextUnformatted("(log in to participate)");
+                }
             }
 
             ImGui.Spacing();

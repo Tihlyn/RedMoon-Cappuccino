@@ -19,15 +19,18 @@ namespace RedMoonCappuccino.Windows;
 public class MainWindow : Window, IDisposable
 {
     private static readonly string[] ParticipantRoles = { "tank", "healer", "dps", "blue_mage", "rider", "flex" };
-    private static readonly HashSet<string> RolesRequiringClass = new(StringComparer.OrdinalIgnoreCase) { "tank", "healer", "dps" };
-    private static readonly string[] AllJobs =
-    {
-        "Astrologian", "Black Mage", "Blue Mage", "Bard", "Dancer",
-        "Dragoon", "Dark Knight", "Gunbreaker", "Machinist", "Monk",
-        "Ninja", "Pictomancer", "Paladin", "Red Mage", "Reaper",
-        "Samurai", "Scholar", "Sage", "Summoner", "Viper",
-        "Warrior", "White Mage",
-    };
+    private static readonly IReadOnlyDictionary<string, string[]> RoleJobs =
+        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["tank"]   = new[] { "Paladin", "Warrior", "Dark Knight", "Gunbreaker" },
+            ["healer"] = new[] { "White Mage", "Scholar", "Astrologian", "Sage" },
+            ["dps"]    = new[]
+            {
+                "Monk", "Dragoon", "Ninja", "Samurai", "Reaper", "Viper",
+                "Bard", "Machinist", "Dancer",
+                "Black Mage", "Summoner", "Red Mage", "Pictomancer",
+            },
+        };
 
     private readonly Plugin plugin;
     private readonly DataService dataService;
@@ -515,7 +518,13 @@ public class MainWindow : Window, IDisposable
                 {
                     var selected = roleIdx == i;
                     if (ImGui.Selectable(ParticipantRoles[i], selected))
-                        eventRoleIndex[ev.Id] = i;
+                    {
+                        if (i != roleIdx)
+                        {
+                            eventRoleIndex[ev.Id] = i;
+                            eventJobIndex[ev.Id]  = 0;  // reset job when role changes
+                        }
+                    }
                     if (selected)
                         ImGui.SetItemDefaultFocus();
                 }
@@ -523,19 +532,23 @@ public class MainWindow : Window, IDisposable
             }
 
             var currentRole = ParticipantRoles[roleIdx];
-            var needsClass  = RolesRequiringClass.Contains(currentRole);
+            var needsClass  = RoleJobs.ContainsKey(currentRole);
 
             if (needsClass)
             {
+                var roleJobList = RoleJobs[currentRole];
                 ImGui.SameLine();
+                // Clamp index in case the role just changed and old index is out of range
+                if (eventJobIndex[ev.Id] >= roleJobList.Length)
+                    eventJobIndex[ev.Id] = 0;
                 var jobIdx = eventJobIndex[ev.Id];
-                ImGui.SetNextItemWidth(80f * ImGuiHelpers.GlobalScale);
-                if (ImGui.BeginCombo($"Job##job_{uniqueId}", AllJobs[jobIdx]))
+                ImGui.SetNextItemWidth(120f * ImGuiHelpers.GlobalScale);
+                if (ImGui.BeginCombo($"Job##job_{uniqueId}", roleJobList[jobIdx]))
                 {
-                    for (var i = 0; i < AllJobs.Length; i++)
+                    for (var i = 0; i < roleJobList.Length; i++)
                     {
                         var selected = jobIdx == i;
-                        if (ImGui.Selectable(AllJobs[i], selected))
+                        if (ImGui.Selectable(roleJobList[i], selected))
                             eventJobIndex[ev.Id] = i;
                         if (selected)
                             ImGui.SetItemDefaultFocus();
@@ -563,15 +576,11 @@ public class MainWindow : Window, IDisposable
             if (submitState == SubmitState.Confirmed)
             {
                 using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.15f, 0.55f, 0.15f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.08f, 0.35f, 0.08f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
+                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
+                using (ImRaii.Disabled(true))
                 {
-                    if (ImGui.Button($"\u2713 Participating##submit_{uniqueId}"))
-                    {
-                        // Click confirmed button to reset and allow re-submission
-                        eventSubmitState.Remove(ev.Id);
-                        eventSubmitBaseCount.Remove(ev.Id);
-                    }
+                    ImGui.Button($"\u2713 Participating##submit_{uniqueId}");
                 }
                 ImGui.SameLine();
                 using (ImRaii.PushColor(ImGuiCol.Text, 0xFF00CC00u))
@@ -593,7 +602,8 @@ public class MainWindow : Window, IDisposable
                 {
                     if (ImGui.Button($"Participate##submit_{uniqueId}"))
                     {
-                        var jobClass = needsClass ? AllJobs[eventJobIndex[ev.Id]] : null;
+                        var roleJobList = needsClass ? RoleJobs[currentRole] : null;
+                        var jobClass = roleJobList != null ? roleJobList[eventJobIndex[ev.Id]] : null;
                         eventSubmitState[ev.Id]    = SubmitState.Pending;
                         eventSubmitBaseCount[ev.Id] = ev.Participants.Count;
                         plugin.WsService.SubmitEventParticipant(ev.Id, playerName!, currentRole, jobClass);

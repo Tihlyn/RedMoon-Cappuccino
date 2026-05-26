@@ -177,6 +177,7 @@ public class AcquisitionWindow : Window, IDisposable
             case "venture":             DrawVentureSource(src.Extra);            break;
             case "gardening":           DrawGardeningSource(src.Extra);          break;
             case "desynthesis":         DrawDesynthesisSource(src.Extra);        break;
+            case "loot_container":       DrawLootContainerSource(src.Extra);      break;
             case "fishing":             DrawFishingSource(src.Extra);            break;
             case "quest":               DrawQuestSource(src.Extra);              break;
             case "achievement":         DrawAchievementSource(src.Extra);        break;
@@ -408,6 +409,19 @@ public class AcquisitionWindow : Window, IDisposable
         }
     }
 
+    // ── Loot Container ────────────────────────────────────────────────────────
+
+    private static void DrawLootContainerSource(Dictionary<string, JsonElement> extra)
+    {
+        using var tbl = MakeSourceTable("##loot");
+        if (!tbl) return;
+
+        if (!extra.TryGetValue("containers", out var ctEl) || ctEl.ValueKind != JsonValueKind.Array) return;
+
+        foreach (var c in ctEl.EnumerateArray())
+            TR("Container", GetStr(c, "name") ?? $"Item #{GetInt(c, "itemId")}");
+    }
+
     // ── Fishing ───────────────────────────────────────────────────────────────
 
     private static void DrawFishingSource(Dictionary<string, JsonElement> extra)
@@ -538,6 +552,7 @@ public class AcquisitionWindow : Window, IDisposable
         "gardening"          => "Gardening",
         "desynthesis"        => "Desynthesis",
         "desynth"            => "Desynthesis",
+        "loot_container"     => "Loot Container",
         "aetherial_reduction"=> "Aetherial Reduction",
         "gathering"          => "Gathering",
         "fishing"            => "Fishing",

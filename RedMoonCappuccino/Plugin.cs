@@ -23,6 +23,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog              Log                 { get; private set; } = null!;
     [PluginService] internal static IContextMenu            ContextMenu         { get; private set; } = null!;
     [PluginService] internal static IDataManager            DataManager         { get; private set; } = null!;
+    [PluginService] internal static IGameGui                GameGui             { get; private set; } = null!;
 
     private const string CommandName = "/rmcap";
 
@@ -109,17 +110,35 @@ public sealed class Plugin : IDalamudPlugin
     public void ToggleConfigUI() => configWindow.Toggle();
     public void ToggleMainUI()   => mainWindow.Toggle();
 
+    // Addons beyond the inventory family that surface item context menus.
+    // HoveredItem is reliable here because the game sets it whenever an item
+    // tooltip is visible, which is always the case just before right-click.
+    private static readonly System.Collections.Generic.HashSet<string> ItemLinkAddons =
+        new(System.StringComparer.OrdinalIgnoreCase)
+        {
+            "ChatLog",          // item links in chat
+            "ItemSearch",       // marketboard search panel
+            "ItemSearchResult", // marketboard results list
+        };
+
     private void OnContextMenuOpened(IMenuOpenedArgs args)
     {
-        if (args.Target is not MenuTargetInventory inventoryTarget)
-            return;
+        uint baseId;
 
-        var targetItem = inventoryTarget.TargetItem;
-        if (targetItem == null || targetItem.Value.ItemId == 0)
-            return;
-
-        var rawId  = targetItem.Value.ItemId;
-        var baseId = rawId >= 1_000_000u ? rawId - 1_000_000u : rawId;
+        if (args.Target is MenuTargetInventory inventoryTarget)
+        {
+            var targetItem = inventoryTarget.TargetItem;
+            if (targetItem == null || targetItem.Value.ItemId == 0) return;
+            var rawId = targetItem.Value.ItemId;
+            baseId = rawId >= 1_000_000u ? rawId - 1_000_000u : rawId;
+        }
+        else if (args.AddonName != null && ItemLinkAddons.Contains(args.AddonName))
+        {
+            var hovered = (uint)GameGui.HoveredItem;
+            if (hovered == 0) return;
+            baseId = hovered >= 1_000_000u ? hovered - 1_000_000u : hovered;
+        }
+        else return;
 
         args.AddMenuItem(new MenuItem
         {

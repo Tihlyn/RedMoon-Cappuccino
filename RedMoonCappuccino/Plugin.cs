@@ -122,8 +122,9 @@ public sealed class Plugin : IDalamudPlugin
 
         args.AddMenuItem(new MenuItem
         {
-            Name      = "Where do I find that",
-            OnClicked = _ =>
+            Name       = "Where do I find that",
+            PrefixChar = 'R',
+            OnClicked  = _ =>
             {
                 WsService.RequestAcquisition(baseId);
                 acquisitionWindow.ShowForItem(baseId);

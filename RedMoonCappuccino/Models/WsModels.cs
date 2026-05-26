@@ -143,8 +143,14 @@ public class AcqResultData
     [JsonPropertyName("itemId")]
     public int ItemId { get; set; }
 
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
     [JsonPropertyName("sources")]
     public List<AcqSource> Sources { get; set; } = new();
+
+    [JsonPropertyName("reducesInto")]
+    public JsonElement? ReducesInto { get; set; }
 }
 
 public class AcqResultMessage : WsMessage

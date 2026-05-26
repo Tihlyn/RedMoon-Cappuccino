@@ -172,6 +172,7 @@ public class AcquisitionWindow : Window, IDisposable
             case "aetherial_reduction": DrawAetherialReductionSource(src.Extra); break;
             case "crafting":            DrawCraftingSource(src.Extra);           break;
             case "drop":                DrawDropSource(src.Extra, dataManager);  break;
+            case "instance":            DrawInstanceSource(src.Extra);           break;
             case "fate":                DrawFateSource(src.Extra);               break;
             case "venture":             DrawVentureSource(src.Extra);            break;
             case "gardening":           DrawGardeningSource(src.Extra);          break;
@@ -291,7 +292,67 @@ public class AcquisitionWindow : Window, IDisposable
             var inst = instEl.GetString();
             if (!string.IsNullOrEmpty(inst)) TR("Instance", inst);
         }
+
+        // Spawn positions — group by zone to avoid listing every individual spawn point
+        if (extra.TryGetValue("positions", out var posEl) && posEl.ValueKind == JsonValueKind.Array)
+        {
+            var zones = posEl.EnumerateArray()
+                .Where(p => p.ValueKind == JsonValueKind.Object)
+                .GroupBy(p => GetStr(p, "zone") ?? string.Empty)
+                .ToList();
+
+            foreach (var zoneGroup in zones)
+            {
+                var first = zoneGroup.First();
+                var area  = GetStr(first, "area");
+                var zone  = zoneGroup.Key;
+                var level = GetInt(first, "level");
+                var loc   = string.Join(" › ", new[] { area, zone }.Where(s => !string.IsNullOrEmpty(s)));
+                if (level.HasValue) loc += $"  (Lv.{level})";
+                TR("Location", loc);
+            }
+        }
     }
+
+    // ── Instance ──────────────────────────────────────────────────────────────
+
+    private static void DrawInstanceSource(Dictionary<string, JsonElement> extra)
+    {
+        using var tbl = MakeSourceTable("##inst");
+        if (!tbl) return;
+
+        if (!extra.TryGetValue("instances", out var instEl) || instEl.ValueKind != JsonValueKind.Array) return;
+
+        foreach (var inst in instEl.EnumerateArray())
+        {
+            var name  = GetStr(inst, "name")        ?? "Unknown";
+            var ctRaw = GetStr(inst, "contentType") ?? string.Empty;
+            var level = GetInt(inst, "levelRequired");
+            var ilvl  = GetInt(inst, "ilvlRequired");
+
+            var val  = name;
+            var reqs = new System.Collections.Generic.List<string>();
+            if (level is > 1) reqs.Add($"Lv.{level}");
+            if (ilvl  is > 0) reqs.Add($"iLvl {ilvl}");
+            if (reqs.Count > 0) val += $"  ({string.Join(" · ", reqs)})";
+
+            TR(FormatContentType(ctRaw), val);
+        }
+    }
+
+    private static string FormatContentType(string ct) => ct switch
+    {
+        "Raid"         => "Raid",
+        "TreasureHunt" => "Treasure Hunt",
+        "Trial"        => "Trial",
+        "Dungeon"      => "Dungeon",
+        "AllianceRaid" => "Alliance Raid",
+        "Ultimate"     => "Ultimate",
+        "DeepDungeon"  => "Deep Dungeon",
+        "Variant"      => "Variant",
+        "Criterion"    => "Criterion",
+        _              => string.IsNullOrEmpty(ct) ? "Instance" : ct,
+    };
 
     // ── FATE ──────────────────────────────────────────────────────────────────
 
@@ -471,6 +532,7 @@ public class AcquisitionWindow : Window, IDisposable
     private static string FormatSourceType(string type) => type switch
     {
         "drop"               => "Drop",
+        "instance"           => "Instance Drop",
         "fate"               => "FATE",
         "venture"            => "Retainer Venture",
         "gardening"          => "Gardening",

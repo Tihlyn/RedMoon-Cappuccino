@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace RedMoonCappuccino.Models;
@@ -125,4 +126,29 @@ public class ImageResponseMessage : WsMessage
 
     [JsonPropertyName("image")]
     public ImageData? Image { get; set; }
+}
+
+public class AcqSource
+{
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    /// Captures any extra properties the server includes per source type.
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+public class AcqResultData
+{
+    [JsonPropertyName("itemId")]
+    public int ItemId { get; set; }
+
+    [JsonPropertyName("sources")]
+    public List<AcqSource> Sources { get; set; } = new();
+}
+
+public class AcqResultMessage : WsMessage
+{
+    [JsonPropertyName("data")]
+    public AcqResultData? Data { get; set; }
 }

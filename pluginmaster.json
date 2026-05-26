@@ -20,11 +20,11 @@
     "IconUrl": "https://raw.githubusercontent.com/Tihlyn/RedMoon-Cappuccino/main/Data/icon.png",
     "AcceptsFeedback": true,
     "FeedbackMessage": "Open an issue on GitHub.",
-    "AssemblyVersion": "3.1.6.0",
+    "AssemblyVersion": "3.2.4.0",
     "DownloadLinkInstall": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
     "DownloadLinkUpdate": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
     "DownloadLinkTesting": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
-    "DownloadCount": 0,
+    "DownloadCount": 1,
     "LastUpdate": 1779546213,
     "IsHide": false,
     "IsTestingExclusive": false

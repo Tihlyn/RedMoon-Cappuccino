@@ -1,4 +1,5 @@
 using Dalamud.Game.Command;
+using Dalamud.Game.Gui.ContextMenu;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -20,6 +21,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ITextureProvider        TextureProvider     { get; private set; } = null!;
     [PluginService] internal static INotificationManager    NotificationManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog              Log                 { get; private set; } = null!;
+    [PluginService] internal static IContextMenu            ContextMenu         { get; private set; } = null!;
 
     private const string CommandName = "/rmcap";
 
@@ -31,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
+    private readonly AcquisitionWindow acquisitionWindow;
 
     public Plugin()
     {
@@ -49,8 +52,13 @@ public sealed class Plugin : IDalamudPlugin
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
+        acquisitionWindow = new AcquisitionWindow(WsService);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
+        WindowSystem.AddWindow(acquisitionWindow);
+
+        // Context menu
+        ContextMenu.OnMenuOpened += OnContextMenuOpened;
 
         // Command
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -72,6 +80,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         ClientState.Login -= OnLogin;
+        ContextMenu.OnMenuOpened -= OnContextMenuOpened;
 
         PluginInterface.UiBuilder.Draw         -= DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUI;
@@ -82,6 +91,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
         mainWindow.Dispose();
         configWindow.Dispose();
+        acquisitionWindow.Dispose();
 
         WsService.Dispose();
         DataService.Dispose();
@@ -97,4 +107,27 @@ public sealed class Plugin : IDalamudPlugin
     private void DrawUI() => WindowSystem.Draw();
     public void ToggleConfigUI() => configWindow.Toggle();
     public void ToggleMainUI()   => mainWindow.Toggle();
+
+    private void OnContextMenuOpened(IMenuOpenedArgs args)
+    {
+        if (args.Target is not MenuTargetInventory inventoryTarget)
+            return;
+
+        var targetItem = inventoryTarget.TargetItem;
+        if (targetItem == null || targetItem.Value.ItemId == 0)
+            return;
+
+        var rawId  = targetItem.Value.ItemId;
+        var baseId = rawId >= 1_000_000u ? rawId - 1_000_000u : rawId;
+
+        args.AddMenuItem(new MenuItem
+        {
+            Name      = "Where do I find that",
+            OnClicked = _ =>
+            {
+                WsService.RequestAcquisition(baseId);
+                acquisitionWindow.ShowForItem(baseId);
+            },
+        });
+    }
 }

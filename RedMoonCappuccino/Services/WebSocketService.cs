@@ -27,6 +27,9 @@ public class WebSocketService : IDisposable
 
     public bool IsConnected => activeWs?.State == WebSocketState.Open;
 
+    /// Fired on the receive thread when an ACQ_RESULT message arrives.
+    public event Action<AcqResultMessage>? OnAcqResult;
+
     public WebSocketService(DataService dataService, IPluginLog log)
     {
         this.dataService = dataService;
@@ -96,6 +99,23 @@ public class WebSocketService : IDisposable
             catch (Exception ex)
             {
                 log.Warning($"[RedMoonCappuccino] SubmitEventParticipant failed: {ex.Message}");
+            }
+        });
+    }
+
+    public void RequestAcquisition(uint itemId)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var ws = activeWs;
+                if (ws?.State == WebSocketState.Open)
+                    await SendAsync(ws, new { type = "ACQ_QUERY", itemId = (int)itemId }, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                log.Warning($"[RedMoonCappuccino] RequestAcquisition failed for item {itemId}: {ex.Message}");
             }
         });
     }
@@ -239,6 +259,12 @@ public class WebSocketService : IDisposable
                     var img = JsonSerializer.Deserialize<ImageResponseMessage>(text);
                     if (img != null)
                         dataService.UpdateImage(img);
+                    break;
+
+                case "ACQ_RESULT":
+                    var acq = JsonSerializer.Deserialize<AcqResultMessage>(text);
+                    if (acq != null)
+                        OnAcqResult?.Invoke(acq);
                     break;
 
                 case "pong":

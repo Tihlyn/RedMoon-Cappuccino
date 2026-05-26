@@ -8,6 +8,8 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
+using Lumina.Excel.Sheets;
 using RedMoonCappuccino.Models;
 using RedMoonCappuccino.Services;
 
@@ -16,14 +18,16 @@ namespace RedMoonCappuccino.Windows;
 public class AcquisitionWindow : Window, IDisposable
 {
     private readonly WebSocketService wsService;
+    private readonly IDataManager dataManager;
     private uint currentItemId;
     private volatile bool isLoading;
     private AcqResultData? result;
 
-    public AcquisitionWindow(WebSocketService wsService)
+    public AcquisitionWindow(WebSocketService wsService, IDataManager dataManager)
         : base("Where do I find that?##AcqWindow")
     {
-        this.wsService = wsService;
+        this.wsService   = wsService;
+        this.dataManager = dataManager;
         wsService.OnAcqResult += HandleAcqResult;
         SizeConstraints = new WindowSizeConstraints
         {
@@ -152,7 +156,7 @@ public class AcquisitionWindow : Window, IDisposable
 
     // ── Source dispatch ───────────────────────────────────────────────────────
 
-    private static void DrawSourceContent(AcqSource src)
+    private void DrawSourceContent(AcqSource src)
     {
         if (src.Extra == null || src.Extra.Count == 0)
         {
@@ -167,7 +171,7 @@ public class AcquisitionWindow : Window, IDisposable
             case "gathering":           DrawGatheringSource(src.Extra);          break;
             case "aetherial_reduction": DrawAetherialReductionSource(src.Extra); break;
             case "crafting":            DrawCraftingSource(src.Extra);           break;
-            case "drop":                DrawDropSource(src.Extra);               break;
+            case "drop":                DrawDropSource(src.Extra, dataManager);  break;
             case "fate":                DrawFateSource(src.Extra);               break;
             case "venture":             DrawVentureSource(src.Extra);            break;
             case "gardening":           DrawGardeningSource(src.Extra);          break;
@@ -221,8 +225,8 @@ public class AcquisitionWindow : Window, IDisposable
         if (extra.TryGetValue("gatheringTypes", out var typesEl) && typesEl.ValueKind == JsonValueKind.Array)
         {
             var types = string.Join(", ", typesEl.EnumerateArray()
-                .Select(t => t.GetString()).Where(s => s != null));
-            TR("Method", types);
+                .Select(t => FormatGatheringType(t.GetString())).Where(s => s != null));
+            if (!string.IsNullOrEmpty(types)) TR("Method", types);
         }
 
         AddNodeRows(extra);
@@ -263,14 +267,30 @@ public class AcquisitionWindow : Window, IDisposable
 
     // ── Drop ──────────────────────────────────────────────────────────────────
 
-    private static void DrawDropSource(Dictionary<string, JsonElement> extra)
+    private static void DrawDropSource(Dictionary<string, JsonElement> extra, IDataManager dm)
     {
         using var tbl = MakeSourceTable("##drop");
         if (!tbl) return;
 
-        var name = extra.TryGetValue("mobName", out var nEl) ? nEl.GetString() : null;
-        var id   = extra.TryGetValue("mobId",   out var iEl) && iEl.ValueKind == JsonValueKind.Number ? iEl.GetInt32() : (int?)null;
+        var name = extra.TryGetValue("mobName", out var nEl) && nEl.ValueKind == JsonValueKind.String
+            ? nEl.GetString() : null;
+        var id   = extra.TryGetValue("mobId", out var iEl) && iEl.ValueKind == JsonValueKind.Number
+            ? iEl.GetInt32() : (int?)null;
+
+        // Server may omit the name; resolve it locally via Lumina BNpcName sheet
+        if (name == null && id.HasValue)
+        {
+            var row = dm.GetExcelSheet<BNpcName>()?.GetRow((uint)id.Value);
+            if (row.HasValue) name = row.Value.Singular.ExtractText();
+        }
+
         TR("Mob", name ?? (id.HasValue ? $"Mob #{id}" : "Unknown"));
+
+        if (extra.TryGetValue("instanceName", out var instEl) && instEl.ValueKind == JsonValueKind.String)
+        {
+            var inst = instEl.GetString();
+            if (!string.IsNullOrEmpty(inst)) TR("Instance", inst);
+        }
     }
 
     // ── FATE ──────────────────────────────────────────────────────────────────
@@ -390,29 +410,63 @@ public class AcquisitionWindow : Window, IDisposable
 
         if (!extra.TryGetValue("nodes", out var nodesEl) || nodesEl.ValueKind != JsonValueKind.Array) return;
 
-        foreach (var node in nodesEl.EnumerateArray())
+        var nodes = nodesEl.EnumerateArray().ToList();
+        for (var n = 0; n < nodes.Count; n++)
         {
-            var gt        = GetStr(node, "gatherType") ?? "?";
+            var node      = nodes[n];
+            var gtRaw     = GetStr(node, "gatherType");
+            var gt        = gtRaw != null ? FormatGatheringType(gtRaw) : null;
             var level     = GetInt(node, "level");
             var area      = GetStr(node, "area");
             var zone      = GetStr(node, "zone");
             var coords    = FormatCoords(node);
             var legendary = GetBool(node, "legendary") == true;
-            var folklore  = GetInt(node, "folklore");
+            var ephemeral = GetBool(node, "ephemeral") == true;
 
-            var typeLevel = $"{gt} Lv.{level?.ToString() ?? "?"}";
+            // If node has no gatherType, omit prefix (Method row already shows it)
+            var typeLevel = gt != null ? $"{gt} Lv.{level?.ToString() ?? "?"}" : $"Lv.{level?.ToString() ?? "?"}";
             if (legendary) typeLevel += " ★";
+            if (ephemeral) typeLevel += " (Ephemeral)";
 
-            var loc = string.Join(" › ", new[] { area, zone }.Where(s => !string.IsNullOrEmpty(s)));
-            var val = typeLevel;
+            var loc   = string.Join(" › ", new[] { area, zone }.Where(s => !string.IsNullOrEmpty(s)));
+            var val   = typeLevel;
             if (!string.IsNullOrEmpty(loc))    val += $"  |  {loc}";
-            if (!string.IsNullOrEmpty(coords))
+            if (!string.IsNullOrEmpty(coords)) val += $"  ({coords})";
+            TR(nodes.Count > 1 ? $"Node {n + 1}" : "Node", val);
+
+            // Folklore tome requirement
+            if (node.TryGetProperty("folklore", out var folkEl) && folkEl.ValueKind == JsonValueKind.Object)
             {
-                val += $"  ({coords})";
+                var folkName = GetStr(folkEl, "name");
+                if (!string.IsNullOrEmpty(folkName)) TR("Folklore", folkName);
             }
-            TR("Node", val);
+
+            // Timed spawn windows (hours, e.g. [4, 16] → "4:00  ·  16:00")
+            if (node.TryGetProperty("spawns", out var spawnsEl) && spawnsEl.ValueKind == JsonValueKind.Array)
+            {
+                var times = string.Join("  ·  ", spawnsEl.EnumerateArray()
+                    .Where(s => s.ValueKind == JsonValueKind.Number)
+                    .Select(s => $"{s.GetInt32()}:00"));
+                if (!string.IsNullOrEmpty(times)) TR("Spawns", times);
+            }
+
+            // Active duration in minutes (skip if 0 = no timer data)
+            if (node.TryGetProperty("duration", out var durEl) && durEl.ValueKind == JsonValueKind.Number && durEl.GetInt32() > 0)
+                TR("Duration", $"{durEl.GetInt32()} min");
         }
     }
+
+    private static string? FormatGatheringType(string? raw) => raw switch
+    {
+        "type_0" or "Mining"       => "Mining",
+        "type_1" or "Quarrying"    => "Quarrying",
+        "type_2" or "Logging"      => "Logging",
+        "type_3" or "Harvesting"   => "Harvesting",
+        "type_4" or "Spearfishing" => "Spearfishing",
+        "type_5" or "Fishing"      => "Fishing",
+        null or ""                 => null,
+        _                          => raw,
+    };
 
     private static string FormatSourceType(string type) => type switch
     {

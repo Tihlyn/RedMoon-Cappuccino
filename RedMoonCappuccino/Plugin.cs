@@ -22,6 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static INotificationManager    NotificationManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog              Log                 { get; private set; } = null!;
     [PluginService] internal static IContextMenu            ContextMenu         { get; private set; } = null!;
+    [PluginService] internal static IDataManager            DataManager         { get; private set; } = null!;
 
     private const string CommandName = "/rmcap";
 
@@ -52,7 +53,7 @@ public sealed class Plugin : IDalamudPlugin
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
-        acquisitionWindow = new AcquisitionWindow(WsService);
+        acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);

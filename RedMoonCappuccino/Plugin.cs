@@ -6,6 +6,7 @@ using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
 using RedMoonCappuccino.Services;
 using RedMoonCappuccino.Windows;
+using RedMoonCappuccino.RotationRecorder;
 
 namespace RedMoonCappuccino;
 
@@ -24,10 +25,14 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IContextMenu            ContextMenu         { get; private set; } = null!;
     [PluginService] internal static IDataManager            DataManager         { get; private set; } = null!;
     [PluginService] internal static IGameGui                GameGui             { get; private set; } = null!;
+    [PluginService] internal static IGameInteropProvider    GameInterop         { get; private set; } = null!;
 
-    private const string CommandName = "/rmcap";
+    private const string CommandName    = "/rmcap";
+    private const string CommandDpsCheck = "/dpscheck";
 
     public Configuration Configuration { get; init; }
+    /// <summary>Alias used by RotationRecorder components.</summary>
+    public Configuration Config => Configuration;
 
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
@@ -37,6 +42,10 @@ public sealed class Plugin : IDalamudPlugin
     private readonly ConfigWindow configWindow;
     private readonly AcquisitionWindow acquisitionWindow;
 
+    private ActionRecorder  _actionRecorder  = null!;
+    private GeminiAnalyzer  _geminiAnalyzer  = null!;
+    private RecorderWindow  _recorderWindow  = null!;
+
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -44,7 +53,7 @@ public sealed class Plugin : IDalamudPlugin
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
-        WsService   = new WebSocketService(DataService, Log);
+        WsService   = new WebSocketService(DataService, Log, Configuration);
 
         // Wire image-fetch callback before starting the WS connection so no
         // snapshot is missed.
@@ -59,6 +68,12 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);
 
+        // Rotation Recorder
+        _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, Log);
+        _geminiAnalyzer = new GeminiAnalyzer();
+        _recorderWindow = new RecorderWindow(this, _actionRecorder, _geminiAnalyzer);
+        WindowSystem.AddWindow(_recorderWindow);
+
         // Context menu
         ContextMenu.OnMenuOpened += OnContextMenuOpened;
 
@@ -66,6 +81,10 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Toggle the Red Moon Cappuccino main window.",
+        });
+        CommandManager.AddHandler(CommandDpsCheck, new CommandInfo(OnDpsCheckCommand)
+        {
+            HelpMessage = "Toggle the rotation recorder window.",
         });
 
         // UI hooks
@@ -89,6 +108,12 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi   -= ToggleMainUI;
 
         CommandManager.RemoveHandler(CommandName);
+        CommandManager.RemoveHandler(CommandDpsCheck);
+
+        _recorderWindow.Dispose();
+        _geminiAnalyzer.Dispose();
+        _actionRecorder.Dispose();
+        WindowSystem.RemoveWindow(_recorderWindow);
 
         WindowSystem.RemoveAllWindows();
         mainWindow.Dispose();
@@ -106,6 +131,7 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     private void OnCommand(string command, string args) => ToggleMainUI();
+    private void OnDpsCheckCommand(string command, string args) => _recorderWindow.Toggle();
     private void DrawUI() => WindowSystem.Draw();
     public void ToggleConfigUI() => configWindow.Toggle();
     public void ToggleMainUI()   => mainWindow.Toggle();

@@ -12,7 +12,7 @@ namespace RedMoonCappuccino.Services;
 
 public class WebSocketService : IDisposable
 {
-    private const string WsUrl = "ws://78.116.140.30:3100";
+    private readonly string WsUrl;
     private const int ReconnectDelayMs = 5000;
     private const int PingIntervalMs = 30000;
     private const int ReceiveBufferSize = 1024 * 128;
@@ -30,10 +30,11 @@ public class WebSocketService : IDisposable
     /// Fired on the receive thread when an ACQ_RESULT message arrives.
     public event Action<AcqResultMessage>? OnAcqResult;
 
-    public WebSocketService(DataService dataService, IPluginLog log)
+    public WebSocketService(DataService dataService, IPluginLog log, Configuration config)
     {
         this.dataService = dataService;
         this.log = log;
+        WsUrl = config.WsServerAddress;
     }
 
     public void Start()

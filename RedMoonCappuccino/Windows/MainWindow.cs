@@ -47,6 +47,8 @@ public class MainWindow : Window, IDisposable
     private enum SubmitState { None, Pending, Confirmed }
     private readonly Dictionary<string, SubmitState> eventSubmitState    = new();
     private readonly Dictionary<string, int>          eventSubmitBaseCount = new();
+    private readonly Dictionary<string, DateTime>     eventSubmitPendingTime = new();
+    private readonly Dictionary<string, string>       eventSubmitError     = new();
 
     public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService)
         : base("Red Moon Cappuccino##MainWindow",
@@ -567,6 +569,14 @@ public class MainWindow : Window, IDisposable
                 submitState = SubmitState.None;
 
             if (submitState == SubmitState.Pending &&
+                eventSubmitPendingTime.TryGetValue(ev.Id, out var pendingStart) &&
+                (DateTime.UtcNow - pendingStart).TotalSeconds > 5.0)
+            {
+                eventSubmitState[ev.Id]  = SubmitState.None;
+                eventSubmitError[ev.Id]  = "Timed out — character not recognized by server.";
+                submitState = SubmitState.None;
+            }
+            else if (submitState == SubmitState.Pending &&
                 ev.Participants.Count > eventSubmitBaseCount.GetValueOrDefault(ev.Id))
             {
                 eventSubmitState[ev.Id] = SubmitState.Confirmed;
@@ -604,8 +614,10 @@ public class MainWindow : Window, IDisposable
                     {
                         var roleJobList = needsClass ? RoleJobs[currentRole] : null;
                         var jobClass = roleJobList != null ? roleJobList[eventJobIndex[ev.Id]] : null;
-                        eventSubmitState[ev.Id]    = SubmitState.Pending;
-                        eventSubmitBaseCount[ev.Id] = ev.Participants.Count;
+                        eventSubmitState[ev.Id]      = SubmitState.Pending;
+                        eventSubmitBaseCount[ev.Id]  = ev.Participants.Count;
+                        eventSubmitPendingTime[ev.Id] = DateTime.UtcNow;
+                        eventSubmitError.Remove(ev.Id);
                         plugin.WsService.SubmitEventParticipant(ev.Id, playerName!, currentRole, jobClass);
                     }
                 }
@@ -621,6 +633,12 @@ public class MainWindow : Window, IDisposable
                     ImGui.SameLine();
                     using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
                         ImGui.TextUnformatted("(log in to participate)");
+                }
+
+                if (eventSubmitError.TryGetValue(ev.Id, out var submitError))
+                {
+                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF2222FFu))
+                        ImGui.TextUnformatted(submitError);
                 }
             }
 

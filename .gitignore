@@ -20,3 +20,6 @@ obj/
 # Logs / temp
 *.log
 *.tmp
+
+# Plugin configuration — contains default server address and API key placeholder
+RedMoonCappuccino/Configuration.cs

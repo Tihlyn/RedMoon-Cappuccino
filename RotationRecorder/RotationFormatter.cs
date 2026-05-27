@@ -14,6 +14,7 @@ public static class RotationFormatter
 {
     public static string FormatForPrompt(
         string                     job,
+        string                     encounter,
         IReadOnlyList<ActionEvent> events,
         DateTimeOffset             sessionStart,
         DateTimeOffset             sessionEnd)
@@ -25,8 +26,7 @@ public static class RotationFormatter
         var elapsed = (sessionEnd - sessionStart).TotalSeconds;
 
         // ── Header ────────────────────────────────────────────────────────────
-        sb.AppendLine($"Job: {job}");
-        sb.AppendLine($"Recording duration: {elapsed:F1}s");
+        sb.AppendLine($"Job: {job}");        sb.AppendLine($"Encounter: {encounter}");        sb.AppendLine($"Recording duration: {elapsed:F1}s");
         sb.AppendLine($"Total actions: {events.Count}");
 
         var gcds  = events.Where(e => e.IsGcd).ToList();

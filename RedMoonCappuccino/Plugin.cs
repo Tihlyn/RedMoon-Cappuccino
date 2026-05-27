@@ -69,7 +69,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.AddWindow(acquisitionWindow);
 
         // Rotation Recorder
-        _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, Log);
+        _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, ClientState, Log);
         _geminiAnalyzer = new GeminiAnalyzer();
         _recorderWindow = new RecorderWindow(this, _actionRecorder, _geminiAnalyzer);
         WindowSystem.AddWindow(_recorderWindow);

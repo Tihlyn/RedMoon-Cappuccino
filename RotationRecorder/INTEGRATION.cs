@@ -18,6 +18,7 @@
 //    [PluginService] internal static IGameInteropProvider GameInterop  { get; private set; } = null!;
 //    [PluginService] internal static IObjectTable         ObjectTable  { get; private set; } = null!;
 //    [PluginService] internal static IDataManager         DataManager  { get; private set; } = null!;
+//    [PluginService] internal static IClientState         ClientState  { get; private set; } = null!;
 //    [PluginService] internal static IPluginLog           Log          { get; private set; } = null!;
 //
 //    NOTE: IObjectTable.LocalPlayer is the v15-correct way to get the local player.
@@ -26,7 +27,7 @@
 
 // 3. ADD TO YOUR CONSTRUCTOR, after existing setup:
 //
-//    _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, Log);
+//    _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, ClientState, Log);
 //    _geminiAnalyzer = new GeminiAnalyzer();
 //    _recorderWindow = new RecorderWindow(this, _actionRecorder, _geminiAnalyzer);
 //    WindowSystem.AddWindow(_recorderWindow);

@@ -338,7 +338,7 @@ public sealed class RecorderWindow : Window, IDisposable
             return;
         }
 
-        var rotationText = RotationFormatter.FormatForPrompt(job, events, start, end);
+        var rotationText = RotationFormatter.FormatForPrompt(job, _recorder.EncounterName, events, start, end);
         var ct           = _analyzeCts.Token;
 
         // Fire-and-forget — PollAnalysisTask() in Draw() handles completion

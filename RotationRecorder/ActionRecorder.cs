@@ -89,10 +89,13 @@ public sealed unsafe class ActionRecorder : IDisposable
         uint                        a6,
         bool*                       a7)
     {
+        var result = _useActionHook.Original(self, actionType, actionId, targetId, a4, a5, a6, a7);
+
         try
         {
-            // Only record combat actions while session is active
-            if (IsRecording && actionType == ActionType.Action)
+            // a5 = useType: 0 = fresh player press, 1 = queue re-fire
+            // Exclude re-fires so the timeline reflects deliberate inputs only
+            if (IsRecording && actionType == ActionType.Action && result && (uint)a5 != 1)
                 RecordAction(self, actionId);
         }
         catch (Exception ex)
@@ -100,7 +103,7 @@ public sealed unsafe class ActionRecorder : IDisposable
             _log.Error(ex, "[RotationRecorder] UseAction detour failed");
         }
 
-        return _useActionHook.Original(self, actionType, actionId, targetId, a4, a5, a6, a7);
+        return result;
     }
 
     private void RecordAction(ActionManager* self, uint actionId)

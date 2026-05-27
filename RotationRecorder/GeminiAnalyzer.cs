@@ -54,10 +54,10 @@ public sealed class GeminiAnalyzer : IDisposable
         Assess the opener specifically — correct order, buffs before damage, etc.
 
         RESOURCE USAGE:
-        Comment on MP, job gauge, or ability-specific resources if visible in the data.
+        Comment on MP (only for caster and healer jobs), job gauge, or ability-specific resources if visible in the data.
 
         Be direct. Name specific actions. If the recording is under 30 seconds, say so
-        and give a partial assessment only.
+        and give a partial assessment only. The recording may be lengthy or incomplete and provide no context on encounter, be lenient in your assessment. Focus on the rotation quality, not the raw numbers.
         """;
 
     public async Task<string> AnalyzeAsync(

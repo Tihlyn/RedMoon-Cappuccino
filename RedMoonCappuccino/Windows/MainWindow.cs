@@ -573,7 +573,7 @@ public class MainWindow : Window, IDisposable
                 (DateTime.UtcNow - pendingStart).TotalSeconds > 5.0)
             {
                 eventSubmitState[ev.Id]  = SubmitState.None;
-                eventSubmitError[ev.Id]  = "Timed out — character not recognized by server.";
+                eventSubmitError[ev.Id]  = "Error : Not an FC member or Already participating.";
                 submitState = SubmitState.None;
             }
             else if (submitState == SubmitState.Pending &&

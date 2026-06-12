@@ -15,7 +15,7 @@ public class ConfigWindow : Window, IDisposable
                ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                ImGuiWindowFlags.NoScrollWithMouse)
     {
-        Size          = new Vector2(360, 180);
+        Size          = new Vector2(380, 220);
         SizeCondition = ImGuiCond.Always;
         configuration = plugin.Configuration;
     }
@@ -45,6 +45,18 @@ public class ConfigWindow : Window, IDisposable
             configuration.ShowOnLogin = showOnLogin;
             configuration.Save();
         }
+
+        var eventNotifications = configuration.EnableEventNotifications;
+        if (ImGui.Checkbox("Enable event notifications", ref eventNotifications))
+        {
+            configuration.EnableEventNotifications = eventNotifications;
+            configuration.Save();
+        }
+        ImGui.SameLine();
+        ImGuiComponents.HelpMarker(
+            "Opt-in: shows a pop-up when a new event is detected.\n" +
+            "Also enables per-event start reminders\n" +
+            "(toggled on each event in the Events tab).");
 
         ImGui.Separator();
         ImGui.TextUnformatted("Rotation Analyser — Gemini API Key");

@@ -473,6 +473,27 @@ public class MainWindow : Window, IDisposable
         ImGui.TextUnformatted($"Group type:   {ev.GroupType}");
         ImGui.TextUnformatted($"Date:         {ev.Date.ToLocalTime():yyyy-MM-dd HH:mm}");
 
+        if (allowParticipate)
+        {
+            ImGui.Spacing();
+
+            var notificationsEnabled = plugin.Configuration.EnableEventNotifications;
+            var remind = plugin.Configuration.EventReminderIds.Contains(ev.Id);
+            using (ImRaii.Disabled(!notificationsEnabled))
+            {
+                if (ImGui.Checkbox($"Remind me 10 minutes before start##remind_{uniqueId}", ref remind))
+                {
+                    if (remind)
+                        plugin.Configuration.EventReminderIds.Add(ev.Id);
+                    else
+                        plugin.Configuration.EventReminderIds.Remove(ev.Id);
+                    plugin.Configuration.Save();
+                }
+            }
+            if (!notificationsEnabled && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip("Enable event notifications in the plugin settings first.");
+        }
+
         if (ev.Participants.Count > 0)
         {
             ImGui.Spacing();

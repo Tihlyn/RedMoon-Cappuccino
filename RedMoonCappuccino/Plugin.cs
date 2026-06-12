@@ -26,6 +26,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDataManager            DataManager         { get; private set; } = null!;
     [PluginService] internal static IGameGui                GameGui             { get; private set; } = null!;
     [PluginService] internal static IGameInteropProvider    GameInterop         { get; private set; } = null!;
+    [PluginService] internal static IFramework              Framework           { get; private set; } = null!;
 
     private const string CommandName    = "/rmcap";
     private const string CommandDpsCheck = "/dpscheck";
@@ -37,6 +38,7 @@ public sealed class Plugin : IDalamudPlugin
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
     public readonly WebSocketService  WsService;
+    public readonly NotificationService EventNotifications;
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
@@ -59,6 +61,8 @@ public sealed class Plugin : IDalamudPlugin
         // snapshot is missed.
         DataService.OnImageNeeded = eventId => WsService.RequestImage(eventId);
         WsService.Start();
+
+        EventNotifications = new NotificationService(Configuration, DataService, NotificationManager, Framework, Log);
 
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
@@ -120,6 +124,7 @@ public sealed class Plugin : IDalamudPlugin
         configWindow.Dispose();
         acquisitionWindow.Dispose();
 
+        EventNotifications.Dispose();
         WsService.Dispose();
         DataService.Dispose();
     }

@@ -5,7 +5,11 @@
       "WebFetch(domain:dalamud.dev)",
       "Bash(ildasm Dalamud.dll /text)",
       "Bash(monodis Dalamud.dll)",
-      "Bash(dotnet tool *)"
+      "Bash(dotnet tool *)",
+      "PowerShell($dll = \"$env:APPDATA\\\\XIVLauncher\\\\addon\\\\Hooks\\\\dev\\\\Dalamud.dll\"; $asm = [System.Reflection.Assembly]::LoadFile\\($dll\\); @\\(\"Dalamud.Interface.ImGuiNotification.Notification\",\"Dalamud.Interface.ImGuiNotification.NotificationType\",\"Dalamud.Interface.Internal.Notifications.NotificationType\",\"Dalamud.Plugin.Services.INotificationManager\"\\) | ForEach-Object { $t = $asm.GetType\\($_\\); \"{0} => {1}\" -f $_, \\($\\(if \\($null -ne $t\\) {\"FOUND\"} else {\"missing\"}\\)\\) }; $n = $asm.GetType\\(\"Dalamud.Interface.ImGuiNotification.Notification\"\\); if \\($n\\) { $n.GetProperties\\(\\) | ForEach-Object { \"prop: $\\($_.PropertyType.Name\\) $\\($_.Name\\)\" } })",
+      "PowerShell($dll = \"$env:APPDATA\\\\XIVLauncher\\\\addon\\\\Hooks\\\\dev\\\\Dalamud.dll\"; $asm = [System.Reflection.Assembly]::LoadFile\\($dll\\); $m = $asm.GetType\\(\"Dalamud.Plugin.Services.INotificationManager\"\\); $m.GetMethods\\(\\) | ForEach-Object { $p = \\($_.GetParameters\\(\\) | ForEach-Object { \"$\\($_.ParameterType.FullName\\) $\\($_.Name\\)\" }\\) -join \", \"; \"$\\($_.ReturnType.FullName\\) $\\($_.Name\\)\\($p\\)\" })",
+      "PowerShell($dll = \"$env:APPDATA\\\\XIVLauncher\\\\addon\\\\Hooks\\\\dev\\\\Dalamud.dll\"; $bytes = [System.IO.File]::ReadAllBytes\\($dll\\); $text = [System.Text.Encoding]::ASCII.GetString\\($bytes\\); foreach \\($needle in @\\(\"Dalamud.Interface.ImGuiNotification\",\"Dalamud.Interface.Internal.Notifications\",\"NotificationType\",\"InitialDuration\",\"HardExpiry\"\\)\\) { \"{0} => {1}\" -f $needle, $text.Contains\\($needle\\) })",
+      "PowerShell(dotnet build \"c:\\\\Users\\\\capta\\\\Desktop\\\\RMC\\\\RedMoon-Cappuccino\\\\RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Debug --nologo -v minimal)"
     ]
   }
 }

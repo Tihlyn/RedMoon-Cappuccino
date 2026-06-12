@@ -1,10 +1,10 @@
 {
   "_meta": {
     "source": "https://ffxiv.consolegameswiki.com/wiki/Patches",
-    "lastUpdated": "2026-05-12",
-    "currentPatch": "7.45",
-    "nextPatch": "7.5",
-    "nextPatchDate": "2026-06-09"
+    "lastUpdated": "2026-05-28",
+    "currentPatch": "7.5",
+    "nextPatch": "7.51",
+    "nextPatchDate": "2026-06-02"
   },
   "patches": [
     {
@@ -34,7 +34,7 @@
       "subPatches": [
         {
           "version": "7.51",
-          "releaseDate": "2026-06-09",
+          "releaseDate": "2026-06-02",
           "releaseIsProjected": false,
           "note": "Ultimate"
         },

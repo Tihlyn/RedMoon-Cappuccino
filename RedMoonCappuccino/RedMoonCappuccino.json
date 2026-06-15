@@ -1,8 +1,8 @@
 {
   "Name": "RedMoonCappuccino",
   "Author": "Tihlyn",
-  "Punchline": "FC server info: market tax rates and events.",
-  "Description": "Connects to your FC's WebSocket server to display the lowest market tax rate and location, as well as upcoming and past FC events with event images.",
+  "Punchline": "Cappuccino now in game too!",
+  "Description": "Displays market tax info, FC events, and more in a convenient UI.",
   "RepoUrl": "https://github.com/Tihlyn/RedMoon-Cappuccino",
   "ApplicableVersion": "any",
   "Tags": ["fc", "market", "tax", "events", "utility"],

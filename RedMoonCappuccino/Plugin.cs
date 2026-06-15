@@ -52,6 +52,15 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
+        // One-time migration: the WS host moved off the decommissioned box.
+        // Only rewrites the exact old address, so custom addresses are left
+        // untouched and the condition is false on every subsequent load.
+        if (Configuration.WsServerAddress == "ws://78.116.140.30:3100")
+        {
+            Configuration.WsServerAddress = "ws://51.75.117.220:3100";
+            Configuration.Save();
+        }
+
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);

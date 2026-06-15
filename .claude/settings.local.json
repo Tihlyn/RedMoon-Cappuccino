@@ -11,7 +11,8 @@
       "PowerShell($dll = \"$env:APPDATA\\\\XIVLauncher\\\\addon\\\\Hooks\\\\dev\\\\Dalamud.dll\"; $bytes = [System.IO.File]::ReadAllBytes\\($dll\\); $text = [System.Text.Encoding]::ASCII.GetString\\($bytes\\); foreach \\($needle in @\\(\"Dalamud.Interface.ImGuiNotification\",\"Dalamud.Interface.Internal.Notifications\",\"NotificationType\",\"InitialDuration\",\"HardExpiry\"\\)\\) { \"{0} => {1}\" -f $needle, $text.Contains\\($needle\\) })",
       "PowerShell(dotnet build \"c:\\\\Users\\\\capta\\\\Desktop\\\\RMC\\\\RedMoon-Cappuccino\\\\RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Debug --nologo -v minimal)",
       "PowerShell(git check-ignore -v RedMoonCappuccino/Configuration.cs)",
-      "PowerShell(if \\($?\\) { \"TRACKED\" } else { \"NOT TRACKED\" })"
+      "PowerShell(if \\($?\\) { \"TRACKED\" } else { \"NOT TRACKED\" })",
+      "PowerShell(dotnet build \"RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Release --nologo -v quiet 2>&1)"
     ]
   }
 }

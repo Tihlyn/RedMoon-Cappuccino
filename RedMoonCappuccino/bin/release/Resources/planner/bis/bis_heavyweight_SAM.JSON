@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "tier": "heavyweight",
+    "job": "SAM",
+    "patch": "7.4",
+    "notes": "sam bis set"
+  },
+  "slots": {
+    "WEAPON": {
+      "item_id": 49671,
+      "name": "Unknown (ID 49671)"
+    },
+    "HEAD": {
+      "item_id": 49690,
+      "name": "Unknown (ID 49690)"
+    },
+    "BODY": {
+      "item_id": 49614,
+      "name": "Unknown (ID 49614)"
+    },
+    "HANDS": {
+      "item_id": 49692,
+      "name": "Unknown (ID 49692)"
+    },
+    "LEGS": {
+      "item_id": 49693,
+      "name": "Unknown (ID 49693)"
+    },
+    "FEET": {
+      "item_id": 49694,
+      "name": "Unknown (ID 49694)"
+    },
+    "EARS": {
+      "item_id": 49639,
+      "name": "Unknown (ID 49639)"
+    },
+    "NECK": {
+      "item_id": 49644,
+      "name": "Unknown (ID 49644)"
+    },
+    "WRISTS": {
+      "item_id": 49726,
+      "name": "Unknown (ID 49726)"
+    },
+    "RING_L": {
+      "item_id": 49731,
+      "name": "Unknown (ID 49731)"
+    },
+    "RING_R": {
+      "item_id": 49654,
+      "name": "Unknown (ID 49654)"
+    }
+  }
+}

@@ -30,6 +30,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private const string CommandName    = "/rmcap";
     private const string CommandDpsCheck = "/dpscheck";
+    private const string CommandLiveChat = "/livechat";
 
     public Configuration Configuration { get; init; }
     /// <summary>Alias used by RotationRecorder components.</summary>
@@ -38,11 +39,13 @@ public sealed class Plugin : IDalamudPlugin
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
     public readonly WebSocketService  WsService;
+    public readonly ChatService       ChatService;
     public readonly NotificationService EventNotifications;
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
     private readonly AcquisitionWindow acquisitionWindow;
+    private readonly ChatWindow   chatWindow;
 
     private ActionRecorder  _actionRecorder  = null!;
     private GeminiAnalyzer  _geminiAnalyzer  = null!;
@@ -65,6 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
         WsService   = new WebSocketService(DataService, Log, Configuration);
+        ChatService = new ChatService(Log, Configuration);
 
         // Wire image-fetch callback before starting the WS connection so no
         // snapshot is missed.
@@ -77,9 +81,11 @@ public sealed class Plugin : IDalamudPlugin
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
+        chatWindow   = new ChatWindow(ChatService);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);
+        WindowSystem.AddWindow(chatWindow);
 
         // Rotation Recorder
         _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, ClientState, Log);
@@ -98,6 +104,10 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.AddHandler(CommandDpsCheck, new CommandInfo(OnDpsCheckCommand)
         {
             HelpMessage = "Toggle the rotation recorder window.",
+        });
+        CommandManager.AddHandler(CommandLiveChat, new CommandInfo(OnLiveChatCommand)
+        {
+            HelpMessage = "Toggle the live chat window.",
         });
 
         // UI hooks
@@ -122,6 +132,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(CommandDpsCheck);
+        CommandManager.RemoveHandler(CommandLiveChat);
 
         _recorderWindow.Dispose();
         _geminiAnalyzer.Dispose();
@@ -132,8 +143,10 @@ public sealed class Plugin : IDalamudPlugin
         mainWindow.Dispose();
         configWindow.Dispose();
         acquisitionWindow.Dispose();
+        chatWindow.Dispose();
 
         EventNotifications.Dispose();
+        ChatService.Dispose();
         WsService.Dispose();
         DataService.Dispose();
     }
@@ -146,6 +159,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args) => ToggleMainUI();
     private void OnDpsCheckCommand(string command, string args) => _recorderWindow.Toggle();
+    private void OnLiveChatCommand(string command, string args) => chatWindow.Toggle();
     private void DrawUI() => WindowSystem.Draw();
     public void ToggleConfigUI() => configWindow.Toggle();
     public void ToggleMainUI()   => mainWindow.Toggle();

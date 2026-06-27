@@ -2,8 +2,8 @@
   "Author": "Tihlyn",
   "Name": "RedMoonCappuccino",
   "InternalName": "RedMoonCappuccino",
-  "AssemblyVersion": "4.2.6.0",
-  "Description": "Connects to your FC's WebSocket server to display the lowest market tax rate and location, as well as upcoming and past FC events with event images.",
+  "AssemblyVersion": "4.3.4.2",
+  "Description": "Displays market tax info, FC events, and more in a convenient UI.",
   "ApplicableVersion": "any",
   "RepoUrl": "https://github.com/Tihlyn/RedMoon-Cappuccino",
   "Tags": [
@@ -22,7 +22,7 @@
   "CanUnloadAsync": false,
   "LoadPriority": 0,
   "IconUrl": "https://raw.githubusercontent.com/Tihlyn/RedMoon-Cappuccino/main/Data/icon.png",
-  "Punchline": "FC server info: market tax rates and events.",
+  "Punchline": "Cappuccino now in game too!",
   "AcceptsFeedback": true,
   "FeedbackMessage": "Open an issue on GitHub."
 }

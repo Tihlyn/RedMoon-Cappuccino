@@ -81,11 +81,14 @@ public sealed class Plugin : IDalamudPlugin
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
-        chatWindow   = new ChatWindow(ChatService);
+        chatWindow   = new ChatWindow(ChatService, Configuration);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);
         WindowSystem.AddWindow(chatWindow);
+
+        // DM arrival cues (chime / pop-up) while the chat window is not being watched.
+        ChatService.DmReceived += OnDmReceived;
 
         // Rotation Recorder
         _actionRecorder = new ActionRecorder(GameInterop, ObjectTable, DataManager, ClientState, Log);
@@ -123,6 +126,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        ChatService.DmReceived -= OnDmReceived;
         ClientState.Login -= OnLogin;
         ContextMenu.OnMenuOpened -= OnContextMenuOpened;
 
@@ -155,6 +159,45 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (Configuration.ShowOnLogin)
             mainWindow.IsOpen = true;
+    }
+
+    // ── DM arrival cues ───────────────────────────────────────────────────────
+
+    /// <summary>In-game chat sound (&lt;se.11&gt;) played when a DM arrives unseen. Valid ids: 1–16.</summary>
+    private const uint DmChimeSoundId = 11;
+
+    // Cooldowns so a burst of DMs doesn't stack toasts or spam the chime.
+    private const long DmChimeCooldownMs = 2000;
+    private const long DmToastCooldownMs = 8000;
+    private long lastDmChimeTick;
+    private long lastDmToastTick;
+
+    /// <summary>
+    /// Raised on the chat WS receive thread for every incoming DM; marshalled to the
+    /// framework thread before touching game/UI state. Nothing fires while the chat
+    /// window is visible and focused. A collapsed/unfocused window gets a chime; a
+    /// closed window additionally gets a pop-up notification with a message preview.
+    /// </summary>
+    private void OnDmReceived(RedMoonCappuccino.Models.ChatMessage dm)
+    {
+        Framework.RunOnFrameworkThread(() =>
+        {
+            if (chatWindow.IsActivelyViewed) return;
+
+            var now = System.Environment.TickCount64;
+
+            if (!chatWindow.IsOpen && now - lastDmToastTick >= DmToastCooldownMs)
+            {
+                lastDmToastTick = now;
+                EventNotifications.NotifyDm(dm.Username, dm.Text);
+            }
+
+            if (now - lastDmChimeTick >= DmChimeCooldownMs)
+            {
+                lastDmChimeTick = now;
+                FFXIVClientStructs.FFXIV.Client.UI.UIGlobals.PlayChatSoundEffect(DmChimeSoundId);
+            }
+        });
     }
 
     private void OnCommand(string command, string args) => ToggleMainUI();

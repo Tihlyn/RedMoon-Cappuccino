@@ -17,6 +17,12 @@ public class Configuration : IPluginConfiguration
     /// <summary>Live-chat WebSocket server address (separate server from <see cref="WsServerAddress"/>).</summary>
     public string ChatWsServerAddress { get; set; } = "ws://YOUR_SERVER_ADDRESS:CHAT_PORT";
 
+    /// <summary>Font scale for the live-chat room history. 1.0 = default size.</summary>
+    public float ChatRoomFontScale { get; set; } = 1.0f;
+
+    /// <summary>Font scale for live-chat direct-message history. 1.0 = default size.</summary>
+    public float ChatDmFontScale { get; set; } = 1.0f;
+
     // ── Gemini / Rotation Recorder ────────────────────────────────────────────
 
     /// <summary>Google AI Studio API key. Never log or display in plain text.</summary>

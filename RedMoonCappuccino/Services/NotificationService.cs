@@ -129,15 +129,41 @@ public class NotificationService : IDisposable
         return removedKnown || removedReminders;
     }
 
-    private void Notify(string content)
+    /// <summary>How long toasts stay on screen. The Dalamud default is short and easy to miss.</summary>
+    private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(10);
+
+    /// <summary>Longest DM preview shown in a toast before truncation.</summary>
+    private const int DmPreviewMaxLength = 180;
+
+    /// <summary>
+    /// Pop-up for a direct message received while the chat window is closed.
+    /// Shows the sender and a preview of the message text.
+    /// </summary>
+    public void NotifyDm(string from, string text)
+    {
+        var preview = text.Length > DmPreviewMaxLength
+            ? text[..DmPreviewMaxLength] + "…"
+            : text;
+        Notify($"{from}: {preview}", "Live Chat — New Direct Message");
+    }
+
+    private void Notify(string content) => Notify(content, "Red Moon Cappuccino");
+
+    /// <summary>
+    /// Shows a toast in the expanded (non-minimized) style. Dalamud's default is a
+    /// single collapsed line, which is too small to reliably catch the eye.
+    /// </summary>
+    private void Notify(string content, string title)
     {
         try
         {
             notificationManager.AddNotification(new Notification
             {
-                Content = content,
-                Title   = "Red Moon Cappuccino",
-                Type    = NotificationType.Info,
+                Content         = content,
+                Title           = title,
+                Type            = NotificationType.Info,
+                Minimized       = false,
+                InitialDuration = ToastDuration,
             });
         }
         catch (Exception ex)

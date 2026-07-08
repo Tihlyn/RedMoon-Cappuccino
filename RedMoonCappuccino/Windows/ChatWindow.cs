@@ -22,12 +22,15 @@ namespace RedMoonCappuccino.Windows;
 public sealed class ChatWindow : ThemedWindow, IDisposable
 {
     private readonly ChatService chat;
+    private readonly Configuration config;
 
-    private string usernameBuf = string.Empty;
     private string inputBuf = string.Empty;
-    private bool prefilled;
     private int lastMessageCount;
     private bool focusInput;
+    private long lastDrawnTick;
+
+    // Preset steps for the room/DM font-size selectors.
+    private static readonly float[] FontScaleSteps = { 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.5f };
 
     // Direct messages — open tabs (insertion order), per-peer input buffers and scroll state.
     private readonly List<string> openDmPeers = new();
@@ -43,10 +46,11 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
     private static readonly Vector4 SystemColor = RmcTheme.TextMuted;
     private static readonly Vector4 ErrorColor  = RmcTheme.Error;
 
-    public ChatWindow(ChatService chat)
+    public ChatWindow(ChatService chat, Configuration config)
         : base("Live Chat###RmcChatWindow")
     {
         this.chat = chat;
+        this.config = config;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(460, 320),
@@ -69,9 +73,17 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
             : "Live Chat###RmcChatWindow";
     }
 
+    /// <summary>
+    /// True while the window body is on screen and focused — i.e. the user can actually
+    /// see incoming messages. Collapsed or hidden windows do not run <see cref="Draw"/>,
+    /// so a stale draw tick means the body is not visible even though the window is open.
+    /// </summary>
+    public bool IsActivelyViewed =>
+        IsOpen && IsFocused && Environment.TickCount64 - lastDrawnTick < 250;
+
     public override void Draw()
     {
-        PrefillUsername();
+        lastDrawnTick = Environment.TickCount64;
         DrawHeader();
         ImGui.Separator();
 
@@ -138,13 +150,22 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
                 RmcTheme.StatusDot(MutedColor, "Offline", MutedColor);
                 ImGui.SameLine();
 
+                // The chat identity is locked to the logged-in character — the field is
+                // display-only, so no other name can be logged in (no impersonation).
+                var name    = LocalCharacterName();
+                var display = name ?? "No character logged in";
                 ImGui.SetNextItemWidth(200f * ImGuiHelpers.GlobalScale);
-                var enter = ImGui.InputTextWithHint("##chatuser", "Character name",
-                    ref usernameBuf, 32, ImGuiInputTextFlags.EnterReturnsTrue);
+                using (ImRaii.PushColor(ImGuiCol.Text, name != null ? FriendColor : MutedColor))
+                    ImGui.InputText("##chatuser", ref display, 64, ImGuiInputTextFlags.ReadOnly);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Chat identity is locked to your logged-in character.");
 
                 ImGui.SameLine();
-                if (ImGui.Button("Log In##chat") || enter)
-                    chat.Connect(usernameBuf);
+                using (ImRaii.Disabled(name == null))
+                {
+                    if (ImGui.Button("Log In##chat"))
+                        chat.Connect();
+                }
                 break;
             }
         }
@@ -162,12 +183,12 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
         using (ImRaii.PushColor(ImGuiCol.Text, MutedColor))
         {
             ImGui.TextWrapped(
-                "You are logged off. Enter your FFXIV character name above and press " +
-                "\"Log In\" to join the live chat.");
+                "You are logged off. Press \"Log In\" to join the live chat as your " +
+                "current character.");
             ImGui.Spacing();
             ImGui.TextWrapped(
-                "Your name is resolved against the FC roster — both FC members and FC " +
-                "friends can join.");
+                "The chat always uses the name of the character you are playing. It is " +
+                "resolved against the FC roster — both FC members and FC friends can join.");
         }
     }
 
@@ -273,6 +294,8 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
 
     private void DrawHistory()
     {
+        ImGui.SetWindowFontScale(config.ChatRoomFontScale);
+
         var msgs = chat.SnapshotMessages();
 
         foreach (var m in msgs)
@@ -289,6 +312,15 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
 
     private void DrawInputRow()
     {
+        var scale = DrawFontScaleCombo("##roomFontScale", config.ChatRoomFontScale);
+        if (scale != config.ChatRoomFontScale)
+        {
+            config.ChatRoomFontScale = scale;
+            config.Save();
+        }
+
+        ImGui.SameLine();
+
         var sendWidth = 60f * ImGuiHelpers.GlobalScale;
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - sendWidth - ImGui.GetStyle().ItemSpacing.X);
 
@@ -357,6 +389,8 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
 
     private void DrawDmHistory(string peer)
     {
+        ImGui.SetWindowFontScale(config.ChatDmFontScale);
+
         var msgs = chat.SnapshotDm(peer);
 
         if (msgs.Count == 0)
@@ -382,6 +416,17 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
 
     private void DrawDmInputRow(string peer, bool online)
     {
+        // One shared size for all DM tabs; kept outside the offline-disabled scope so
+        // the history stays resizable even when the peer is offline.
+        var scale = DrawFontScaleCombo($"##dmFontScale_{peer}", config.ChatDmFontScale);
+        if (scale != config.ChatDmFontScale)
+        {
+            config.ChatDmFontScale = scale;
+            config.Save();
+        }
+
+        ImGui.SameLine();
+
         var sendWidth = 60f * ImGuiHelpers.GlobalScale;
         var buf = dmInputBufs.GetValueOrDefault(peer, string.Empty);
 
@@ -444,16 +489,36 @@ public sealed class ChatWindow : ThemedWindow, IDisposable
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /// <summary>On first open, seed the username field with the local character's name.</summary>
-    private void PrefillUsername()
+    /// <summary>
+    /// Compact percent selector for message text size. Returns the (possibly changed) scale.
+    /// </summary>
+    private static float DrawFontScaleCombo(string id, float current)
     {
-        if (prefilled || !string.IsNullOrEmpty(usernameBuf)) return;
-        var name = (Plugin.ObjectTable.LocalPlayer as ICharacter)?.Name.ToString();
-        if (!string.IsNullOrEmpty(name))
+        ImGui.SetNextItemWidth(62f * ImGuiHelpers.GlobalScale);
+        using (var combo = ImRaii.Combo(id, $"{(int)MathF.Round(current * 100)}%"))
         {
-            usernameBuf = name!;
-            prefilled = true;
+            if (combo)
+            {
+                foreach (var step in FontScaleSteps)
+                {
+                    var selected = Math.Abs(step - current) < 0.005f;
+                    if (ImGui.Selectable($"{(int)MathF.Round(step * 100)}%", selected))
+                        current = step;
+                    if (selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+            }
         }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Message text size");
+        return current;
+    }
+
+    /// <summary>The local character's name, or null when nobody is logged in.</summary>
+    private static string? LocalCharacterName()
+    {
+        var name = (Plugin.ObjectTable.LocalPlayer as ICharacter)?.Name.ToString();
+        return string.IsNullOrEmpty(name) ? null : name;
     }
 
     /// <summary>Positions the cursor so a right-aligned button of the given label fits the line.</summary>

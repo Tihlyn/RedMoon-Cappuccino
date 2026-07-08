@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using RedMoonCappuccino.Models;
 
@@ -66,6 +67,13 @@ public sealed class ChatService : IDisposable
     /// <summary>Last DM delivery problem (offline peer, unsupported server, ...); cleared on the next successful DM.</summary>
     public string? LastDmNotice { get; private set; }
 
+    /// <summary>
+    /// Raised when a direct message from another user arrives (never for the echo of our
+    /// own DMs). Raised on the WS receive thread — marshal to the framework thread before
+    /// touching UI or game state.
+    /// </summary>
+    public event Action<ChatMessage>? DmReceived;
+
     public ChatService(IPluginLog log, Configuration config)
     {
         this.log = log;
@@ -121,16 +129,21 @@ public sealed class ChatService : IDisposable
 
     // ── Public control ────────────────────────────────────────────────────────
 
-    /// <summary>Connect and join the room as <paramref name="username"/> (FFXIV character name).</summary>
-    public void Connect(string username)
+    /// <summary>
+    /// Connect and join the room as the currently logged-in character. The username is
+    /// captured from the game client rather than accepted from user input, so a session
+    /// can only be opened under the local character's own name (no impersonation).
+    /// Must be called from the main/draw thread (LocalPlayer access).
+    /// </summary>
+    public void Connect()
     {
         if (disposed) return;
         if (state != ChatConnectionState.Disconnected) return;
 
-        var name = (username ?? string.Empty).Trim();
+        var name = ((Plugin.ObjectTable.LocalPlayer as ICharacter)?.Name.ToString() ?? string.Empty).Trim();
         if (name.Length == 0)
         {
-            LastError = "Enter a character name to log in.";
+            LastError = "Log in to a character first — the chat uses your character name.";
             return;
         }
 
@@ -375,6 +388,12 @@ public sealed class ChatService : IDisposable
                                 dmUnread[peer] = dmUnread.GetValueOrDefault(peer) + 1;
                         }
                         LastDmNotice = null;
+
+                        if (!fromSelf)
+                        {
+                            try { DmReceived?.Invoke(dm); }
+                            catch (Exception ex) { log.Warning($"[RedMoonCappuccino] Chat DM handler failed: {ex.Message}"); }
+                        }
                     }
                 }
                 break;

@@ -8,6 +8,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -218,55 +220,14 @@ public class MainWindow : ThemedWindow, IDisposable
 
         ImGui.Spacing();
 
-        using (var table = ImRaii.Table("##mountGuidesTable", 6,
-                   ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp))
+        if (mountGuides.Count == 0)
         {
-            if (table)
-            {
-                ImGui.TableSetupColumn("Mount", ImGuiTableColumnFlags.WidthFixed, 120f * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("Source / Fight", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Creator", ImGuiTableColumnFlags.WidthFixed, 120f * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("Title", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Link", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Note", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableHeadersRow();
-
-                if (mountGuides.Count == 0)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("-");
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("No guide data available.");
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("-");
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("-");
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("-");
-                    ImGui.TableNextColumn(); ImGui.TextUnformatted("-");
-                }
-                else
-                {
-                    for (var i = 0; i < mountGuides.Count; i++)
-                    {
-                        var guide = mountGuides[i];
-
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn(); ImGui.TextUnformatted(guide.Mount);
-                        ImGui.TableNextColumn(); ImGui.TextWrapped(guide.Source);
-                        ImGui.TableNextColumn(); ImGui.TextUnformatted(guide.Creator);
-                        ImGui.TableNextColumn(); ImGui.TextWrapped(guide.VideoTitle);
-
-                        ImGui.TableNextColumn();
-                        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
-                        {
-                            if (ImGui.Selectable($"{guide.Link}##guide_link_{i}", false))
-                                OpenExternalLink(guide.Link);
-                        }
-                        if (ImGui.IsItemHovered())
-                            ImGui.SetTooltip("Open link");
-
-                        ImGui.TableNextColumn();
-                        ImGui.TextWrapped(string.IsNullOrWhiteSpace(guide.Note) ? "-" : guide.Note);
-                    }
-                }
-            }
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No guide data available.");
+        }
+        else
+        {
+            DrawMountGuidesTable();
         }
 
         ImGui.Spacing();
@@ -284,6 +245,79 @@ public class MainWindow : ThemedWindow, IDisposable
         }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Open link");
+    }
+
+    private void DrawMountGuidesTable()
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        var style = ImGui.GetStyle();
+
+        // Rows hold an icon button, so they are frame-height tall rather than text-height.
+        var rowHeight     = ImGui.GetFrameHeight() + style.CellPadding.Y * 2f;
+        var headerHeight  = ImGui.GetTextLineHeight() + style.CellPadding.Y * 2f;
+        var contentHeight = headerHeight + mountGuides.Count * rowHeight + style.ScrollbarSize;
+
+        // Cap the table height so the Visual Plans section stays reachable below it.
+        var footerReserve = ImGui.GetTextLineHeightWithSpacing() * 5f;
+        var minHeight     = headerHeight + rowHeight * 3f + style.ScrollbarSize;
+        var tableHeight   = Math.Min(contentHeight,
+            Math.Max(ImGui.GetContentRegionAvail().Y - footerReserve, minHeight));
+
+        using var table = ImRaii.Table("##mountGuidesTable", 6,
+            ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit |
+            ImGuiTableFlags.ScrollX | ImGuiTableFlags.ScrollY |
+            ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable,
+            new Vector2(0, tableHeight));
+        if (!table) return;
+
+        ImGui.TableSetupColumn("Mount",
+            ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.NoReorder,
+            120f * scale);
+        ImGui.TableSetupColumn("Source / Fight", ImGuiTableColumnFlags.WidthFixed, 180f * scale);
+        ImGui.TableSetupColumn("Creator", ImGuiTableColumnFlags.WidthFixed, 110f * scale);
+        ImGui.TableSetupColumn("Title", ImGuiTableColumnFlags.WidthFixed, 240f * scale);
+        ImGui.TableSetupColumn("Link",
+            ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.NoResize,
+            44f * scale);
+        ImGui.TableSetupColumn("Note",
+            ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize,
+            44f * scale);
+        ImGui.TableSetupScrollFreeze(1, 1); // Mount column + header stay pinned while scrolling
+        ImGui.TableHeadersRow();
+
+        for (var i = 0; i < mountGuides.Count; i++)
+        {
+            var guide = mountGuides[i];
+
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn(); TableCellText(guide.Mount);
+            ImGui.TableNextColumn(); TableCellText(guide.Source);
+            ImGui.TableNextColumn(); TableCellText(guide.Creator);
+            ImGui.TableNextColumn(); TableCellText(guide.VideoTitle);
+
+            ImGui.TableNextColumn();
+            if (ImGuiComponents.IconButton(i, FontAwesomeIcon.ExternalLinkAlt))
+                OpenExternalLink(guide.Link);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip($"Open in browser\n{guide.Link}");
+
+            ImGui.TableNextColumn();
+            if (!string.IsNullOrWhiteSpace(guide.Note))
+            {
+                ImGui.AlignTextToFramePadding();
+                ImGuiComponents.HelpMarker(guide.Note);
+            }
+        }
+    }
+
+    /// <summary>Single-line table cell that reveals the full text in a tooltip when clipped.</summary>
+    private static void TableCellText(string text)
+    {
+        ImGui.AlignTextToFramePadding();
+        var available = ImGui.GetContentRegionAvail().X;
+        ImGui.TextUnformatted(text);
+        if (ImGui.IsItemHovered() && ImGui.CalcTextSize(text).X > available)
+            ImGui.SetTooltip(text);
     }
 
     private void DrawGearPlannerTab()

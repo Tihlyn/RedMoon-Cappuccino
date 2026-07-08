@@ -76,7 +76,9 @@ Send a **direct message** to a single online user. Requires a prior successful `
   that as "DMs not supported".
 
 > **Status:** client support ships in the plugin (chat window → click an online member).
-> The server (`services/chat-ws.js`) must implement the `dm` relay for delivery to work.
+> Fully verified against the live server (2026-07-08) with a two-user smoke test:
+> sender echo, recipient delivery (both directions), and the `user_offline` rejection
+> (`requestType: "dm"`) all match this schema.
 
 ### get_history
 Request the recent message history on demand (also pushed automatically on join).

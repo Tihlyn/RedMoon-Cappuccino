@@ -13,10 +13,11 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using RedMoonCappuccino.Models;
 using RedMoonCappuccino.Services;
+using RedMoonCappuccino.UI;
 
 namespace RedMoonCappuccino.Windows;
 
-public class MainWindow : Window, IDisposable
+public class MainWindow : ThemedWindow, IDisposable
 {
     private static readonly string[] ParticipantRoles = { "tank", "healer", "dps", "blue_mage", "rider", "flex" };
     private static readonly IReadOnlyDictionary<string, string[]> RoleJobs =
@@ -97,15 +98,9 @@ public class MainWindow : Window, IDisposable
 
         // Connection status badge
         if (plugin.WsService.IsConnected)
-        {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFF00CC00u))
-                ImGui.TextUnformatted("● Connected");
-        }
+            RmcTheme.StatusDot(RmcTheme.Success, "Connected", RmcTheme.Success);
         else
-        {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0044FFu))
-                ImGui.TextUnformatted("● Disconnected – reconnecting...");
-        }
+            RmcTheme.StatusDot(RmcTheme.Error, "Disconnected – reconnecting...", RmcTheme.Error);
 
         ImGui.Spacing();
         ImGui.Separator();
@@ -114,12 +109,12 @@ public class MainWindow : Window, IDisposable
         var taxInfo = dataService.Tax;
         if (taxInfo == null)
         {
-            ImGui.TextUnformatted("Waiting for server data...");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Waiting for server data...");
         }
         else
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-                ImGui.TextUnformatted("Market Tax");
+            RmcTheme.SectionHeader("Market Tax");
 
             ImGui.Spacing();
 
@@ -134,13 +129,13 @@ public class MainWindow : Window, IDisposable
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn(); ImGui.TextUnformatted("Lowest Tax City");
                 ImGui.TableNextColumn();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
                     ImGui.TextUnformatted(taxInfo.Location);
 
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn(); ImGui.TextUnformatted("Tax Rate");
                 ImGui.TableNextColumn();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
                     ImGui.TextUnformatted($"{taxInfo.Rate}%");
             }
         }
@@ -149,7 +144,10 @@ public class MainWindow : Window, IDisposable
 
         var lastUpdated = dataService.LastUpdated;
         if (lastUpdated != default)
-            ImGui.TextUnformatted($"Last updated: {lastUpdated.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted($"Last updated: {lastUpdated.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        }
 
         ImGui.Spacing();
         ImGui.Separator();
@@ -160,14 +158,14 @@ public class MainWindow : Window, IDisposable
 
     private void DrawUpcomingPatchesSection()
     {
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-            ImGui.TextUnformatted("Upcoming Patches (7.4 - 8.0)");
+        RmcTheme.SectionHeader("Upcoming Patches (7.4 – 8.0)");
 
         ImGui.Spacing();
 
         if (upcomingPatches.Count == 0)
         {
-            ImGui.TextUnformatted("No upcoming patch data available.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No upcoming patch data available.");
             return;
         }
 
@@ -216,8 +214,7 @@ public class MainWindow : Window, IDisposable
 
         ImGui.Spacing();
 
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-            ImGui.TextUnformatted("Mount Guides");
+        RmcTheme.SectionHeader("Mount Guides");
 
         ImGui.Spacing();
 
@@ -257,8 +254,11 @@ public class MainWindow : Window, IDisposable
                         ImGui.TableNextColumn(); ImGui.TextWrapped(guide.VideoTitle);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{guide.Link}##guide_link_{i}", false))
-                            OpenExternalLink(guide.Link);
+                        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+                        {
+                            if (ImGui.Selectable($"{guide.Link}##guide_link_{i}", false))
+                                OpenExternalLink(guide.Link);
+                        }
                         if (ImGui.IsItemHovered())
                             ImGui.SetTooltip("Open link");
 
@@ -273,20 +273,22 @@ public class MainWindow : Window, IDisposable
         ImGui.Separator();
         ImGui.Spacing();
 
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-            ImGui.TextUnformatted("Visual Plans");
+        RmcTheme.SectionHeader("Visual Plans");
         ImGui.Spacing();
 
         const string visualPlanUrl = "https://wtfdig.info";
-        if (ImGui.Selectable($"{visualPlanUrl}##visual_plans_link", false))
-            OpenExternalLink(visualPlanUrl);
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+        {
+            if (ImGui.Selectable($"{visualPlanUrl}##visual_plans_link", false))
+                OpenExternalLink(visualPlanUrl);
+        }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Open link");
     }
 
     private void DrawGearPlannerTab()
     {
-        using var tab = ImRaii.TabItem("gear planner");
+        using var tab = ImRaii.TabItem("Gear Planner");
         if (!tab) return;
 
         ImGui.Spacing();
@@ -294,7 +296,8 @@ public class MainWindow : Window, IDisposable
         var availableJobs = gearPlannerService.AvailableJobs;
         if (availableJobs.Count == 0)
         {
-            ImGui.TextUnformatted("Gear planner data is unavailable. Ensure local JSON planner resources are present.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Gear planner data is unavailable. Ensure local JSON planner resources are present.");
             return;
         }
 
@@ -302,8 +305,8 @@ public class MainWindow : Window, IDisposable
             !availableJobs.Contains(plannerSelectedJob, StringComparer.OrdinalIgnoreCase))
             plannerSelectedJob = availableJobs[0];
 
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
-            ImGui.TextUnformatted("\u26a0 Make sure your character is on the same job as the one selected below before solving.");
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+            ImGui.TextWrapped("\u26a0 Make sure your character is on the same job as the one selected below before solving.");
         ImGui.Spacing();
 
         if (ImGui.BeginCombo("Job", plannerSelectedJob))
@@ -323,7 +326,7 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("auto detect"))
+        if (ImGui.Button("Auto Detect"))
         {
             var detected = gearPlannerService.GetCurrentJob();
             if (detected != null)
@@ -344,7 +347,7 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("solve"))
+        if (ImGui.Button("Solve"))
             plannerResult = gearPlannerService.Solve(plannerSelectedJob);
 
         ImGui.Separator();
@@ -352,26 +355,30 @@ public class MainWindow : Window, IDisposable
 
         if (plannerResult == null)
         {
-            ImGui.TextUnformatted("Manual planner is idle. Press solve to compute progression paths.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Manual planner is idle. Press Solve to compute progression paths.");
             return;
         }
 
         if (!plannerResult.IsReady)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0044FFu))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Error))
                 ImGui.TextUnformatted(plannerResult.Error ?? "Planner is not ready.");
             return;
         }
 
         ImGui.TextUnformatted($"Job: {plannerResult.SelectedJob}");
-        ImGui.TextUnformatted($"Data version: {plannerResult.DataVersion}  |  Game patch: {plannerResult.GamePatch}  |  BiS patch: {plannerResult.BisPatch}");
-        ImGui.TextUnformatted($"Snapshot generated: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
-        ImGui.TextUnformatted($"BiS tracked slots: {plannerResult.Snapshot.MatchingSlots}/{plannerResult.Snapshot.TotalTargetSlots}");
-        if (!plannerResult.Snapshot.HasKnownCurrentGear)
-            ImGui.TextUnformatted("Current gear source: unknown (planning from empty baseline until equipped-gear reader is integrated).");
-        ImGui.TextUnformatted(plannerResult.SupportsBranching
-            ? "Branching-ready search graph enabled (contingency support planned)."
-            : "Single-path mode.");
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+        {
+            ImGui.TextUnformatted($"Data version: {plannerResult.DataVersion}  |  Game patch: {plannerResult.GamePatch}  |  BiS patch: {plannerResult.BisPatch}");
+            ImGui.TextUnformatted($"Snapshot generated: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+            ImGui.TextUnformatted($"BiS tracked slots: {plannerResult.Snapshot.MatchingSlots}/{plannerResult.Snapshot.TotalTargetSlots}");
+            if (!plannerResult.Snapshot.HasKnownCurrentGear)
+                ImGui.TextUnformatted("Current gear source: unknown (planning from empty baseline until equipped-gear reader is integrated).");
+            ImGui.TextUnformatted(plannerResult.SupportsBranching
+                ? "Branching-ready search graph enabled (contingency support planned)."
+                : "Single-path mode.");
+        }
 
         var currentTotal = plannerResult.Snapshot.CurrentStats.Values.Sum();
         var targetTotal = plannerResult.Snapshot.TargetStats.Values.Sum();
@@ -381,7 +388,8 @@ public class MainWindow : Window, IDisposable
 
         if (plannerResult.RecommendedPaths.Count == 0)
         {
-            ImGui.TextUnformatted("No upgrade path was generated.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No upgrade path was generated.");
             return;
         }
 
@@ -401,7 +409,7 @@ public class MainWindow : Window, IDisposable
             {
                 var step = path.Upgrades[i];
                 ImGui.Spacing();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
                     ImGui.TextUnformatted($"Step {i + 1}: {step.Slot} — {step.TargetItemName} (i{step.TargetItemLevel})");
 
                 ImGui.TextWrapped($"Replaces {step.CurrentItemName} (i{step.CurrentItemLevel}) · Source: {step.SourceType} · Tomes: {step.EstimatedTomeCost} · Books: {step.EstimatedBookCost} · Breakpoint bonus: {step.BreakpointBonus} · Utility: {step.UtilityScore:F1}");
@@ -424,7 +432,8 @@ public class MainWindow : Window, IDisposable
 
         if (upcomingEvents.Count == 0)
         {
-            ImGui.TextUnformatted("No upcoming events.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No upcoming events.");
             return;
         }
 
@@ -448,7 +457,8 @@ public class MainWindow : Window, IDisposable
 
         if (pastEvents.Count == 0)
         {
-            ImGui.TextUnformatted("No recent past events (within the last 24 hours).");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No recent past events (within the last 24 hours).");
             return;
         }
 
@@ -469,9 +479,24 @@ public class MainWindow : Window, IDisposable
 
         using var indent = ImRaii.PushIndent(14f);
 
-        ImGui.TextUnformatted($"Organizer:    {ev.Organizer}");
-        ImGui.TextUnformatted($"Group type:   {ev.GroupType}");
-        ImGui.TextUnformatted($"Date:         {ev.Date.ToLocalTime():yyyy-MM-dd HH:mm}");
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+        {
+            ImGui.TextUnformatted("Organizer:");
+            ImGui.SameLine(120f * ImGuiHelpers.GlobalScale);
+        }
+        ImGui.TextUnformatted(ev.Organizer);
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+        {
+            ImGui.TextUnformatted("Group type:");
+            ImGui.SameLine(120f * ImGuiHelpers.GlobalScale);
+        }
+        ImGui.TextUnformatted(ev.GroupType);
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+        {
+            ImGui.TextUnformatted("Date:");
+            ImGui.SameLine(120f * ImGuiHelpers.GlobalScale);
+        }
+        ImGui.TextUnformatted($"{ev.Date.ToLocalTime():yyyy-MM-dd HH:mm}");
 
         if (allowParticipate)
         {
@@ -497,7 +522,8 @@ public class MainWindow : Window, IDisposable
         if (ev.Participants.Count > 0)
         {
             ImGui.Spacing();
-            ImGui.TextUnformatted($"Participants ({ev.Participants.Count}):");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.LightSteel))
+                ImGui.TextUnformatted($"Participants ({ev.Participants.Count}):");
 
             using var ptable = ImRaii.Table($"##pt_{uniqueId}", 2,
                 ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
@@ -517,7 +543,8 @@ public class MainWindow : Window, IDisposable
         }
         else
         {
-            ImGui.TextUnformatted("Participants: (none)");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Participants: (none)");
         }
 
         if (allowParticipate)
@@ -526,8 +553,7 @@ public class MainWindow : Window, IDisposable
             ImGui.Separator();
             ImGui.Spacing();
 
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-                ImGui.TextUnformatted("Participate");
+            RmcTheme.SectionHeader("Participate");
             ImGui.Spacing();
 
             if (!eventRoleIndex.ContainsKey(ev.Id)) eventRoleIndex[ev.Id] = 0;
@@ -606,22 +632,18 @@ public class MainWindow : Window, IDisposable
 
             if (submitState == SubmitState.Confirmed)
             {
-                using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.10f, 0.45f, 0.10f, 1.0f)))
+                using (RmcTheme.PushButtonColors(RmcTheme.SuccessButton))
                 using (ImRaii.Disabled(true))
                 {
                     ImGui.Button($"\u2713 Participating##submit_{uniqueId}");
                 }
                 ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, 0xFF00CC00u))
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Success))
                     ImGui.TextUnformatted("Confirmed by server");
             }
             else if (submitState == SubmitState.Pending)
             {
-                using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
-                using (ImRaii.PushColor(ImGuiCol.ButtonActive,  new Vector4(0.50f, 0.32f, 0.04f, 1.0f)))
+                using (RmcTheme.PushButtonColors(RmcTheme.WarningButton))
                 using (ImRaii.Disabled(true))
                 {
                     ImGui.Button($"Submitting...##submit_{uniqueId}");
@@ -646,19 +668,19 @@ public class MainWindow : Window, IDisposable
                 if (!plugin.WsService.IsConnected)
                 {
                     ImGui.SameLine();
-                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                    using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
                         ImGui.TextUnformatted("(not connected)");
                 }
                 else if (string.IsNullOrWhiteSpace(playerName))
                 {
                     ImGui.SameLine();
-                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF4444FFu))
+                    using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
                         ImGui.TextUnformatted("(log in to participate)");
                 }
 
                 if (eventSubmitError.TryGetValue(ev.Id, out var submitError))
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFF2222FFu))
+                    using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Error))
                         ImGui.TextUnformatted(submitError);
                 }
             }
@@ -686,22 +708,26 @@ public class MainWindow : Window, IDisposable
             }
             else
             {
-                ImGui.TextUnformatted("(Loading image...)");
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                    ImGui.TextUnformatted("(Loading image...)");
             }
         }
         else if (dataService.IsImagePending(eventId))
         {
-            ImGui.TextUnformatted("(Downloading image...)");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("(Downloading image...)");
         }
         else if (dataService.HasImageManifest(eventId))
         {
             // Trigger lazy download — safe to call every frame, no-ops once a request is in flight.
             dataService.RequestImageIfNeeded(eventId);
-            ImGui.TextUnformatted("(Downloading image...)");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("(Downloading image...)");
         }
         else
         {
-            ImGui.TextUnformatted("(No image for this event)");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("(No image for this event)");
         }
     }
 

@@ -12,7 +12,8 @@
       "PowerShell(dotnet build \"c:\\\\Users\\\\capta\\\\Desktop\\\\RMC\\\\RedMoon-Cappuccino\\\\RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Debug --nologo -v minimal)",
       "PowerShell(git check-ignore -v RedMoonCappuccino/Configuration.cs)",
       "PowerShell(if \\($?\\) { \"TRACKED\" } else { \"NOT TRACKED\" })",
-      "PowerShell(dotnet build \"RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Release --nologo -v quiet 2>&1)"
+      "PowerShell(dotnet build \"RedMoonCappuccino\\\\RedMoonCappuccino.csproj\" -c Release --nologo -v quiet 2>&1)",
+      "PowerShell($candidates = @\\(\"$env:DALAMUD_HOME\", \"$env:AppData\\\\XIVLauncher\\\\addon\\\\Hooks\\\\dev\"\\) | Where-Object { $_ -and \\(Test-Path $_\\) }; $candidates; if \\($candidates\\) { Get-ChildItem \\(Join-Path $candidates[0] 'Dalamud.Bindings.ImGui.dll'\\) -ErrorAction SilentlyContinue | Select-Object FullName })"
     ]
   }
 }

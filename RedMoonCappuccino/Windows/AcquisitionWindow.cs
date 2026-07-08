@@ -12,10 +12,11 @@ using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using RedMoonCappuccino.Models;
 using RedMoonCappuccino.Services;
+using RedMoonCappuccino.UI;
 
 namespace RedMoonCappuccino.Windows;
 
-public class AcquisitionWindow : Window, IDisposable
+public class AcquisitionWindow : ThemedWindow, IDisposable
 {
     private readonly WebSocketService wsService;
     private readonly IDataManager dataManager;
@@ -62,26 +63,26 @@ public class AcquisitionWindow : Window, IDisposable
     {
         // Show item name (from server response) or fall back to "Item #ID" while loading
         var headerName = result?.Name is { Length: > 0 } n ? n : $"Item #{currentItemId}";
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
-            ImGui.TextUnformatted(headerName);
-        ImGui.Separator();
+        RmcTheme.SectionHeader(headerName);
         ImGui.Spacing();
 
         if (isLoading)
         {
-            ImGui.TextUnformatted("Querying server...");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Querying server...");
             return;
         }
 
         if (result == null)
         {
-            ImGui.TextUnformatted("No response received.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("No response received.");
             return;
         }
 
         if (result.Sources.Count == 0)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFAAAAAAu))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted("No acquisition sources found for this item.");
             DrawReducesInto();
             return;
@@ -102,7 +103,7 @@ public class AcquisitionWindow : Window, IDisposable
             var entries = group.ToList();
             var label   = FormatSourceType(group.Key);
 
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFFFD700u))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
                 ImGui.TextUnformatted(entries.Count == 1 ? label : $"{label}  ×{entries.Count}");
 
             ImGui.Spacing();
@@ -113,7 +114,7 @@ public class AcquisitionWindow : Window, IDisposable
 
                 if (entries.Count > 1)
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, 0xFFAAAAAAu))
+                    using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                         ImGui.TextUnformatted($"  Entry {i + 1}");
                     ImGui.Spacing();
                 }
@@ -147,7 +148,7 @@ public class AcquisitionWindow : Window, IDisposable
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFAAAAAAu))
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
             ImGui.TextUnformatted("Aetherial Reduction yields:");
         using var indent = ImRaii.PushIndent(12f);
         foreach (var item in items)
@@ -160,7 +161,7 @@ public class AcquisitionWindow : Window, IDisposable
     {
         if (src.Extra == null || src.Extra.Count == 0)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, 0xFFAAAAAAu))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted("(no additional data)");
             return;
         }
@@ -628,7 +629,7 @@ public class AcquisitionWindow : Window, IDisposable
     {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
-        using (ImRaii.PushColor(ImGuiCol.Text, 0xFFCCCCCCu))
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.LightSteel))
             ImGui.TextUnformatted(label);
         ImGui.TableNextColumn();
         ImGui.TextWrapped(value);

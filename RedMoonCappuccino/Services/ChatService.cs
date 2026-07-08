@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -45,6 +46,10 @@ public sealed class ChatService : IDisposable
     private List<ChatPresenceUser> presence = new();
     private string requestedUsername = string.Empty;
 
+    // Direct-message conversations keyed by the peer's resolved username.
+    private readonly Dictionary<string, List<ChatMessage>> dmConversations = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> dmUnread = new(StringComparer.OrdinalIgnoreCase);
+
     private ClientWebSocket? activeWs;
     private CancellationTokenSource? sessionCts;
     private Task? sessionTask;
@@ -57,6 +62,9 @@ public sealed class ChatService : IDisposable
     public string ResolvedUsername { get; private set; } = string.Empty;
     public bool IsFCMember { get; private set; }
     public string? LastError { get; private set; }
+
+    /// <summary>Last DM delivery problem (offline peer, unsupported server, ...); cleared on the next successful DM.</summary>
+    public string? LastDmNotice { get; private set; }
 
     public ChatService(IPluginLog log, Configuration config)
     {
@@ -81,6 +89,36 @@ public sealed class ChatService : IDisposable
         get { lock (gate) return presence.Count; }
     }
 
+    /// <summary>Usernames with an existing DM conversation this session.</summary>
+    public List<string> SnapshotDmPeers()
+    {
+        lock (gate) return dmConversations.Keys.ToList();
+    }
+
+    /// <summary>Messages exchanged with <paramref name="peer"/> this session.</summary>
+    public List<ChatMessage> SnapshotDm(string peer)
+    {
+        lock (gate)
+            return dmConversations.TryGetValue(peer, out var list)
+                ? new List<ChatMessage>(list)
+                : new List<ChatMessage>();
+    }
+
+    public int GetDmUnread(string peer)
+    {
+        lock (gate) return dmUnread.GetValueOrDefault(peer);
+    }
+
+    public int TotalDmUnread
+    {
+        get { lock (gate) return dmUnread.Values.Sum(); }
+    }
+
+    public void MarkDmRead(string peer)
+    {
+        lock (gate) dmUnread.Remove(peer);
+    }
+
     // ── Public control ────────────────────────────────────────────────────────
 
     /// <summary>Connect and join the room as <paramref name="username"/> (FFXIV character name).</summary>
@@ -98,12 +136,15 @@ public sealed class ChatService : IDisposable
 
         requestedUsername = name;
         LastError = null;
+        LastDmNotice = null;
         state = ChatConnectionState.Connecting;
 
         lock (gate)
         {
             messages.Clear();
             presence = new List<ChatPresenceUser>();
+            dmConversations.Clear();
+            dmUnread.Clear();
         }
 
         sessionCts = new CancellationTokenSource();
@@ -132,6 +173,25 @@ public sealed class ChatService : IDisposable
         {
             try { await SendAsync(ws, new { type = "message", text }, token); }
             catch (Exception ex) { log.Warning($"[RedMoonCappuccino] Chat send failed: {ex.Message}"); }
+        });
+    }
+
+    /// <summary>
+    /// Send a direct message to <paramref name="to"/> (resolved username). No-op unless fully
+    /// connected. The server echoes the DM back to the sender, so nothing is appended locally
+    /// here — the conversation updates when the echo arrives.
+    /// </summary>
+    public void SendDirectMessage(string to, string text)
+    {
+        if (string.IsNullOrWhiteSpace(to) || string.IsNullOrWhiteSpace(text)) return;
+        var ws = activeWs;
+        var token = sessionCts?.Token ?? CancellationToken.None;
+        if (state != ChatConnectionState.Connected || ws?.State != WebSocketState.Open) return;
+
+        _ = Task.Run(async () =>
+        {
+            try { await SendAsync(ws, new { type = "dm", to, text }, token); }
+            catch (Exception ex) { log.Warning($"[RedMoonCappuccino] Chat DM send failed: {ex.Message}"); }
         });
     }
 
@@ -294,6 +354,31 @@ public sealed class ChatService : IDisposable
                     lock (gate) { messages.Add(env.Message); Trim(); }
                 break;
 
+            case "dm":
+                var dmEnv = JsonSerializer.Deserialize<ChatMessageEnvelope>(text);
+                if (dmEnv?.Message is { } dm)
+                {
+                    // The server echoes DMs to both parties; the conversation is keyed
+                    // by whichever end of the exchange is not us.
+                    var fromSelf = string.Equals(dm.Username, ResolvedUsername, StringComparison.OrdinalIgnoreCase);
+                    var peer = fromSelf ? dm.To : dm.Username;
+                    if (!string.IsNullOrEmpty(peer))
+                    {
+                        lock (gate)
+                        {
+                            if (!dmConversations.TryGetValue(peer, out var conv))
+                                dmConversations[peer] = conv = new List<ChatMessage>();
+                            conv.Add(dm);
+                            if (conv.Count > MaxHistory)
+                                conv.RemoveRange(0, conv.Count - MaxHistory);
+                            if (!fromSelf)
+                                dmUnread[peer] = dmUnread.GetValueOrDefault(peer) + 1;
+                        }
+                        LastDmNotice = null;
+                    }
+                }
+                break;
+
             case "system":
                 var sys = JsonSerializer.Deserialize<ChatSystemMessage>(text);
                 if (sys != null)
@@ -313,6 +398,15 @@ public sealed class ChatService : IDisposable
                 // A rejected join (taken name, unresolved, etc.) is terminal for this session.
                 if (string.Equals(err?.RequestType, "join", StringComparison.OrdinalIgnoreCase))
                     return false;
+                // DM failures surface in the DM pane rather than the header. Old servers
+                // answer an unknown "dm" type with unsupported_type and no requestType.
+                if (string.Equals(err?.RequestType, "dm", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(err?.Code, "unsupported_type", StringComparison.OrdinalIgnoreCase))
+                {
+                    LastDmNotice = string.Equals(err?.Code, "unsupported_type", StringComparison.OrdinalIgnoreCase)
+                        ? "The chat server does not support direct messages yet."
+                        : LastError;
+                }
                 break;
 
             default:

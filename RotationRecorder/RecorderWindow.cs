@@ -9,6 +9,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using RedMoonCappuccino.UI;
 
 namespace RedMoonCappuccino.RotationRecorder;
 
@@ -20,7 +21,7 @@ namespace RedMoonCappuccino.RotationRecorder;
 ///   ActionRecorder  recorder       (the hook-based session recorder)
 ///   GeminiAnalyzer  analyzer       (the API client)
 /// </summary>
-public sealed class RecorderWindow : Window, IDisposable
+public sealed class RecorderWindow : ThemedWindow, IDisposable
 {
     // ── Injected ──────────────────────────────────────────────────────────────
     private readonly Plugin        _plugin;
@@ -84,8 +85,7 @@ public sealed class RecorderWindow : Window, IDisposable
         // Record / Stop button
         if (isRecording)
         {
-            using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.7f, 0.15f, 0.15f, 1f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.85f, 0.2f, 0.2f, 1f)))
+            using (RmcTheme.PushButtonColors(RmcTheme.DangerButton))
             {
                 if (ImGui.Button("  ⏹  Stop Recording  "))
                     _recorder.Stop();
@@ -93,13 +93,11 @@ public sealed class RecorderWindow : Window, IDisposable
 
             ImGui.SameLine();
             var elapsed = (DateTimeOffset.UtcNow - (_recorder.SessionStart ?? DateTimeOffset.UtcNow)).TotalSeconds;
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.9f, 0.4f, 0.4f, 1f)))
-                ImGui.TextUnformatted($"● REC  {elapsed:F0}s  |  {events.Length} actions");
+            RmcTheme.StatusDot(RmcTheme.Error, $"REC  {elapsed:F0}s  |  {events.Length} actions", RmcTheme.Error);
         }
         else
         {
-            using (ImRaii.PushColor(ImGuiCol.Button,        new Vector4(0.15f, 0.55f, 0.15f, 1f)))
-            using (ImRaii.PushColor(ImGuiCol.ButtonHovered, new Vector4(0.2f, 0.7f, 0.2f, 1f)))
+            using (RmcTheme.PushButtonColors(RmcTheme.SuccessButton))
             {
                 if (ImGui.Button("  ▶  Start Recording  "))
                 {
@@ -124,7 +122,7 @@ public sealed class RecorderWindow : Window, IDisposable
                     : 0.0;
 
                 ImGui.SameLine();
-                using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.6f, 0.6f, 0.6f, 1f)))
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                     ImGui.TextUnformatted($"{events.Length} actions recorded ({dur:F1}s)");
             }
         }
@@ -136,7 +134,7 @@ public sealed class RecorderWindow : Window, IDisposable
     {
         var events = _recorder.Events.ToArray();
 
-        ImGui.TextUnformatted("Timeline");
+        RmcTheme.SectionHeader("Timeline");
         ImGui.Spacing();
 
         var childSize = new Vector2(0, TimelineHeight * ImGuiHelpers.GlobalScale);
@@ -145,7 +143,7 @@ public sealed class RecorderWindow : Window, IDisposable
 
         if (events.Length == 0)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted("No actions recorded yet. Press Start, then hit a training dummy.");
             return;
         }
@@ -158,18 +156,18 @@ public sealed class RecorderWindow : Window, IDisposable
             var t    = (ev.Timestamp - origin).TotalSeconds;
             var kind = ev.IsGcd ? " GCD" : "oGCD";
 
-            // Color: GCDs = white, oGCDs = light blue, large gaps = yellow
-            var col = new Vector4(1f, 1f, 1f, 1f);
+            // Color: GCDs = steel white, oGCDs = cornflower, large gaps = amber
+            var col = RmcTheme.Text;
 
             if (!ev.IsGcd)
-                col = new Vector4(0.4f, 0.8f, 1f, 1f);
+                col = RmcTheme.Cornflower;
 
             double gap = 0;
             if (ev.IsGcd && lastGcd != null)
             {
                 gap = (ev.Timestamp - lastGcd.Timestamp).TotalSeconds;
                 if (gap > 3.2)
-                    col = new Vector4(1f, 0.8f, 0.2f, 1f);   // yellow = gap warning
+                    col = RmcTheme.Warning;   // gap warning
             }
             if (ev.IsGcd) lastGcd = ev;
 
@@ -200,12 +198,12 @@ public sealed class RecorderWindow : Window, IDisposable
         var used      = Configuration.GroundedHardLimit - remaining;
         var fraction  = (float)used / Configuration.GroundedHardLimit;
 
-        // Bar colour: green → yellow → red
+        // Bar colour: success → warning → error
         var barCol = fraction switch
         {
-            < 0.70f => new Vector4(0.25f, 0.75f, 0.25f, 1f),
-            < 0.90f => new Vector4(0.90f, 0.70f, 0.10f, 1f),
-            _       => new Vector4(0.90f, 0.20f, 0.20f, 1f),
+            < 0.70f => RmcTheme.Success,
+            < 0.90f => RmcTheme.Warning,
+            _       => RmcTheme.Error,
         };
 
         using (ImRaii.PushColor(ImGuiCol.PlotHistogram, barCol))
@@ -215,19 +213,19 @@ public sealed class RecorderWindow : Window, IDisposable
 
         if (remaining <= 0)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.9f, 0.2f, 0.2f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Error))
                 ImGui.TextUnformatted(
                     $"Daily limit reached ({Configuration.GroundedHardLimit} queries used). " +
                     "Resets at midnight UTC.");
         }
         else if (remaining <= Configuration.GroundedSoftWarnAt)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.9f, 0.7f, 0.1f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
                 ImGui.TextUnformatted($"⚠ {remaining} grounded queries remaining today");
         }
         else
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted(
                     $"Grounded queries today: {used} / {Configuration.GroundedHardLimit}   " +
                     $"({remaining} remaining, resets midnight UTC)");
@@ -252,13 +250,13 @@ public sealed class RecorderWindow : Window, IDisposable
         if (!hasKey)
         {
             ImGui.SameLine();
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.9f, 0.3f, 0.3f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Error))
                 ImGui.TextUnformatted("⚠ No API key — set one in Settings");
         }
         else if (_recorder.IsRecording)
         {
             ImGui.SameLine();
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted("Stop recording first");
         }
         else if (!hasQuota)
@@ -269,12 +267,13 @@ public sealed class RecorderWindow : Window, IDisposable
         {
             ImGui.SameLine();
             var spinner = "|/-\\"[(int)(ImGui.GetTime() * 4) % 4];
-            ImGui.TextUnformatted($"Analysing… {spinner}");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+                ImGui.TextUnformatted($"Analysing… {spinner}");
         }
         else if (!hasEvents)
         {
             ImGui.SameLine();
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
                 ImGui.TextUnformatted("Record a session first");
         }
     }
@@ -284,14 +283,14 @@ public sealed class RecorderWindow : Window, IDisposable
         if (!string.IsNullOrEmpty(_analyzeError))
         {
             ImGui.Spacing();
-            using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.9f, 0.3f, 0.3f, 1f)))
-                ImGui.TextUnformatted($"Error: {_analyzeError}");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Error))
+                ImGui.TextWrapped($"Error: {_analyzeError}");
         }
 
         if (string.IsNullOrEmpty(_analyzeResult)) return;
 
         ImGui.Spacing();
-        ImGui.TextUnformatted("── Analysis ────────────────────────────────────────");
+        RmcTheme.SectionHeader("Analysis");
         ImGui.Spacing();
 
         var childSize = new Vector2(0, ResultsHeight * ImGuiHelpers.GlobalScale);

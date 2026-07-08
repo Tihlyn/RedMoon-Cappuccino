@@ -59,6 +59,25 @@ The alternate nested form is also accepted: `{ "type": "message", "payload": { "
 - Max length `2000` chars (`invalid_message` if exceeded).
 - Flood control: max `8` messages per `10s` per connection (`rate_limited` if exceeded).
 
+### dm (client → server)
+Send a **direct message** to a single online user. Requires a prior successful `join`.
+`to` is the recipient's **resolved canonical username** as shown in `presence`.
+```json
+{ "type": "dm", "to": "Alphinaud Leveilleur", "text": "psst — got a sec?" }
+```
+- The server relays the message **only** to the recipient and echoes it back to the sender
+  (both receive the same [`dm`](#dm-server--client) frame). It is never broadcast and never
+  stored in the shared room history.
+- `text` follows the same rules as `message` (trimmed, 1..2000 chars, `invalid_message`).
+- Shares the same flood control as `message` (`rate_limited`).
+- If `to` does not match an online user, the server rejects with code `user_offline`
+  and `requestType: "dm"`.
+- Servers that predate this extension answer with `unsupported_type`; clients should surface
+  that as "DMs not supported".
+
+> **Status:** client support ships in the plugin (chat window → click an online member).
+> The server (`services/chat-ws.js`) must implement the `dm` relay for delivery to work.
+
 ### get_history
 Request the recent message history on demand (also pushed automatically on join).
 ```json
@@ -147,6 +166,17 @@ A chat message broadcast to all clients (including the sender).
 }
 ```
 
+### dm (server → client)
+A direct message, delivered only to the sender (echo) and the recipient. The message object
+matches the room [message object](#message-object) plus a `to` field carrying the recipient's
+resolved username.
+```json
+{
+  "type": "dm",
+  "message": { "id": "uuid", "username": "Tataru Taru", "isFCMember": true, "to": "Alphinaud Leveilleur", "text": "psst — got a sec?", "ts": 1719446400000 }
+}
+```
+
 ### system
 Lightweight room notices, broadcast to everyone except the subject.
 ```json
@@ -181,6 +211,7 @@ Any rejected request.
 | `resolution_unavailable`| the server has no resolver configured                          |
 | `not_joined`            | sent a `message` before joining                                |
 | `invalid_message`       | empty or too-long message text                                 |
+| `user_offline`          | `dm` recipient is not currently online                         |
 | `rate_limited`          | exceeded the per-connection message rate                       |
 | `unsupported_type`      | unknown `type`                                                 |
 | `internal_error`        | unexpected server-side error                                   |

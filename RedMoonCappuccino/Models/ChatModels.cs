@@ -25,6 +25,10 @@ public class ChatMessage
     [JsonPropertyName("ts")]
     public long Ts { get; set; }
 
+    /// <summary>Recipient's resolved username for direct messages; null for room messages.</summary>
+    [JsonPropertyName("to")]
+    public string? To { get; set; }
+
     /// <summary>UI-only marker for locally-synthesised room notices (join/leave).</summary>
     [JsonIgnore]
     public bool IsSystem { get; set; }

@@ -133,7 +133,7 @@ public class NotificationService : IDisposable
     private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(10);
 
     /// <summary>Longest DM preview shown in a toast before truncation.</summary>
-    private const int DmPreviewMaxLength = 180;
+    private const int DmPreviewMaxLength = 90;
 
     /// <summary>
     /// Pop-up for a direct message received while the chat window is closed.

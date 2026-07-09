@@ -164,7 +164,7 @@ public sealed class Plugin : IDalamudPlugin
     // ── DM arrival cues ───────────────────────────────────────────────────────
 
     /// <summary>In-game chat sound (&lt;se.11&gt;) played when a DM arrives unseen. Valid ids: 1–16.</summary>
-    private const uint DmChimeSoundId = 11;
+    private const uint DmChimeSoundId = 5;
 
     // Cooldowns so a burst of DMs doesn't stack toasts or spam the chime.
     private const long DmChimeCooldownMs = 2000;

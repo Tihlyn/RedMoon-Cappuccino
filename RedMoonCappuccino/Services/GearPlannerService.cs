@@ -175,13 +175,69 @@ public sealed class GearPlannerService
                 if (EquipSlotIndexToKey.TryGetValue(slotIndex, out var slotKey))
                 {
                     var rawId = (int)invItem.ItemId;
-                    var baseId = rawId >= 1_000_000 ? rawId - 1_000_000 : rawId;
-                    result[slotKey] = data.GetItemById(baseId);
+                    var isHq = rawId >= 1_000_000;
+                    var baseId = isHq ? rawId - 1_000_000 : rawId;
+                    result[slotKey] = data.GetItemById(baseId) ?? ResolveEquippedFromGameData(baseId, isHq, slotKey);
                 }
             }
         }
         catch { /* Best-effort: return whatever was collected before the failure. */ }
         return result;
+    }
+
+    // Maps Lumina BaseParam row IDs to the stat keys used by the planner gear DB.
+    private static readonly IReadOnlyDictionary<uint, string> BaseParamToStatKey =
+        new Dictionary<uint, string>
+        {
+            [1] = "str", [2] = "dex", [3] = "vit", [4] = "int", [5] = "mnd", [6] = "pie",
+            [19] = "ten", [22] = "dh", [27] = "crit", [44] = "det", [45] = "sks", [46] = "sps",
+        };
+
+    /// <summary>
+    /// Fallback for equipped items that are not in the planner gear DB (crafted, older content, ...):
+    /// resolves name, item level and stats from the game's own data so the plan can show what is
+    /// actually being replaced instead of "unknown item".
+    /// </summary>
+    private static GearItem? ResolveEquippedFromGameData(int itemId, bool isHq, string slotKey)
+    {
+        try
+        {
+            var row = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Item>()?.GetRowOrDefault((uint)itemId);
+            if (row == null || row.Value.RowId == 0)
+                return null;
+
+            var item = row.Value;
+            var stats = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < item.BaseParam.Count; i++)
+            {
+                if (BaseParamToStatKey.TryGetValue(item.BaseParam[i].RowId, out var key))
+                    stats[key] = stats.GetValueOrDefault(key) + item.BaseParamValue[i];
+            }
+
+            if (isHq)
+            {
+                for (var i = 0; i < item.BaseParamSpecial.Count; i++)
+                {
+                    if (BaseParamToStatKey.TryGetValue(item.BaseParamSpecial[i].RowId, out var key))
+                        stats[key] = stats.GetValueOrDefault(key) + item.BaseParamValueSpecial[i];
+                }
+            }
+
+            var name = item.Name.ExtractText();
+            return new GearItem
+            {
+                Id = itemId,
+                Name = string.IsNullOrWhiteSpace(name) ? $"Item #{itemId}" : name,
+                Slot = slotKey,
+                ItemLevel = (int)item.LevelItem.RowId,
+                SourceType = "Equipped",
+                Stats = stats,
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private List<PlannerPathRecommendation> ComputeBestPaths(PlannerSnapshot snapshot)
@@ -256,17 +312,30 @@ public sealed class GearPlannerService
         if (completePaths.Count == 0)
             return [];
 
-        return completePaths
-            .OrderByDescending(p => p.Score)
-            .Take(3)
-            .Select((path, index) => new PlannerPathRecommendation
+        // The solver often finds several orderings of the same purchases with (near-)identical
+        // scores; only surface paths that begin with a different purchase so alternatives are
+        // meaningful rather than shuffled duplicates.
+        var ranked = new List<PlannerPathRecommendation>();
+        var seenFirstSlots = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var path in completePaths.OrderByDescending(p => p.Score))
+        {
+            var firstSlot = path.Actions.Count > 0 ? path.Actions[0].Slot : string.Empty;
+            if (!seenFirstSlots.Add(firstSlot))
+                continue;
+
+            ranked.Add(new PlannerPathRecommendation
             {
-                Rank = index + 1,
+                Rank = ranked.Count + 1,
                 TotalUtility = path.Score,
                 Upgrades = path.Actions,
                 Summary = BuildPathSummary(path),
-            })
-            .ToList();
+            });
+
+            if (ranked.Count >= 3)
+                break;
+        }
+
+        return ranked;
     }
 
     private PlannerUpgradeAction BuildAction(string slot, GearItem? current, GearItem target, IReadOnlyDictionary<string, int> baselineStats)
@@ -291,44 +360,80 @@ public sealed class GearPlannerService
                     - (bookCost * 6.0)
                     - sourcePenalty;
 
-        var reasons = new List<string>
-        {
-            $"{slot}: +{itemLevelGain} item level, +{statGain} weighted stat gain",
-            breakpointBonus > 0 ? "Crosses a speed breakpoint" : "No speed breakpoint crossed",
-            tomeCost > 0 ? $"Estimated tome spend: {tomeCost}" : "No tome spend required",
-            bookCost > 0 ? $"Estimated savage books: {bookCost}" : "No savage book requirement",
-        };
-
-        if (target.SourceType == "AllianceRaid" && target.ItemLevel == 780)
-        {
-            var (rain, certs) = AllianceRaidAugmentCost(slot);
-            reasons.Add($"Augment from i770 Courtly Lover: {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate");
-        }
-        else if (current?.SourceType == "AllianceRaid" && current.ItemLevel == 770)
-        {
-            var (rain, certs) = AllianceRaidAugmentCost(slot);
-            reasons.Add($"Current piece upgradeable to i780: {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate");
-        }
-
-        if (target.SourceType == "Tome" && target.ItemLevel == 790)
-        {
-            reasons.Add(TomeAugmentNote(slot));
-        }
+        var (costText, detailNote) = DescribeAcquisition(slot, current, target, tomeCost, bookCost);
 
         return new PlannerUpgradeAction
         {
             Slot = slot,
-            CurrentItemName = current?.Name ?? "Unknown equipped item",
+            SlotName = PlannerDisplay.SlotName(slot),
+            CurrentItemId = current?.Id ?? 0,
+            CurrentItemName = current?.Name,
             CurrentItemLevel = current?.ItemLevel ?? 0,
+            TargetItemId = target.Id,
             TargetItemName = target.Name,
             TargetItemLevel = target.ItemLevel,
             SourceType = target.SourceType,
+            CostText = costText,
+            DetailNote = detailNote,
+            CrossesSpeedBreakpoint = breakpointBonus > 0,
+            StatGains = PlannerDisplay.StatDelta(current?.Stats ?? EmptyStats, target.Stats),
             EstimatedTomeCost = tomeCost,
             EstimatedBookCost = bookCost,
-            BreakpointBonus = breakpointBonus,
             UtilityScore = utility,
-            Reasons = reasons,
         };
+    }
+
+    /// <summary>
+    /// Composes the single-line acquisition cost shown next to an upgrade step, plus an
+    /// optional longer note for the step tooltip (augment currency details, alternatives).
+    /// </summary>
+    private static (string CostText, string? DetailNote) DescribeAcquisition(string slot, GearItem? current, GearItem target, int tomeCost, int bookCost)
+    {
+        string costText;
+        var notes = new List<string>();
+
+        if (target.SourceType == "AllianceRaid" && target.ItemLevel == 780)
+        {
+            var (rain, certs) = AllianceRaidAugmentCost(slot);
+            var mats = $"{rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Cert.";
+            var ownsBasePiece = current is { SourceType: "AllianceRaid", ItemLevel: 770 };
+            costText = ownsBasePiece ? $"Augment: {mats}" : $"i770 alliance piece + {mats}";
+            if (!ownsBasePiece)
+                notes.Add("The i770 base piece drops in the alliance raid and is then augmented to i780.");
+        }
+        else if (target.SourceType == "Tome" && target.ItemLevel == 790)
+        {
+            var augmentItem = TomeAugmentItemName(slot);
+            var ownsBasePiece = current is { SourceType: "Tome", ItemLevel: 780 };
+            costText = ownsBasePiece
+                ? $"Augment: 1\u00d7 {augmentItem}"
+                : $"{tomeCost:N0} tomes + 1\u00d7 {augmentItem}";
+            notes.Add(TomeAugmentDetail(slot));
+        }
+        else
+        {
+            costText = target.SourceType switch
+            {
+                "Tome"         => $"{tomeCost:N0} tomes",
+                "Savage"       => $"{bookCost} savage books",
+                "AllianceRaid" => "Alliance raid drop",
+                "Raid"         => "Normal raid drop",
+                "Trial"        => "Trial drop",
+                "Ultimate"     => "Ultimate drop",
+                _              => target.SourceType,
+            };
+        }
+
+        // The equipped piece has its own augment route; surface it as an alternative
+        // instead of mixing it into the recommendation itself.
+        if (current is { SourceType: "AllianceRaid", ItemLevel: 770 } &&
+            !(target.SourceType == "AllianceRaid" && target.ItemLevel == 780))
+        {
+            var (rain, certs) = AllianceRaidAugmentCost(slot);
+            notes.Add($"Alternative: augment your current {current.Name} to i780 for {rain}\u00d7 Treno Rain + {certs}\u00d7 Everkeep Certificate.");
+        }
+
+        return (costText, notes.Count > 0 ? string.Join("\n", notes) : null);
     }
 
     private static double RemainingPotential(PlannerSnapshot snapshot, IReadOnlyList<string> orderedSlots, ulong mask, IReadOnlyDictionary<string, int> currentStats)
@@ -373,10 +478,26 @@ public sealed class GearPlannerService
     private static string BuildPathSummary(SearchNode path)
     {
         if (path.Actions.Count == 0)
-            return "Already at BiS for tracked slots.";
+            return "Already at BiS for all tracked slots.";
 
-        var first = path.Actions[0];
-        return $"Start with {first.Slot} ({first.TargetItemName}) to maximize immediate utility and preserve future upgrade flexibility.";
+        var parts = new List<string>
+        {
+            path.Actions.Count == 1 ? "1 upgrade" : $"{path.Actions.Count} upgrades",
+        };
+
+        var tomes = path.Actions.Sum(a => a.EstimatedTomeCost);
+        if (tomes > 0)
+            parts.Add($"{tomes:N0} tomes");
+
+        var books = path.Actions.Sum(a => a.EstimatedBookCost);
+        if (books > 0)
+            parts.Add($"{books} savage books");
+
+        var augments = path.Actions.Count(a => a.CostText.StartsWith("Augment", StringComparison.Ordinal));
+        if (augments > 0)
+            parts.Add(augments == 1 ? "1 augment" : $"{augments} augments");
+
+        return string.Join(" · ", parts);
     }
 
     private static int SumPrimaryCombatStats(IReadOnlyDictionary<string, int> stats)
@@ -407,14 +528,21 @@ public sealed class GearPlannerService
         _                                            => (2, 7),  // EARS, NECK, WRISTS, RING_L, RING_R
     };
 
-    private static string TomeAugmentNote(string slot) => slot switch
+    private static string TomeAugmentItemName(string slot) => slot switch
+    {
+        "WEAPON"                                                    => "Thundersteeped Solvent",
+        "BODY" or "HEAD" or "HANDS" or "LEGS" or "FEET" or "OFFHAND" => "Thundersteeped Twine",
+        _                                                           => "Thundersteeped Glaze",
+    };
+
+    private static string TomeAugmentDetail(string slot) => slot switch
     {
         "WEAPON" =>
-            "Direct augment: Thundersteeped Solvent (4 M11S books or M12S loot)",
+            "Thundersteeped Solvent: 4 M11S books or M12S loot.",
         "BODY" or "HEAD" or "HANDS" or "LEGS" or "FEET" or "OFFHAND" =>
-            "Direct augment: Thundersteeped Twine (4 M11S books, 3000 Nuts, or M11S loot)",
+            "Thundersteeped Twine: 4 M11S books, 3,000 Nuts, or M11S loot.",
         _ =>
-            "Direct augment: Thundersteeped Glaze (3 M10S books, 2000 Nuts, or M10S loot)",
+            "Thundersteeped Glaze: 3 M10S books, 2,000 Nuts, or M10S loot.",
     };
 
     private int EstimateBreakpointBonus(int baselineSpeed, int upgradedSpeed)
@@ -776,16 +904,25 @@ public sealed class PlannerPathRecommendation
 public sealed class PlannerUpgradeAction
 {
     public string Slot { get; init; } = string.Empty;
-    public string CurrentItemName { get; init; } = string.Empty;
+    public string SlotName { get; init; } = string.Empty;
+    public int CurrentItemId { get; init; }
+    /// <summary>Null when the slot is empty.</summary>
+    public string? CurrentItemName { get; init; }
     public int CurrentItemLevel { get; init; }
+    public int TargetItemId { get; init; }
     public string TargetItemName { get; init; } = string.Empty;
     public int TargetItemLevel { get; init; }
     public string SourceType { get; init; } = string.Empty;
+    /// <summary>Single-line acquisition cost, e.g. "825 tomes + 1× Thundersteeped Twine".</summary>
+    public string CostText { get; init; } = string.Empty;
+    /// <summary>Optional longer note for tooltips (augment currency details, alternatives).</summary>
+    public string? DetailNote { get; init; }
+    public bool CrossesSpeedBreakpoint { get; init; }
+    /// <summary>Per-stat gain of this step (displayable stats only, zero entries omitted).</summary>
+    public IReadOnlyDictionary<string, int> StatGains { get; init; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     public int EstimatedTomeCost { get; init; }
     public int EstimatedBookCost { get; init; }
-    public int BreakpointBonus { get; init; }
     public double UtilityScore { get; init; }
-    public List<string> Reasons { get; init; } = [];
 }
 
 public sealed class BisTarget
@@ -804,4 +941,81 @@ public sealed class GearItem
     public string SourceType { get; init; } = string.Empty;
     public HashSet<string> Jobs { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, int> Stats { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+/// <summary>Shared presentation helpers for planner output: slot names, stat labels, stat deltas.</summary>
+public static class PlannerDisplay
+{
+    private static readonly IReadOnlyDictionary<string, string> SlotNames =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["WEAPON"]  = "Weapon",
+            ["OFFHAND"] = "Off Hand",
+            ["HEAD"]    = "Head",
+            ["BODY"]    = "Body",
+            ["HANDS"]   = "Hands",
+            ["LEGS"]    = "Legs",
+            ["FEET"]    = "Feet",
+            ["EARS"]    = "Earrings",
+            ["NECK"]    = "Necklace",
+            ["WRISTS"]  = "Bracelet",
+            ["RING_L"]  = "Left Ring",
+            ["RING_R"]  = "Right Ring",
+        };
+
+    // Display order: major stats first, then substats. Keys match the gear DB.
+    private static readonly (string Key, string Label)[] StatOrder =
+    {
+        ("str", "STR"), ("dex", "DEX"), ("int", "INT"), ("mnd", "MND"), ("vit", "VIT"),
+        ("crit", "Crit"), ("det", "Det"), ("dh", "Direct Hit"),
+        ("sks", "Skill Speed"), ("sps", "Spell Speed"), ("ten", "Tenacity"), ("pie", "Piety"),
+    };
+
+    public static string SlotName(string slotKey)
+        => SlotNames.TryGetValue(slotKey, out var name) ? name : slotKey;
+
+    /// <summary>Per-stat difference (to − from), restricted to displayable stats, zero entries omitted.</summary>
+    public static IReadOnlyDictionary<string, int> StatDelta(IReadOnlyDictionary<string, int> from, IReadOnlyDictionary<string, int> to)
+    {
+        var delta = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, _) in StatOrder)
+        {
+            var diff = to.GetValueOrDefault(key) - from.GetValueOrDefault(key);
+            if (diff != 0)
+                delta[key] = diff;
+        }
+
+        return delta;
+    }
+
+    /// <summary>Formats a stat delta as "+205 STR · +378 Crit". Empty string when nothing changes.</summary>
+    public static string FormatStatDelta(IReadOnlyDictionary<string, int> delta)
+    {
+        var parts = new List<string>();
+        foreach (var (key, label) in StatOrder)
+        {
+            if (delta.TryGetValue(key, out var value) && value != 0)
+                parts.Add($"{(value > 0 ? "+" : "−")}{Math.Abs(value):N0} {label}");
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    /// <summary>Adds a step's stat delta onto a running cumulative total.</summary>
+    public static void Accumulate(Dictionary<string, int> total, IReadOnlyDictionary<string, int> delta)
+    {
+        foreach (var (key, value) in delta)
+            total[key] = total.GetValueOrDefault(key) + value;
+    }
+
+    public static string SourceLabel(string sourceType) => sourceType switch
+    {
+        "Tome"         => "Tomestone gear",
+        "Savage"       => "Savage raid",
+        "AllianceRaid" => "Alliance raid",
+        "Raid"         => "Normal raid",
+        "Trial"        => "Trial",
+        "Ultimate"     => "Ultimate",
+        _              => sourceType,
+    };
 }

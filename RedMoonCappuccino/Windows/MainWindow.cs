@@ -10,6 +10,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -42,6 +43,7 @@ public class MainWindow : ThemedWindow, IDisposable
     private readonly List<MountGuideEntry> mountGuides;
     private PlannerRunResult? plannerResult;
     private string? plannerSelectedJob;
+    private readonly Dictionary<int, uint> plannerIconCache = new();
 
     // Per-event participation state (keyed by event id)
     private readonly Dictionary<string, int> eventRoleIndex = new();
@@ -390,7 +392,7 @@ public class MainWindow : ThemedWindow, IDisposable
         if (plannerResult == null)
         {
             using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
-                ImGui.TextUnformatted("Manual planner is idle. Press Solve to compute progression paths.");
+                ImGui.TextUnformatted("Press Solve to compute an upgrade plan.");
             return;
         }
 
@@ -401,22 +403,37 @@ public class MainWindow : ThemedWindow, IDisposable
             return;
         }
 
-        ImGui.TextUnformatted($"Job: {plannerResult.SelectedJob}");
-        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+        var snapshot = plannerResult.Snapshot;
+
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+            ImGui.TextUnformatted($"{plannerResult.SelectedJob} — BiS patch {plannerResult.BisPatch}");
+        ImGui.SameLine();
+        ImGuiComponents.HelpMarker(
+            $"Data version: {plannerResult.DataVersion}\n" +
+            $"Game patch: {plannerResult.GamePatch}\n" +
+            $"Solved: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}");
+
+        if (!snapshot.HasKnownCurrentGear)
         {
-            ImGui.TextUnformatted($"Data version: {plannerResult.DataVersion}  |  Game patch: {plannerResult.GamePatch}  |  BiS patch: {plannerResult.BisPatch}");
-            ImGui.TextUnformatted($"Snapshot generated: {plannerResult.GeneratedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
-            ImGui.TextUnformatted($"BiS tracked slots: {plannerResult.Snapshot.MatchingSlots}/{plannerResult.Snapshot.TotalTargetSlots}");
-            if (!plannerResult.Snapshot.HasKnownCurrentGear)
-                ImGui.TextUnformatted("Current gear source: unknown (planning from empty baseline until equipped-gear reader is integrated).");
-            ImGui.TextUnformatted(plannerResult.SupportsBranching
-                ? "Branching-ready search graph enabled (contingency support planned)."
-                : "Single-path mode.");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextWrapped("Not logged in — planning from an empty gear baseline.");
         }
 
-        var currentTotal = plannerResult.Snapshot.CurrentStats.Values.Sum();
-        var targetTotal = plannerResult.Snapshot.TargetStats.Values.Sum();
-        ImGui.TextUnformatted($"Current weighted stat sum: {currentTotal} → Target: {targetTotal} (Δ {targetTotal - currentTotal})");
+        var bisFraction = snapshot.TotalTargetSlots > 0
+            ? snapshot.MatchingSlots / (float)snapshot.TotalTargetSlots
+            : 0f;
+        ImGui.ProgressBar(bisFraction, new Vector2(-1, 0),
+            $"{snapshot.MatchingSlots} / {snapshot.TotalTargetSlots} slots at BiS");
+
+        var gainsToBis = PlannerDisplay.StatDelta(snapshot.CurrentStats, snapshot.TargetStats);
+        if (gainsToBis.Count > 0)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("Gains to BiS:");
+            ImGui.SameLine();
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Success))
+                ImGui.TextWrapped(PlannerDisplay.FormatStatDelta(gainsToBis));
+        }
 
         ImGui.Spacing();
 
@@ -430,26 +447,145 @@ public class MainWindow : ThemedWindow, IDisposable
         using var child = ImRaii.Child("##gearPlannerResults", new Vector2(0, 0), false);
         if (!child) return;
 
-        foreach (var path in plannerResult.RecommendedPaths)
+        var best = plannerResult.RecommendedPaths[0];
+        if (best.Upgrades.Count == 0)
         {
-            var title = $"Path #{path.Rank} · Utility {path.TotalUtility:F1}";
-            var open = ImGui.CollapsingHeader(title, ImGuiTreeNodeFlags.DefaultOpen);
-            if (!open) continue;
+            RmcTheme.StatusDot(RmcTheme.Success, "Already at BiS — every tracked slot matches the target set.");
+            return;
+        }
 
-            using var indent = ImRaii.PushIndent(14f);
-            ImGui.TextWrapped(path.Summary);
+        RmcTheme.SectionHeader("Upgrade order");
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+            ImGui.TextUnformatted(best.Summary);
+        DrawUpgradePath("##plannerBestPath", best);
 
-            for (var i = 0; i < path.Upgrades.Count; i++)
+        foreach (var alt in plannerResult.RecommendedPaths.Skip(1))
+        {
+            if (alt.Upgrades.Count == 0)
+                continue;
+
+            ImGui.Spacing();
+            var first = alt.Upgrades[0];
+            if (!ImGui.CollapsingHeader($"Alternative — start with {first.SlotName}: {first.TargetItemName}###plannerAlt{alt.Rank}"))
+                continue;
+
+            using var indent = ImRaii.PushIndent(8f);
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted(alt.Summary);
+            DrawUpgradePath($"##plannerAltPath{alt.Rank}", alt);
+        }
+    }
+
+    private void DrawUpgradePath(string id, PlannerPathRecommendation path)
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        using var table = ImRaii.Table(id, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.PadOuterX);
+        if (!table) return;
+
+        ImGui.TableSetupColumn("#", ImGuiTableColumnFlags.WidthFixed, 20f * scale);
+        ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 0.58f);
+        ImGui.TableSetupColumn("Slot", ImGuiTableColumnFlags.WidthFixed, 74f * scale);
+        ImGui.TableSetupColumn("Cost", ImGuiTableColumnFlags.WidthStretch, 0.42f);
+        ImGui.TableHeadersRow();
+
+        var cumulativeGains = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < path.Upgrades.Count; i++)
+        {
+            var step = path.Upgrades[i];
+            PlannerDisplay.Accumulate(cumulativeGains, step.StatGains);
+            var tooltip = BuildStepTooltip(step, cumulativeGains);
+
+            ImGui.TableNextRow();
+
+            ImGui.TableNextColumn();
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted((i + 1).ToString());
+
+            ImGui.TableNextColumn();
+            // Icon spans the two text lines (item name + "replaces ...") beside it.
+            var iconSize = ImGui.GetTextLineHeight() * 2f + ImGui.GetStyle().ItemSpacing.Y;
+            DrawItemIcon(step.TargetItemId, iconSize);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(tooltip);
+            ImGui.SameLine();
+            ImGui.BeginGroup();
+            ImGui.TextUnformatted($"{step.TargetItemName} (i{step.TargetItemLevel})");
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted(step.CurrentItemName != null
+                    ? $"replaces {step.CurrentItemName} (i{step.CurrentItemLevel})"
+                    : "fills an empty slot");
+            ImGui.EndGroup();
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(tooltip);
+
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(step.SlotName);
+
+            ImGui.TableNextColumn();
+            ImGui.TextWrapped(step.CostText);
+            if (step.CrossesSpeedBreakpoint)
             {
-                var step = path.Upgrades[i];
-                ImGui.Spacing();
-                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
-                    ImGui.TextUnformatted($"Step {i + 1}: {step.Slot} — {step.TargetItemName} (i{step.TargetItemLevel})");
-
-                ImGui.TextWrapped($"Replaces {step.CurrentItemName} (i{step.CurrentItemLevel}) · Source: {step.SourceType} · Tomes: {step.EstimatedTomeCost} · Books: {step.EstimatedBookCost} · Breakpoint bonus: {step.BreakpointBonus} · Utility: {step.UtilityScore:F1}");
-                foreach (var reason in step.Reasons)
-                    ImGui.BulletText(reason);
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Success))
+                    ImGui.TextUnformatted("crosses a speed tier");
             }
+        }
+    }
+
+    private static string BuildStepTooltip(PlannerUpgradeAction step, IReadOnlyDictionary<string, int> cumulativeGains)
+    {
+        var lines = new List<string>
+        {
+            $"{step.TargetItemName} (i{step.TargetItemLevel}) — {PlannerDisplay.SourceLabel(step.SourceType)}",
+        };
+
+        var stepGains = PlannerDisplay.FormatStatDelta(step.StatGains);
+        if (stepGains.Length > 0)
+            lines.Add($"This step: {stepGains}");
+
+        var totalGains = PlannerDisplay.FormatStatDelta(cumulativeGains);
+        if (totalGains.Length > 0 && totalGains != stepGains)
+            lines.Add($"After this step: {totalGains}");
+
+        if (step.DetailNote != null)
+        {
+            lines.Add(string.Empty);
+            lines.Add(step.DetailNote);
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private uint GetItemIconId(int itemId)
+    {
+        if (itemId <= 0)
+            return 0;
+        if (plannerIconCache.TryGetValue(itemId, out var cached))
+            return cached;
+
+        uint iconId = 0;
+        try
+        {
+            iconId = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Item>()?.GetRowOrDefault((uint)itemId)?.Icon ?? 0;
+        }
+        catch { /* Missing sheet or row: fall through to the placeholder. */ }
+
+        plannerIconCache[itemId] = iconId;
+        return iconId;
+    }
+
+    private void DrawItemIcon(int itemId, float size)
+    {
+        var iconId = GetItemIconId(itemId);
+        if (iconId != 0 &&
+            Plugin.TextureProvider.TryGetFromGameIcon(new GameIconLookup(iconId), out var texture) &&
+            texture.TryGetWrap(out var wrap, out _))
+        {
+            ImGui.Image(wrap.Handle, new Vector2(size, size));
+        }
+        else
+        {
+            ImGui.Dummy(new Vector2(size, size));
         }
     }
 

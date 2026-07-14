@@ -654,7 +654,7 @@ public class MainWindow : ThemedWindow, IDisposable
             ImGui.TextUnformatted("Organizer:");
             ImGui.SameLine(120f * ImGuiHelpers.GlobalScale);
         }
-        ImGui.TextUnformatted(ev.Organizer);
+        ImGui.TextUnformatted(ev.OrganizerName ?? ev.Organizer);
         using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
         {
             ImGui.TextUnformatted("Group type:");

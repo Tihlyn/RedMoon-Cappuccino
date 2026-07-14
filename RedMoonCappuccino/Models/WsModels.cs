@@ -46,6 +46,9 @@ public class EventSummary
     [JsonPropertyName("organizer")]
     public string Organizer { get; set; } = string.Empty;
 
+    [JsonPropertyName("organizerName")]
+    public string OrganizerName { get; set; } = string.Empty;
+
     [JsonPropertyName("participants")]
     public List<EventParticipant> Participants { get; set; } = new();
 

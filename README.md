@@ -19,9 +19,23 @@ Event images are downloaded from the server and stored locally for up to 24 hour
 
 It also ships a **submersible route planner** (`/route`): pick a material and it
 ranks every sector that drops it for your build, orders the best five-sector
-voyage, and checks it against your range. Builds are picked by hand from the
-part lists, so the planner works anywhere; submarines seen in a free company
-workshop are cached and can be loaded with one click.
+voyage, and checks it against your range and voyage time. Builds are picked by
+hand from the part lists, so the planner works anywhere; submarines seen in a
+free company workshop are cached and can be loaded with one click. Ranks go to
+145 and sectors your rank cannot reach are marked and kept out of routes.
+
+Its dataset is generated, not edited by hand:
+
+```sh
+node subs/build_dataset.mjs
+```
+
+That merges the loot tables in `subs/FFXIV Submersible Route Planner.html` with
+the rank table, breakpoints and Northern Empty loot in
+`resources/subs_data/stats_breakpoints.xlsx` into
+`RedMoonCappuccino/Resources/submarine_routes.json`. Re-run it after changing
+either source. Sectors with no recorded voyages yet carry placeholder yields
+(one unit at a 50% drop rate) and the planner labels them as incomplete.
 
 ## Commands
 

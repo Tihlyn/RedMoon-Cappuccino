@@ -60,6 +60,9 @@ public sealed class SubmarineRouteService
     public bool IsReady { get; private set; }
     public string? LoadError { get; private set; }
 
+    /// <summary>Highest submarine rank the dataset has a stat bonus for.</summary>
+    public int MaxRank { get; private set; } = 1;
+
     public SubmarineRouteService(IDalamudPluginInterface pluginInterface, IPluginLog log)
         : this(Path.Combine(Path.GetDirectoryName(pluginInterface.AssemblyLocation.FullName) ?? ".",
                             "Resources", "submarine_routes.json"), log)
@@ -108,8 +111,12 @@ public sealed class SubmarineRouteService
                 partStats[slot] = partNames[slot].Select(n => slotParts[n]).ToArray();
             }
 
+            foreach (var key in Data.Rank.Keys)
+                if (int.TryParse(key, out var rank) && rank > MaxRank) MaxRank = rank;
+
             IsReady = true;
-            log?.Information($"[RedMoonCappuccino] Submersible planner loaded {Data.Sectors.Length} sectors and {Data.Names.Length} materials.");
+            log?.Information($"[RedMoonCappuccino] Submersible planner loaded {Data.Sectors.Length} sectors, " +
+                             $"{Data.Names.Length} materials and ranks up to {MaxRank}.");
         }
         catch (Exception ex)
         {
@@ -220,13 +227,18 @@ public sealed class SubmarineRouteService
             estimate.Tier       = tier;
             estimate.Drop       = drop;
             estimate.DropChance = weight * drop.Chance;
+            estimate.Estimated |= drop.Estimated;
         }
 
         return estimate;
     }
 
-    /// <summary>Every sector that can drop the material, with upgrade headroom filled in.</summary>
-    public List<SectorEstimate> BuildRows(int itemIndex, int[] stats)
+    /// <summary>
+    /// Every sector that can drop the material, with upgrade headroom filled in.
+    /// Pass <paramref name="rank"/> to mark sectors the submarine is not ranked
+    /// high enough to plot; 0 leaves them all unmarked.
+    /// </summary>
+    public List<SectorEstimate> BuildRows(int itemIndex, int[] stats, int rank = 0)
     {
         var rows = new List<SectorEstimate>();
         if (!IsReady || itemIndex < 0) return rows;
@@ -237,7 +249,8 @@ public sealed class SubmarineRouteService
             var estimate = Estimate(sector, itemIndex, stats);
             if (!estimate.Found) continue;
 
-            estimate.Index = index;
+            estimate.Index      = index;
+            estimate.RankLocked = IsRankLocked(sector, rank);
 
             if (estimate.Retrieval < 2)
             {
@@ -264,6 +277,14 @@ public sealed class SubmarineRouteService
         return rows;
     }
 
+    /// <summary>
+    /// Whether a submarine of this rank is barred from the sector. Only the
+    /// sectors the dataset carries a requirement for can be locked; for the rest
+    /// the answer is always no.
+    /// </summary>
+    private static bool IsRankLocked(SubmarineSector sector, int rank) =>
+        rank > 0 && sector.RankRequirement > 0 && sector.RankRequirement > rank;
+
     public int MaxTier(int itemIndex)
     {
         var max = -1;
@@ -289,7 +310,7 @@ public sealed class SubmarineRouteService
     {
         var routes = new List<MapRoute>();
 
-        foreach (var group in rows.Where(r => r.Expected > 0 && !options.Disabled.Contains(r.Index))
+        foreach (var group in rows.Where(r => r.Expected > 0 && !r.RankLocked && !options.Disabled.Contains(r.Index))
                                   .GroupBy(r => r.Sector.Map))
         {
             var ranked = group.OrderByDescending(r => r.Expected).ToList();
@@ -413,7 +434,7 @@ public sealed class SubmarineRouteService
     {
         if (!IsReady || itemIndex < 0) return null;
 
-        var candidates = CandidateSectors(itemIndex, disabled);
+        var candidates = CandidateSectors(itemIndex, disabled, rank);
         if (candidates.Count == 0) return null;
 
         var scoring = new ScoringSet(candidates, itemIndex);
@@ -525,8 +546,11 @@ public sealed class SubmarineRouteService
     public float BestMapTotal(List<SubmarineSector> candidates, int[] stats, int itemIndex) =>
         new ScoringSet(candidates, itemIndex).Score(stats);
 
-    /// <summary>Sectors that can drop the material at all, ignoring current stats.</summary>
-    public List<SubmarineSector> CandidateSectors(int itemIndex, ISet<int>? disabled = null)
+    /// <summary>
+    /// Sectors that can drop the material at all, ignoring current stats. A
+    /// <paramref name="rank"/> above 0 drops the ones the submarine cannot reach.
+    /// </summary>
+    public List<SubmarineSector> CandidateSectors(int itemIndex, ISet<int>? disabled = null, int rank = 0)
     {
         var result = new List<SubmarineSector>();
 
@@ -535,6 +559,8 @@ public sealed class SubmarineRouteService
             if (disabled != null && disabled.Contains(index)) continue;
 
             var sector = Data.Sectors[index];
+            if (IsRankLocked(sector, rank)) continue;
+
             if (sector.Items.Any(pool => pool?.Any(d => d.ItemIndex == itemIndex) == true))
                 result.Add(sector);
         }
@@ -661,6 +687,12 @@ public sealed class SectorEstimate
     public int  Surveillance { get; set; }
     public int  Retrieval { get; set; }
     public bool Favor { get; set; }
+
+    /// <summary>The yield behind this estimate is a placeholder, not measured data.</summary>
+    public bool Estimated { get; set; }
+
+    /// <summary>True when the submarine's rank is too low to plot this sector.</summary>
+    public bool RankLocked { get; set; }
 
     /// <summary>Retrieval needed for the next tier and what it would add.</summary>
     public (int Need, float Gain)? RetrievalUpgrade { get; set; }

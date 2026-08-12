@@ -83,6 +83,7 @@ public class RouteWindow : ThemedWindow, IDisposable
 
         if (service.IsReady)
         {
+            rank = Math.Min(rank, service.MaxRank);
             ApplyPreset(SubmarineRouteService.Presets[0].Name);
             selectedItem = Array.IndexOf(service.Data.Names, "Unaspected Crystal");
             if (selectedItem < 0) selectedItem = 0;
@@ -140,7 +141,7 @@ public class RouteWindow : ThemedWindow, IDisposable
             return;
         }
 
-        rows = service.BuildRows(selectedItem, stats);
+        rows = service.BuildRows(selectedItem, stats, rank);
 
         var options = new RouteOptions
         {
@@ -150,7 +151,7 @@ public class RouteWindow : ThemedWindow, IDisposable
         };
 
         routes       = service.BuildRoutes(rows, options);
-        currentScore = service.BestMapTotal(service.CandidateSectors(selectedItem, disabled), stats, selectedItem);
+        currentScore = service.BestMapTotal(service.CandidateSectors(selectedItem, disabled, rank), stats, selectedItem);
 
         var key = (selectedItem, rank, disabledVersion);
         if (key != suggestionKey)
@@ -220,7 +221,7 @@ public class RouteWindow : ThemedWindow, IDisposable
         ImGui.Spacing();
         ImGui.TextUnformatted($"Rank {rank}");
         ImGui.SetNextItemWidth(-1f);
-        if (ImGui.SliderInt("##rank", ref rank, 1, 130, string.Empty))
+        if (ImGui.SliderInt("##rank", ref rank, 1, service.MaxRank, string.Empty))
         {
             loadedSubmarine = null;
             MarkDirty();
@@ -377,7 +378,7 @@ public class RouteWindow : ThemedWindow, IDisposable
     /// </summary>
     private void LoadSubmarine(SavedSubmarine sub)
     {
-        rank = Math.Clamp(sub.Rank, 1, 130);
+        rank = Math.Clamp(sub.Rank, 1, service.MaxRank);
 
         if (sub.HasParts)
         {
@@ -506,6 +507,8 @@ public class RouteWindow : ThemedWindow, IDisposable
             return;
         }
 
+        DrawEstimateNotice();
+
         ImGui.Spacing();
         DrawSuggestion();
         ImGui.Spacing();
@@ -516,6 +519,29 @@ public class RouteWindow : ThemedWindow, IDisposable
         ImGui.Separator();
         ImGui.Spacing();
         DrawSectorTable();
+    }
+
+    /// <summary>
+    /// Says plainly when the numbers below rest on the dataset's placeholder
+    /// yields, so nobody reads a routed voyage as a measured one.
+    /// </summary>
+    private void DrawEstimateNotice()
+    {
+        var estimated = rows.Count(r => r.Estimated);
+        if (estimated == 0) return;
+
+        ImGui.Spacing();
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+            ImGui.TextWrapped(estimated == rows.Count
+                ? "Yield data incomplete — no voyages recorded for this material yet."
+                : $"Yield data incomplete for {estimated} of {rows.Count} sectors.");
+
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+            ImGui.TextWrapped(estimated == rows.Count
+                // With every quantity fixed at one unit, retrieval changes nothing,
+                // so the optimiser below only chases surveillance and favor.
+                ? "Those sectors assume one unit at a 50% drop rate. Treat the numbers — and the suggested build, which has no reason to raise Retrieval — as placeholders."
+                : "Those sectors assume one unit at a 50% drop rate, so treat their numbers as a placeholder.");
     }
 
     private void DrawSuggestion()
@@ -655,7 +681,7 @@ public class RouteWindow : ThemedWindow, IDisposable
                     Pill($"T{row.Tier + 1}", TierColors[row.Tier]);
 
                     ImGui.TableNextColumn();
-                    using (ImRaii.PushColor(ImGuiCol.Text, Gold))
+                    using (ImRaii.PushColor(ImGuiCol.Text, row.Estimated ? RmcTheme.Warning : Gold))
                         ImGui.TextUnformatted($"{row.Expected:0.00}");
                 }
             }
@@ -740,8 +766,17 @@ public class RouteWindow : ThemedWindow, IDisposable
         }
     }
 
+    /// <summary>Flags a sector the submarine cannot plot: rank too low, or not yet unlocked.</summary>
     private void DrawLockWarning(SectorEstimate row)
     {
+        if (row.RankLocked)
+        {
+            ImGui.SameLine();
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextUnformatted($"(needs rank {row.Sector.RankRequirement})");
+            return;
+        }
+
         if (gameData.IsUnlocked(row.Sector) == false)
         {
             ImGui.SameLine();
@@ -812,14 +847,22 @@ public class RouteWindow : ThemedWindow, IDisposable
             Pill($"T{row.Tier + 1}", TierColors[row.Tier]);
 
             ImGui.TableNextColumn();
-            using (ImRaii.PushColor(ImGuiCol.Text, Gold))
+            using (ImRaii.PushColor(ImGuiCol.Text, row.Estimated ? RmcTheme.Warning : Gold))
                 ImGui.TextUnformatted($"{row.Expected:0.00}");
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{row.AverageYield:0.0}");
-            ImGui.SameLine();
-            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
-                ImGui.TextUnformatted($"({row.MinYield}–{row.MaxYield})");
+            if (row.Estimated)
+            {
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                    ImGui.TextUnformatted("data incomplete");
+            }
+            else
+            {
+                ImGui.TextUnformatted($"{row.AverageYield:0.0}");
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                    ImGui.TextUnformatted($"({row.MinYield}–{row.MaxYield})");
+            }
 
             ImGui.TableNextColumn();
             Pill(SubmarineRouteService.SurveillanceNames[row.Surveillance], LevelColor(row.Surveillance));
@@ -856,12 +899,28 @@ public class RouteWindow : ThemedWindow, IDisposable
             ImGui.TextUnformatted(service.Data.Maps[row.Sector.Map]);
 
         ImGui.Separator();
-        ImGui.TextUnformatted($"Chance a voyage brings some back: {row.DropChance * 100f:0.0}%");
-        ImGui.TextUnformatted($"Quantity at {SubmarineRouteService.RetrievalNames[row.Retrieval].ToLowerInvariant()} retrieval: {row.MinYield}–{row.MaxYield}, {row.AverageYield:0.0} on average");
 
-        var rankRequirement = gameData.GetRankRequirement(row.Sector);
+        if (row.Estimated)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextUnformatted("Yield data incomplete");
+            ImGui.TextUnformatted("No voyages recorded here yet. The planner stands in one unit");
+            ImGui.TextUnformatted("at a 50% drop rate so the sector can still be routed.");
+        }
+        else
+        {
+            ImGui.TextUnformatted($"Chance a voyage brings some back: {row.DropChance * 100f:0.0}%");
+            ImGui.TextUnformatted($"Quantity at {SubmarineRouteService.RetrievalNames[row.Retrieval].ToLowerInvariant()} retrieval: {row.MinYield}–{row.MaxYield}, {row.AverageYield:0.0} on average");
+        }
+
+        var rankRequirement = row.Sector.RankRequirement > 0
+            ? row.Sector.RankRequirement
+            : gameData.GetRankRequirement(row.Sector);
         if (rankRequirement is > 0)
-            ImGui.TextUnformatted($"Sector needs submarine rank {rankRequirement}");
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, row.RankLocked ? RmcTheme.Warning : RmcTheme.Text))
+                ImGui.TextUnformatted($"Sector needs submarine rank {rankRequirement}");
+        }
 
         ImGui.Separator();
         using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
@@ -869,7 +928,8 @@ public class RouteWindow : ThemedWindow, IDisposable
             ImGui.TextUnformatted($"Breakpoints — Surveillance {row.Sector.SurveillanceForMid}/{row.Sector.SurveillanceForHigh}, " +
                                   $"Retrieval {row.Sector.RetrievalForNormal}/{row.Sector.RetrievalForOptimal}, " +
                                   $"Favor {row.Sector.FavorRequired}");
-            ImGui.TextUnformatted($"Modelled from {row.Drop.Samples:N0} recorded voyages");
+            if (!row.Estimated)
+                ImGui.TextUnformatted($"Modelled from {row.Drop.Samples:N0} recorded voyages");
         }
     }
 

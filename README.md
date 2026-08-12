@@ -17,9 +17,16 @@ Connects to a WebSocket server at `ws://IP:3100` and displays:
 
 Event images are downloaded from the server and stored locally for up to 24 hours, after which they are deleted automatically.
 
+It also ships a **submersible route planner** (`/route`): pick a material and it
+ranks every sector that drops it for your build, orders the best five-sector
+voyage, and checks it against your range. Builds are picked by hand from the
+part lists, so the planner works anywhere; submarines seen in a free company
+workshop are cached and can be loaded with one click.
+
 ## Commands
 
 - `/rmcap` — Toggle the main window.
+- `/route` — Toggle the submersible route planner.
 
 ## Installing via Dalamud (custom repository)
 

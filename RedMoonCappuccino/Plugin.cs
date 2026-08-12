@@ -31,6 +31,7 @@ public sealed class Plugin : IDalamudPlugin
     private const string CommandName    = "/rmcap";
     private const string CommandDpsCheck = "/dpscheck";
     private const string CommandLiveChat = "/livechat";
+    private const string CommandRoute    = "/route";
 
     public Configuration Configuration { get; init; }
     /// <summary>Alias used by RotationRecorder components.</summary>
@@ -41,11 +42,14 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WebSocketService  WsService;
     public readonly ChatService       ChatService;
     public readonly NotificationService EventNotifications;
+    public readonly SubmarineRouteService SubmarineRoutes;
+    public readonly SubmarineGameData     SubmarineGame;
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
     private readonly AcquisitionWindow acquisitionWindow;
     private readonly ChatWindow   chatWindow;
+    private readonly RouteWindow  routeWindow;
 
     private ActionRecorder  _actionRecorder  = null!;
     private GeminiAnalyzer  _geminiAnalyzer  = null!;
@@ -77,15 +81,22 @@ public sealed class Plugin : IDalamudPlugin
 
         EventNotifications = new NotificationService(Configuration, DataService, NotificationManager, Framework, Log);
 
+        // Submersible route planner: the dataset works offline, the game data
+        // layer only enriches it when a character is logged in.
+        SubmarineRoutes = new SubmarineRouteService(PluginInterface, Log);
+        SubmarineGame   = new SubmarineGameData(SubmarineRoutes, Configuration, Framework, Log);
+
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
         chatWindow   = new ChatWindow(ChatService, Configuration);
+        routeWindow  = new RouteWindow(SubmarineRoutes, SubmarineGame);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);
         WindowSystem.AddWindow(chatWindow);
+        WindowSystem.AddWindow(routeWindow);
 
         // DM arrival cues (chime / pop-up) while the chat window is not being watched.
         ChatService.DmReceived += OnDmReceived;
@@ -112,6 +123,10 @@ public sealed class Plugin : IDalamudPlugin
         {
             HelpMessage = "Toggle the live chat window.",
         });
+        CommandManager.AddHandler(CommandRoute, new CommandInfo(OnRouteCommand)
+        {
+            HelpMessage = "Toggle the submersible route planner.",
+        });
 
         // UI hooks
         PluginInterface.UiBuilder.Draw         += DrawUI;
@@ -137,6 +152,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(CommandDpsCheck);
         CommandManager.RemoveHandler(CommandLiveChat);
+        CommandManager.RemoveHandler(CommandRoute);
 
         _recorderWindow.Dispose();
         _geminiAnalyzer.Dispose();
@@ -148,7 +164,9 @@ public sealed class Plugin : IDalamudPlugin
         configWindow.Dispose();
         acquisitionWindow.Dispose();
         chatWindow.Dispose();
+        routeWindow.Dispose();
 
+        SubmarineGame.Dispose();
         EventNotifications.Dispose();
         ChatService.Dispose();
         WsService.Dispose();
@@ -203,6 +221,7 @@ public sealed class Plugin : IDalamudPlugin
     private void OnCommand(string command, string args) => ToggleMainUI();
     private void OnDpsCheckCommand(string command, string args) => _recorderWindow.Toggle();
     private void OnLiveChatCommand(string command, string args) => chatWindow.Toggle();
+    private void OnRouteCommand(string command, string args) => routeWindow.Toggle();
     private void DrawUI() => WindowSystem.Draw();
     public void ToggleConfigUI() => configWindow.Toggle();
     public void ToggleMainUI()   => mainWindow.Toggle();

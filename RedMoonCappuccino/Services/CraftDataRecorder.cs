@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -125,10 +126,6 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private long    lastUnreadableTick;
     private long    confirmWindowUntil;
     private bool    loggedUnknownDialog;
-
-    // Sampled while the crafting log is open, because the window is gone by the time the
-    // craft itself starts and the header is written.
-    private string[] possibleConditions = [];
 
     // Sample captured on entering a step, held until the action taken from it is
     // known so the pair lands on one line. Written with action 0 if the craft ends first.
@@ -265,10 +262,6 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         Emit($"Player: job={playerState.ClassJob.RowId} level={playerState.Level} " +
              $"cp={player?.CurrentCp.ToString() ?? "?"}/{player?.MaxCp.ToString() ?? "?"}");
         Emit(DescribeActions());
-
-        RefreshPossibleConditions();
-        Emit($"Possible conditions: [{string.Join(" | ", possibleConditions)}]");
-
         Emit($"Visible addons: {string.Join(", ", VisibleAddonNames())}");
 
         return string.Join("\n", lines);
@@ -318,11 +311,6 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                 EndSession();
                 craftEndedTick = now;
             }
-
-            // The crafting log is up between crafts, which is the only time the recipe's
-            // condition set is on screen — so it is sampled here and carried into the next
-            // session header rather than read when the header is written.
-            RefreshPossibleConditions();
 
             if (Mode != RecorderMode.Auto) return;
 
@@ -485,7 +473,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             RequiredQuality = requiredQuality,
             Durability      = durability,
             Stars           = stars,
-            PossibleConditions = possibleConditions,
+            ConditionBits   = DecodeConditionBits(conditionsFlag),
             MaxCp           = objectTable.LocalPlayer?.MaxCp ?? 0,
             StartedAtMs     = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         });
@@ -634,35 +622,20 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     }
 
     /// <summary>
-    /// Samples the SynthesisCondition window, which lists the conditions the selected recipe
-    /// can roll. Good Omen is granted per recipe rather than universally, so this set is the
-    /// only reliable statement of which population a craft's samples belong to.
+    /// Decodes the recipe's conditions bitmask into set bit positions.
     ///
-    /// Kept from the last time the window was seen, since it closes once the craft begins.
-    /// A failed read leaves the previous value rather than clearing it — collection runs one
-    /// recipe at a time, so a stale set is far less harmful than an empty one.
+    /// This replaced reading the SynthesisCondition window, which turned out to render its
+    /// conditions as icons rather than text — the only readable node there was the recipe
+    /// name. The bitmask is authoritative, needs no addon to be on screen, and cannot go
+    /// stale between crafts.
     /// </summary>
-    private void RefreshPossibleConditions()
+    private static int[] DecodeConditionBits(ushort conditionsFlag)
     {
-        var ptr = gameGui.GetAddonByName("SynthesisCondition");
-        if (ptr.IsNull || !ptr.IsReady || !ptr.IsVisible) return;
+        var bits = new List<int>();
+        for (var i = 0; i < 16; i++)
+            if ((conditionsFlag & (1 << i)) != 0) bits.Add(i);
 
-        var addon = (AtkUnitBase*)ptr.Address;
-        var found = new List<string>();
-
-        for (var i = 0; i < addon->UldManager.NodeListCount; i++)
-        {
-            var node = addon->UldManager.NodeList[i];
-            if (node == null || node->Type != NodeType.Text) continue;
-
-            // Window chrome comes through alongside the condition names; it is kept rather
-            // than filtered, because a language-specific filter here would silently drop real
-            // conditions. The analysis intersects this against observed values instead.
-            var text = ReadText((AtkTextNode*)node);
-            if (!string.IsNullOrWhiteSpace(text) && !found.Contains(text)) found.Add(text);
-        }
-
-        if (found.Count > 0) possibleConditions = found.ToArray();
+        return bits.ToArray();
     }
 
     /// <summary>
@@ -754,8 +727,14 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         // Read through the pointer and do not gate on StringLength. The client does not
         // maintain that field for addon-populated nodes — it reads 0 on nodes that are
         // plainly displaying text — so using it as an emptiness signal silently discards
-        // every value. ToString handles a genuinely empty buffer on its own.
-        text = node->NodeText.ToString() ?? string.Empty;
+        // every value.
+        //
+        // Parse as SeString rather than calling ToString: node text carries embedded payload
+        // bytes for icons and colour runs, and rendering those raw produces binary garbage
+        // wrapped around the actual words. Condition names have been clean so far, but a
+        // single payload in one would corrupt a sample invisibly.
+        var span = node->NodeText.AsSpan();
+        text = span.IsEmpty ? string.Empty : SeString.Parse(span).TextValue;
         return true;
     }
 

@@ -67,16 +67,17 @@ public sealed record CraftSessionHeader
     public required byte   Stars          { get; init; }
 
     /// <summary>
-    /// The conditions this recipe can actually roll, as displayed by the SynthesisCondition
-    /// window. Good Omen in particular is granted per recipe rather than universally, so the
-    /// set cannot be inferred from the game's full condition list.
+    /// <see cref="ConditionsFlag"/> decoded into its set bit positions — one per condition the
+    /// recipe can roll. Good Omen is granted per recipe rather than universally, so this set
+    /// genuinely varies and cannot be assumed from the game's full condition list.
     ///
-    /// These are localised strings drawn from the same source as <see cref="CraftStepSample.Condition"/>,
-    /// so the two compare directly. That makes them the pipeline's known-answer test: every
-    /// condition observed during the craft must appear here, and anything outside the set means
-    /// steps are being misread or misattributed.
+    /// The names are deliberately not resolved: fitting runs on the observed condition strings,
+    /// and the flag only has to identify which crafts belong to the same population. What this
+    /// does give is the pipeline's known-answer test — the number of distinct conditions observed
+    /// across a recipe must equal this array's length. More means steps are being misread; fewer
+    /// means the sample is simply not yet complete.
     /// </summary>
-    public required string[] PossibleConditions { get; init; }
+    public required int[] ConditionBits { get; init; }
 
     /// <summary>Player stats at craft start; the policy depends on these, so fits must not mix them silently.</summary>
     public required uint MaxCp { get; init; }

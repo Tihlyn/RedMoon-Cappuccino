@@ -5,10 +5,15 @@ using System.Text.Json;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
 using RedMoonCappuccino.Models;
+
+// Disambiguated from FFXIVClientStructs.FFXIV.Client.UI.AddonRecipeNote, which is the
+// window; this is the game-side state behind it.
+using GameRecipeNote = FFXIVClientStructs.FFXIV.Client.Game.UI.RecipeNote;
 
 namespace RedMoonCappuccino.Services;
 
@@ -56,8 +61,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     /// <summary>How often the addon is polled. Fast enough not to miss a step, slow enough to cost nothing.</summary>
     private const long PollIntervalMs = 120;
 
-    /// <summary>Minimum gap between sent actions. The client rejects anything faster and the craft stalls.</summary>
-    private const long ActionIntervalMs = 450;
+    /// <summary>
+    /// Minimum gap between sent actions, matching the 2s the game's own macro system
+    /// uses. Anything faster is rejected by the client.
+    /// </summary>
+    private const long ActionIntervalMs = 2000;
 
     /// <summary>Delay before re-pressing Trial Synthesis, so the previous craft's addon has fully torn down.</summary>
     private const long RestartDelayMs = 1200;
@@ -191,8 +199,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
         try
         {
+            // IsReady matters as much as IsVisible: the addon exists before its nodes
+            // are built, and reading a node that does not exist yet faults the client
+            // rather than throwing something catchable.
             var synthPtr = gameGui.GetAddonByName("Synthesis");
-            if (!synthPtr.IsNull && synthPtr.IsVisible)
+            if (!synthPtr.IsNull && synthPtr.IsReady && synthPtr.IsVisible)
             {
                 HandleCraft((AddonSynthesis*)synthPtr.Address, now);
                 return;
@@ -298,14 +309,24 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     {
         sessionId = Guid.NewGuid().ToString("N")[..12];
 
-        var note = FFXIVClientStructs.FFXIV.Client.Game.UI.RecipeNote.Instance();
-        var entry = note != null && note->RecipeList != null ? note->RecipeList->SelectedRecipe : null;
+        var note = GameRecipeNote.Instance();
+
+        // SelectedRecipe indexes the recipe array directly, so the bounds are checked
+        // here rather than trusted — an out-of-range read would fault the client.
+        GameRecipeNote.RecipeEntry* entry = null;
+        if (note != null)
+        {
+            var list = note->RecipeList;
+            if (list != null && list->Recipes != null && list->RecipeCount > 0 &&
+                list->SelectedIndex < list->RecipeCount)
+                entry = list->SelectedRecipe;
+        }
 
         Write("session", new CraftSessionHeader
         {
             Id              = sessionId,
             RecipeId        = note != null ? note->ActiveCraftRecipeId : (ushort)0,
-            ItemName        = entry != null ? entry->ItemName.ToString() : string.Empty,
+            ItemName        = entry != null ? ReadUtf8(entry->ItemName) : string.Empty,
             JobId           = playerState.ClassJob.RowId,
             ConditionsFlag  = entry != null ? entry->ConditionsFlag : (ushort)0,
             Difficulty      = entry != null ? entry->Difficulty : (ushort)0,
@@ -409,7 +430,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private void TryStartTrialSynthesis()
     {
         var notePtr = gameGui.GetAddonByName("RecipeNote");
-        if (notePtr.IsNull || !notePtr.IsVisible) return;
+        if (notePtr.IsNull || !notePtr.IsReady || !notePtr.IsVisible) return;
 
         var note = (AddonRecipeNote*)notePtr.Address;
         if (ClickButton(&note->AtkUnitBase, note->TrialSynthesisButton))
@@ -440,15 +461,37 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     // ── Addon reading ─────────────────────────────────────────────────────────
 
     /// <summary>
+    /// Validates a text node before dereferencing it. A pointer that does not report
+    /// <see cref="NodeType.Text"/> is either not built yet or is not the node the struct
+    /// definition claims — and reading its string would fault the client outright rather
+    /// than throw something catchable, because access violations in native memory are not
+    /// .NET exceptions. This check is also what keeps a struct-layout drift between the
+    /// compiled ClientStructs and the running client from becoming a crash instead of an
+    /// empty read.
+    /// </summary>
+    private static bool TryReadNodeText(AtkTextNode* node, out string text)
+    {
+        text = string.Empty;
+        if (node == null) return false;
+        if (((AtkResNode*)node)->Type != NodeType.Text) return false;
+
+        var utf8 = node->NodeText;
+        if (utf8.StringLength <= 0) return true; // valid node, no text in it
+
+        text = utf8.ToString();
+        return true;
+    }
+
+    /// <summary>
     /// Text nodes carry localised display strings, so digits are extracted rather than
     /// parsed — this survives thousands separators and any client language. Returns -1
-    /// when the node is absent or holds no digits, which the caller treats as "not ready".
+    /// when the node is unreadable or holds no digits, which the caller treats as
+    /// "not ready" and skips the tick.
     /// </summary>
     private static int ReadInt(AtkTextNode* node)
     {
-        if (node == null) return -1;
+        if (!TryReadNodeText(node, out var text)) return -1;
 
-        var text = node->NodeText.ToString();
         long value = 0;
         var any = false;
 
@@ -464,9 +507,18 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     }
 
     private static string ReadText(AtkTextNode* node) =>
-        node == null ? string.Empty : node->NodeText.ToString().Trim();
+        TryReadNodeText(node, out var text) ? text.Trim() : string.Empty;
 
-    /// <summary>Active buffs with their remaining steps, named as the addon displays them.</summary>
+    /// <summary>Reads an inline game string, treating an unset buffer as empty rather than reading it.</summary>
+    private static string ReadUtf8(Utf8String value) =>
+        value.StringLength <= 0 ? string.Empty : value.ToString();
+
+    /// <summary>
+    /// Active buffs with their remaining steps, named as the addon displays them.
+    /// Slots are skipped unless their container component is present — the effect pane
+    /// is rebuilt whenever a buff is applied or expires, which is precisely when an
+    /// action is used, so this runs against a structure in flux every single step.
+    /// </summary>
     private static string[] ReadEffects(AddonSynthesis* a)
     {
         var slots = new[]
@@ -478,6 +530,8 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         var active = new List<string>(slots.Length);
         foreach (var slot in slots)
         {
+            if (slot.Container == null) continue;
+
             var name = ReadText(slot.Name);
             if (string.IsNullOrWhiteSpace(name)) continue;
 

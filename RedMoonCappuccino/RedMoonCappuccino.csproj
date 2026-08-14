@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>4.7.0.41</Version>
+    <Version>4.7.0.5</Version>
     <Description>Displays market tax info, FC events, and more in a convenient UI.</Description>
     <PackageProjectUrl>https://github.com/Tihlyn/RedMoon-Cappuccino</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>

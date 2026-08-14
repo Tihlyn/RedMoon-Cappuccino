@@ -53,11 +53,30 @@ public sealed record CraftSessionHeader
     /// <summary>Bitmask of conditions this recipe can roll. Samples from differing flags are different populations.</summary>
     public required ushort ConditionsFlag { get; init; }
 
+    /// <summary>
+    /// Whether the game flags this as an expert recipe. A non-expert recipe rolls a
+    /// different condition set entirely, so its samples must never be pooled with expert
+    /// ones — this is the field that catches such a mix-up after the fact.
+    /// </summary>
+    public required bool IsExpert { get; init; }
+
     public required ushort Difficulty     { get; init; }
     public required uint   MaxQuality     { get; init; }
     public required uint   RequiredQuality { get; init; }
     public required ushort Durability     { get; init; }
     public required byte   Stars          { get; init; }
+
+    /// <summary>
+    /// The conditions this recipe can actually roll, as displayed by the SynthesisCondition
+    /// window. Good Omen in particular is granted per recipe rather than universally, so the
+    /// set cannot be inferred from the game's full condition list.
+    ///
+    /// These are localised strings drawn from the same source as <see cref="CraftStepSample.Condition"/>,
+    /// so the two compare directly. That makes them the pipeline's known-answer test: every
+    /// condition observed during the craft must appear here, and anything outside the set means
+    /// steps are being misread or misattributed.
+    /// </summary>
+    public required string[] PossibleConditions { get; init; }
 
     /// <summary>Player stats at craft start; the policy depends on these, so fits must not mix them silently.</summary>
     public required uint MaxCp { get; init; }

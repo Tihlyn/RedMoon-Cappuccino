@@ -90,7 +90,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private const long ConfirmWindowMs = 5000;
 
     /// <summary>Confirmation dialogs to answer. Ordered by likelihood; unknown ones are reported, never guessed at.</summary>
-    private static readonly string[] ConfirmDialogNames = { "SelectYesno" };
+    private static readonly string[] ConfirmDialogNames = { "RecipeNotePraticeSetting", "SelectYesno" };
 
     /// <summary>Observe's CP cost, used to identify it in the sheet and to decide when it is no longer affordable.</summary>
     private const byte ObserveCpCost = 7;
@@ -125,6 +125,10 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private long    lastUnreadableTick;
     private long    confirmWindowUntil;
     private bool    loggedUnknownDialog;
+
+    // Sampled while the crafting log is open, because the window is gone by the time the
+    // craft itself starts and the header is written.
+    private string[] possibleConditions = [];
 
     // Sample captured on entering a step, held until the action taken from it is
     // known so the pair lands on one line. Written with action 0 if the craft ends first.
@@ -261,6 +265,10 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         Emit($"Player: job={playerState.ClassJob.RowId} level={playerState.Level} " +
              $"cp={player?.CurrentCp.ToString() ?? "?"}/{player?.MaxCp.ToString() ?? "?"}");
         Emit(DescribeActions());
+
+        RefreshPossibleConditions();
+        Emit($"Possible conditions: [{string.Join(" | ", possibleConditions)}]");
+
         Emit($"Visible addons: {string.Join(", ", VisibleAddonNames())}");
 
         return string.Join("\n", lines);
@@ -310,6 +318,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                 EndSession();
                 craftEndedTick = now;
             }
+
+            // The crafting log is up between crafts, which is the only time the recipe's
+            // condition set is on screen — so it is sampled here and carried into the next
+            // session header rather than read when the header is written.
+            RefreshPossibleConditions();
 
             if (Mode != RecorderMode.Auto) return;
 
@@ -423,31 +436,56 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     {
         sessionId = Guid.NewGuid().ToString("N")[..12];
 
-        var note = GameRecipeNote.Instance();
+        var note     = GameRecipeNote.Instance();
+        var recipeId = note != null ? note->ActiveCraftRecipeId : (ushort)0;
 
-        // SelectedRecipe indexes the recipe array directly, so the bounds are checked
-        // here rather than trusted — an out-of-range read would fault the client.
-        GameRecipeNote.RecipeEntry* entry = null;
-        if (note != null)
+        // Recipe metadata is read from the sheet rather than the live RecipeNote list.
+        // By the time the Synthesis window opens, the crafting log has closed and that
+        // list is empty — which is why every header field except the id recorded as zero.
+        // ConditionsFlag matters most: it decides which condition set the recipe rolls,
+        // and samples from differing flags are separate populations that must not be
+        // pooled into one fit.
+        ushort conditionsFlag = 0, difficulty = 0, durability = 0;
+        uint   maxQuality = 0, requiredQuality = 0;
+        byte   stars = 0;
+        var    itemName = string.Empty;
+        var    isExpert = false;
+
+        var recipe = dataManager.GetExcelSheet<Recipe>()?.GetRowOrDefault(recipeId);
+        if (recipe != null)
         {
-            var list = note->RecipeList;
-            if (list != null && list->Recipes != null && list->RecipeCount > 0 &&
-                list->SelectedIndex < list->RecipeCount)
-                entry = list->SelectedRecipe;
+            var row = recipe.Value;
+            isExpert        = row.IsExpert;
+            requiredQuality = row.RequiredQuality;
+            itemName        = row.ItemResult.ValueNullable?.Name.ExtractText() ?? string.Empty;
+
+            // A recipe scales the level table's base values by a percentage factor.
+            var table = row.RecipeLevelTable.ValueNullable;
+            if (table != null)
+            {
+                var lvl = table.Value;
+                conditionsFlag = lvl.ConditionsFlag;
+                stars          = lvl.Stars;
+                difficulty     = (ushort)(lvl.Difficulty * row.DifficultyFactor / 100);
+                durability     = (ushort)(lvl.Durability * row.DurabilityFactor / 100);
+                maxQuality     = lvl.Quality * row.QualityFactor / 100u;
+            }
         }
 
         Write("session", new CraftSessionHeader
         {
             Id              = sessionId,
-            RecipeId        = note != null ? note->ActiveCraftRecipeId : (ushort)0,
-            ItemName        = entry != null ? ReadUtf8(entry->ItemName) : string.Empty,
+            RecipeId        = recipeId,
+            ItemName        = itemName,
             JobId           = playerState.ClassJob.RowId,
-            ConditionsFlag  = entry != null ? entry->ConditionsFlag : (ushort)0,
-            Difficulty      = entry != null ? entry->Difficulty : (ushort)0,
-            MaxQuality      = entry != null ? entry->Quality : 0,
-            RequiredQuality = entry != null ? entry->RequiredQuality : 0,
-            Durability      = entry != null ? entry->Durability : (ushort)0,
-            Stars           = entry != null ? entry->Stars : (byte)0,
+            ConditionsFlag  = conditionsFlag,
+            IsExpert        = isExpert,
+            Difficulty      = difficulty,
+            MaxQuality      = maxQuality,
+            RequiredQuality = requiredQuality,
+            Durability      = durability,
+            Stars           = stars,
+            PossibleConditions = possibleConditions,
             MaxCp           = objectTable.LocalPlayer?.MaxCp ?? 0,
             StartedAtMs     = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         });
@@ -571,9 +609,15 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             var ptr = gameGui.GetAddonByName(name);
             if (ptr.IsNull || !ptr.IsReady || !ptr.IsVisible) continue;
 
-            // 0 is the affirmative callback for the game's yes/no dialogs.
-            ((AtkUnitBase*)ptr.Address)->FireCallbackInt(0);
-            log.Information($"[CraftRecorder] Confirmed '{name}'.");
+            var dialog = (AtkUnitBase*)ptr.Address;
+
+            // Button inventory is logged before the click, not instead of it: if callback 0
+            // turns out not to be the affirmative option on this window, the ids and labels
+            // needed to click the right one directly are already in the log.
+            log.Information($"[CraftRecorder] Confirming '{name}'. Buttons: {string.Join(" | ", DescribeButtons(dialog))}");
+
+            // 0 is the affirmative callback for the game's confirmation windows.
+            dialog->FireCallbackInt(0);
 
             confirmWindowUntil = 0;
             return true;
@@ -587,6 +631,63 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Samples the SynthesisCondition window, which lists the conditions the selected recipe
+    /// can roll. Good Omen is granted per recipe rather than universally, so this set is the
+    /// only reliable statement of which population a craft's samples belong to.
+    ///
+    /// Kept from the last time the window was seen, since it closes once the craft begins.
+    /// A failed read leaves the previous value rather than clearing it — collection runs one
+    /// recipe at a time, so a stale set is far less harmful than an empty one.
+    /// </summary>
+    private void RefreshPossibleConditions()
+    {
+        var ptr = gameGui.GetAddonByName("SynthesisCondition");
+        if (ptr.IsNull || !ptr.IsReady || !ptr.IsVisible) return;
+
+        var addon = (AtkUnitBase*)ptr.Address;
+        var found = new List<string>();
+
+        for (var i = 0; i < addon->UldManager.NodeListCount; i++)
+        {
+            var node = addon->UldManager.NodeList[i];
+            if (node == null || node->Type != NodeType.Text) continue;
+
+            // Window chrome comes through alongside the condition names; it is kept rather
+            // than filtered, because a language-specific filter here would silently drop real
+            // conditions. The analysis intersects this against observed values instead.
+            var text = ReadText((AtkTextNode*)node);
+            if (!string.IsNullOrWhiteSpace(text) && !found.Contains(text)) found.Add(text);
+        }
+
+        if (found.Count > 0) possibleConditions = found.ToArray();
+    }
+
+    /// <summary>
+    /// Every button in an addon, with node id, enabled state and label. Used to identify the
+    /// affirmative control on a window ClientStructs has no typed definition for, so it can be
+    /// clicked by id rather than by guessing at callback numbers.
+    /// </summary>
+    private static List<string> DescribeButtons(AtkUnitBase* addon)
+    {
+        var buttons = new List<string>();
+        if (addon == null) return buttons;
+
+        for (var i = 0; i < addon->UldManager.NodeListCount; i++)
+        {
+            var node = addon->UldManager.NodeList[i];
+            if (node == null || node->Type != NodeType.Component) continue;
+
+            var component = ((AtkComponentNode*)node)->Component;
+            if (component == null || component->GetComponentType() != ComponentType.Button) continue;
+
+            var button = (AtkComponentButton*)component;
+            buttons.Add($"id={node->NodeId} enabled={button->IsEnabled} '{ReadText(button->ButtonTextNode)}'");
+        }
+
+        return buttons;
     }
 
     /// <summary>Names of every visible loaded addon, for identifying a window we do not yet handle.</summary>

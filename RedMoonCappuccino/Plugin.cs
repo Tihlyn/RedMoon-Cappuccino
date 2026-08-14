@@ -258,8 +258,10 @@ public sealed class Plugin : IDalamudPlugin
                 break;
 
             case "probe":
+                // Probe already writes each line to the log as it produces it, so this
+                // only mirrors to chat — logging again would double every diagnostic.
                 foreach (var line in CraftRecorder.Probe().Split('\n'))
-                    ChatGui_Print(line);
+                    ChatGui.Print(line);
                 break;
 
             default:

@@ -255,8 +255,14 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         if (node == null) return "<null>";
 
         var type = ((AtkResNode*)node)->Type;
-        var text = TryReadNodeText(node, out var value) ? $"'{value.Trim()}'" : "<unreadable>";
-        return $"0x{(nint)node:X} type={type} {text}";
+        if (type != NodeType.Text) return $"0x{(nint)node:X} type={type} <not a text node>";
+
+        // The raw buffer fields are reported alongside the value so that an empty read is
+        // immediately distinguishable from an empty node, rather than needing another pass.
+        var text = TryReadNodeText(node, out var value) ? value.Trim() : "<unreadable>";
+        return $"0x{(nint)node:X} type={type} '{text}' " +
+               $"(bufUsed={node->NodeText.BufUsed} strLen={node->NodeText.StringLength} " +
+               $"empty={node->NodeText.IsEmpty})";
     }
 
     // ── Framework loop ────────────────────────────────────────────────────────
@@ -560,10 +566,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         if (node == null) return false;
         if (((AtkResNode*)node)->Type != NodeType.Text) return false;
 
-        var utf8 = node->NodeText;
-        if (utf8.StringLength <= 0) return true; // valid node, no text in it
-
-        text = utf8.ToString();
+        // Read through the pointer and do not gate on StringLength. The client does not
+        // maintain that field for addon-populated nodes — it reads 0 on nodes that are
+        // plainly displaying text — so using it as an emptiness signal silently discards
+        // every value. ToString handles a genuinely empty buffer on its own.
+        text = node->NodeText.ToString() ?? string.Empty;
         return true;
     }
 

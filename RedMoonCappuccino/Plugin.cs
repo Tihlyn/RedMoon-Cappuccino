@@ -27,11 +27,13 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameGui                GameGui             { get; private set; } = null!;
     [PluginService] internal static IGameInteropProvider    GameInterop         { get; private set; } = null!;
     [PluginService] internal static IFramework              Framework           { get; private set; } = null!;
+    [PluginService] internal static IChatGui                ChatGui             { get; private set; } = null!;
 
     private const string CommandName    = "/rmcap";
     private const string CommandDpsCheck = "/dpscheck";
     private const string CommandLiveChat = "/livechat";
     private const string CommandRoute    = "/route";
+    private const string CommandCraft    = "/rmccraft";
 
     public Configuration Configuration { get; init; }
     /// <summary>Alias used by RotationRecorder components.</summary>
@@ -44,6 +46,7 @@ public sealed class Plugin : IDalamudPlugin
     public readonly NotificationService EventNotifications;
     public readonly SubmarineRouteService SubmarineRoutes;
     public readonly SubmarineGameData     SubmarineGame;
+    public readonly CraftDataRecorder     CraftRecorder;
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
@@ -86,6 +89,9 @@ public sealed class Plugin : IDalamudPlugin
         SubmarineRoutes = new SubmarineRouteService(PluginInterface, Log);
         SubmarineGame   = new SubmarineGameData(SubmarineRoutes, Configuration, Framework, Log);
 
+        // Condition-sample collection for the crafting solver. Idle until /rmccraft starts it.
+        CraftRecorder = new CraftDataRecorder(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, Log);
+
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
         configWindow = new ConfigWindow(this);
@@ -127,6 +133,10 @@ public sealed class Plugin : IDalamudPlugin
         {
             HelpMessage = "Toggle the submersible route planner.",
         });
+        CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
+        {
+            HelpMessage = "Craft condition recorder: start | auto | stop | actions.",
+        });
 
         // UI hooks
         PluginInterface.UiBuilder.Draw         += DrawUI;
@@ -153,6 +163,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandDpsCheck);
         CommandManager.RemoveHandler(CommandLiveChat);
         CommandManager.RemoveHandler(CommandRoute);
+        CommandManager.RemoveHandler(CommandCraft);
 
         _recorderWindow.Dispose();
         _geminiAnalyzer.Dispose();
@@ -166,6 +177,7 @@ public sealed class Plugin : IDalamudPlugin
         chatWindow.Dispose();
         routeWindow.Dispose();
 
+        CraftRecorder.Dispose();
         SubmarineGame.Dispose();
         EventNotifications.Dispose();
         ChatService.Dispose();
@@ -216,6 +228,47 @@ public sealed class Plugin : IDalamudPlugin
                 FFXIVClientStructs.FFXIV.Client.UI.UIGlobals.PlayChatSoundEffect(DmChimeSoundId);
             }
         });
+    }
+
+    /// <summary>
+    /// Craft condition recorder. "start" records crafts driven by hand; "auto" also
+    /// presses Trial Synthesis and spams cheap actions to run the step counter up.
+    /// </summary>
+    private void OnCraftCommand(string command, string args)
+    {
+        switch (args.Trim().ToLowerInvariant())
+        {
+            case "start":
+                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Observe);
+                ChatGui_Print("Craft recorder started (observe only). Craft normally; steps are logged.");
+                break;
+
+            case "auto":
+                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Auto);
+                ChatGui_Print("Craft recorder started (auto). Open the crafting log with an expert recipe selected.");
+                break;
+
+            case "stop":
+                CraftRecorder.Stop();
+                ChatGui_Print("Craft recorder stopped.");
+                break;
+
+            case "actions":
+                ChatGui_Print(CraftRecorder.DescribeActions());
+                break;
+
+            default:
+                ChatGui_Print(CraftRecorder.Summarise());
+                ChatGui_Print("Usage: /rmccraft start | auto | stop | actions");
+                break;
+        }
+    }
+
+    /// <summary>Command feedback goes to chat as well as the log, since the recorder runs unattended.</summary>
+    private static void ChatGui_Print(string message)
+    {
+        Log.Information($"[CraftRecorder] {message}");
+        ChatGui.Print(message);
     }
 
     private void OnCommand(string command, string args) => ToggleMainUI();

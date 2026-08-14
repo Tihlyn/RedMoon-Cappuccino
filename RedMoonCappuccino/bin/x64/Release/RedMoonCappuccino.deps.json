@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "RedMoonCappuccino/4.6.2.0": {
+      "RedMoonCappuccino/4.7.0.0": {
         "runtime": {
           "RedMoonCappuccino.dll": {}
         }
@@ -14,7 +14,7 @@
     }
   },
   "libraries": {
-    "RedMoonCappuccino/4.6.2.0": {
+    "RedMoonCappuccino/4.7.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

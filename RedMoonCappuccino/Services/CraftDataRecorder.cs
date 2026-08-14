@@ -80,6 +80,18 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     /// <summary>Throttle for the unreadable-addon warning, so a bad read cannot spam the log.</summary>
     private const long UnreadableLogIntervalMs = 5000;
 
+    /// <summary>
+    /// How long after pressing Trial Synthesis a confirmation dialog will be accepted.
+    /// This scoping is a safety property, not a timeout: SelectYesno is the same window
+    /// the game uses to confirm trades, discards and desynthesis, so confirming one
+    /// unconditionally while the loop runs unattended could agree to anything. Only a
+    /// dialog that appears in the moment after our own click is ever answered.
+    /// </summary>
+    private const long ConfirmWindowMs = 5000;
+
+    /// <summary>Confirmation dialogs to answer. Ordered by likelihood; unknown ones are reported, never guessed at.</summary>
+    private static readonly string[] ConfirmDialogNames = { "SelectYesno" };
+
     /// <summary>Observe's CP cost, used to identify it in the sheet and to decide when it is no longer affordable.</summary>
     private const byte ObserveCpCost = 7;
 
@@ -111,6 +123,8 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private long    craftEndedTick;
     private long    lastStepTick;
     private long    lastUnreadableTick;
+    private long    confirmWindowUntil;
+    private bool    loggedUnknownDialog;
 
     // Sample captured on entering a step, held until the action taken from it is
     // known so the pair lands on one line. Written with action 0 if the craft ends first.
@@ -168,6 +182,8 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         lastStep = -1;
         inCraft  = false;
         pending  = null;
+        confirmWindowUntil  = 0;
+        loggedUnknownDialog = false;
 
         Mode = mode;
         log.Information($"[CraftRecorder] Started in {mode}. Writing to {OutputPath}");
@@ -245,6 +261,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         Emit($"Player: job={playerState.ClassJob.RowId} level={playerState.Level} " +
              $"cp={player?.CurrentCp.ToString() ?? "?"}/{player?.MaxCp.ToString() ?? "?"}");
         Emit(DescribeActions());
+        Emit($"Visible addons: {string.Join(", ", VisibleAddonNames())}");
 
         return string.Join("\n", lines);
     }
@@ -294,8 +311,14 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                 craftEndedTick = now;
             }
 
-            if (Mode == RecorderMode.Auto && now - craftEndedTick >= RestartDelayMs)
-                TryStartTrialSynthesis();
+            if (Mode != RecorderMode.Auto) return;
+
+            // The confirmation dialog sits between pressing Trial Synthesis and the craft
+            // actually starting, so it has to be cleared before anything else is attempted.
+            if (TryConfirmDialog(now)) return;
+
+            if (now - craftEndedTick >= RestartDelayMs)
+                TryStartTrialSynthesis(now);
         }
         catch (Exception ex)
         {
@@ -518,14 +541,75 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     /// is closed or the button is disabled, so the loop simply idles until the player
     /// puts the game back in a state where it can continue.
     /// </summary>
-    private void TryStartTrialSynthesis()
+    private void TryStartTrialSynthesis(long now)
     {
         var notePtr = gameGui.GetAddonByName("RecipeNote");
         if (notePtr.IsNull || !notePtr.IsReady || !notePtr.IsVisible) return;
 
         var note = (AddonRecipeNote*)notePtr.Address;
-        if (ClickButton(&note->AtkUnitBase, note->TrialSynthesisButton))
-            craftEndedTick = Environment.TickCount64; // re-arm the delay in case the click did not take
+        if (!ClickButton(&note->AtkUnitBase, note->TrialSynthesisButton)) return;
+
+        // Open the window in which a confirmation dialog will be answered, and re-arm the
+        // restart delay so a click that did not take is retried rather than hammered.
+        confirmWindowUntil = now + ConfirmWindowMs;
+        craftEndedTick     = now;
+    }
+
+    /// <summary>
+    /// Answers the settings-confirmation dialog that stands between Trial Synthesis and the
+    /// craft. Only fires inside the window opened by our own button press — see
+    /// <see cref="ConfirmWindowMs"/> for why that scoping is load-bearing rather than
+    /// cosmetic. An unrecognised dialog is reported with everything currently on screen, so
+    /// a wrong addon name identifies itself from the log instead of needing another probe.
+    /// </summary>
+    private bool TryConfirmDialog(long now)
+    {
+        if (now > confirmWindowUntil) return false;
+
+        foreach (var name in ConfirmDialogNames)
+        {
+            var ptr = gameGui.GetAddonByName(name);
+            if (ptr.IsNull || !ptr.IsReady || !ptr.IsVisible) continue;
+
+            // 0 is the affirmative callback for the game's yes/no dialogs.
+            ((AtkUnitBase*)ptr.Address)->FireCallbackInt(0);
+            log.Information($"[CraftRecorder] Confirmed '{name}'.");
+
+            confirmWindowUntil = 0;
+            return true;
+        }
+
+        if (!loggedUnknownDialog)
+        {
+            loggedUnknownDialog = true;
+            log.Warning("[CraftRecorder] Trial Synthesis pressed but no known confirmation dialog appeared. " +
+                        $"Visible addons: {string.Join(", ", VisibleAddonNames())}");
+        }
+
+        return false;
+    }
+
+    /// <summary>Names of every visible loaded addon, for identifying a window we do not yet handle.</summary>
+    private static List<string> VisibleAddonNames()
+    {
+        var names = new List<string>();
+
+        var stage = AtkStage.Instance();
+        if (stage == null || stage->RaptureAtkUnitManager == null) return names;
+
+        ref var list = ref stage->RaptureAtkUnitManager->AtkUnitManager.AllLoadedUnitsList;
+        var entries = list.Entries;
+
+        for (var i = 0; i < list.Count && i < entries.Length; i++)
+        {
+            var unit = entries[i].Value;
+            if (unit == null || !unit->IsVisible) continue;
+
+            var name = unit->NameString;
+            if (!string.IsNullOrEmpty(name)) names.Add(name);
+        }
+
+        return names;
     }
 
     /// <summary>

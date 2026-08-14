@@ -135,7 +135,7 @@ public sealed class Plugin : IDalamudPlugin
         });
         CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
         {
-            HelpMessage = "Craft condition recorder: start | auto | stop | actions.",
+            HelpMessage = "Craft condition recorder: start | auto | stop | actions | probe.",
         });
 
         // UI hooks
@@ -257,9 +257,14 @@ public sealed class Plugin : IDalamudPlugin
                 ChatGui_Print(CraftRecorder.DescribeActions());
                 break;
 
+            case "probe":
+                foreach (var line in CraftRecorder.Probe().Split('\n'))
+                    ChatGui_Print(line);
+                break;
+
             default:
                 ChatGui_Print(CraftRecorder.Summarise());
-                ChatGui_Print("Usage: /rmccraft start | auto | stop | actions");
+                ChatGui_Print("Usage: /rmccraft start | auto | stop | actions | probe");
                 break;
         }
     }

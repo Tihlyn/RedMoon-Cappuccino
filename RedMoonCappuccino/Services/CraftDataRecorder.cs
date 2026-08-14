@@ -77,6 +77,9 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     /// </summary>
     private const long StallTimeoutMs = 30_000;
 
+    /// <summary>Throttle for the unreadable-addon warning, so a bad read cannot spam the log.</summary>
+    private const long UnreadableLogIntervalMs = 5000;
+
     /// <summary>Observe's CP cost, used to identify it in the sheet and to decide when it is no longer affordable.</summary>
     private const byte ObserveCpCost = 7;
 
@@ -107,6 +110,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private long    lastActionTick;
     private long    craftEndedTick;
     private long    lastStepTick;
+    private long    lastUnreadableTick;
 
     // Sample captured on entering a step, held until the action taken from it is
     // known so the pair lands on one line. Written with action 0 if the craft ends first.
@@ -187,6 +191,74 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             : $"filler={fillerName} ({fillerActionId}), observe={observeName} ({observeActionId})";
     }
 
+    /// <summary>
+    /// One-shot dump of everything the reader can currently see, run on demand with a
+    /// craft open. It deliberately ignores the gates the polling loop applies and reads
+    /// anyway, because the question it answers is <em>which</em> gate is shut.
+    ///
+    /// A node reporting <c>Text</c> with sensible content means the struct layout matches
+    /// and any empty log is a gating problem. Nodes reporting a wrong type, or a non-null
+    /// address with nothing readable behind it, mean the compiled ClientStructs disagrees
+    /// with the running client and the offsets are pointing at the wrong memory.
+    /// </summary>
+    public string Probe()
+    {
+        var lines = new List<string>();
+
+        // Each line is logged the moment it is produced, not at the end. A native fault
+        // takes the client down without unwinding, so the last line in the Dalamud log
+        // names the read that caused it — which is the whole diagnostic value here.
+        void Emit(string line)
+        {
+            lines.Add(line);
+            log.Information($"[CraftRecorder] probe: {line}");
+        }
+
+        var synthPtr = gameGui.GetAddonByName("Synthesis");
+        Emit(synthPtr.IsNull
+            ? "Synthesis: not found"
+            : $"Synthesis: ready={synthPtr.IsReady} visible={synthPtr.IsVisible} addr=0x{synthPtr.Address:X}");
+
+        if (!synthPtr.IsNull)
+        {
+            var a = (AddonSynthesis*)synthPtr.Address;
+            Emit($"  Step       {Describe(a->StepNumber)}");
+            Emit($"  Condition  {Describe(a->Condition)}");
+            Emit($"  Progress   {Describe(a->CurrentProgress)} / {Describe(a->MaxProgress)}");
+            Emit($"  Quality    {Describe(a->CurrentQuality)} / {Describe(a->MaxQuality)}");
+            Emit($"  Durability {Describe(a->CurrentDurability)}");
+            Emit($"  Effects    [{string.Join(" | ", ReadEffects(a))}]");
+        }
+
+        var notePtr = gameGui.GetAddonByName("RecipeNote");
+        Emit(notePtr.IsNull
+            ? "RecipeNote: not found"
+            : $"RecipeNote: ready={notePtr.IsReady} visible={notePtr.IsVisible}");
+
+        if (!notePtr.IsNull)
+        {
+            var button = ((AddonRecipeNote*)notePtr.Address)->TrialSynthesisButton;
+            Emit($"  TrialSynthesis button: {(button == null ? "null" : $"enabled={button->IsEnabled}")}");
+        }
+
+        var player = objectTable.LocalPlayer;
+        Emit($"Player: job={playerState.ClassJob.RowId} level={playerState.Level} " +
+             $"cp={player?.CurrentCp.ToString() ?? "?"}/{player?.MaxCp.ToString() ?? "?"}");
+        Emit(DescribeActions());
+
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>Reports a node's address, self-declared type and text, so a bad offset is visible rather than inferred.</summary>
+    private static string Describe(AtkTextNode* node)
+    {
+        if (node == null) return "<null>";
+
+        var type = ((AtkResNode*)node)->Type;
+        var text = TryReadNodeText(node, out var value) ? $"'{value.Trim()}'" : "<unreadable>";
+        return $"0x{(nint)node:X} type={type} {text}";
+    }
+
     // ── Framework loop ────────────────────────────────────────────────────────
 
     private void OnFrameworkUpdate(IFramework _)
@@ -199,11 +271,12 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
         try
         {
-            // IsReady matters as much as IsVisible: the addon exists before its nodes
-            // are built, and reading a node that does not exist yet faults the client
-            // rather than throwing something catchable.
+            // Deliberately gated on visibility alone. IsReady is the addon's own opinion
+            // of itself and gating on it risks closing the door permanently for a window
+            // that never reports ready; the per-node type validation below is the actual
+            // safety guarantee, and it is the stronger of the two.
             var synthPtr = gameGui.GetAddonByName("Synthesis");
-            if (!synthPtr.IsNull && synthPtr.IsReady && synthPtr.IsVisible)
+            if (!synthPtr.IsNull && synthPtr.IsVisible)
             {
                 HandleCraft((AddonSynthesis*)synthPtr.Address, now);
                 return;
@@ -229,7 +302,19 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private void HandleCraft(AddonSynthesis* synth, long now)
     {
         var step = ReadInt(synth->StepNumber);
-        if (step < 0) return; // addon open but not yet populated
+        if (step < 0)
+        {
+            // Never fail silently here: an open craft whose step node cannot be read is
+            // the signature of a struct-layout drift, and staying quiet about it produces
+            // an empty log with no explanation.
+            if (now - lastUnreadableTick > UnreadableLogIntervalMs)
+            {
+                lastUnreadableTick = now;
+                log.Warning("[CraftRecorder] Synthesis is open but its step node is unreadable. " +
+                            "Run /rmccraft probe to see what the reader sees.");
+            }
+            return;
+        }
 
         if (!inCraft)
         {

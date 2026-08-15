@@ -252,12 +252,29 @@ public sealed class Plugin : IDalamudPlugin
                 break;
 
             case "study":
-                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Study, rest);
-                ChatGui_Print(rest == null
-                    ? "Study mode started. Rerolls fire whenever a charge is available."
-                    : $"Study mode started, spending rerolls on '{rest}'.");
-                ChatGui_Print("This data is deliberately biased — do not pool it into a weight fit.");
+            {
+                // Specialist actions each consume a Crafter's Delineation, so spending them has
+                // to be asked for by name rather than inherited from starting the mode.
+                var spend  = rest != null && rest.Contains("--spend", System.StringComparison.OrdinalIgnoreCase);
+                var target = rest?.Replace("--spend", string.Empty, System.StringComparison.OrdinalIgnoreCase).Trim();
+                if (string.IsNullOrWhiteSpace(target)) target = null;
+
+                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Study, target, spend);
+
+                if (!spend)
+                {
+                    ChatGui_Print("Study mode started WITHOUT spending Delineations — it records rerolls "
+                                + "you trigger by hand but fires no specialist actions itself.");
+                    ChatGui_Print("Add --spend to let it use Careful Observation (1 Delineation each, 3 per craft).");
+                }
+                else
+                {
+                    ChatGui_Print($"Study mode started and WILL SPEND Crafter's Delineations"
+                                + (target == null ? "." : $", targeting '{target}'."));
+                    ChatGui_Print("Up to 3 per craft. This data is deliberately biased — never pool it into a weight fit.");
+                }
                 break;
+            }
 
             case "stop":
                 CraftRecorder.Stop();
@@ -277,7 +294,7 @@ public sealed class Plugin : IDalamudPlugin
 
             default:
                 ChatGui_Print(CraftRecorder.Summarise());
-                ChatGui_Print("Usage: /rmccraft start | auto | study [condition] | stop | actions | probe");
+                ChatGui_Print("Usage: /rmccraft start | auto | study [condition] [--spend] | stop | actions | probe");
                 break;
         }
     }

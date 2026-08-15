@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
@@ -159,7 +160,12 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     /// <summary>Condition to spend rerolls on, when set. Matched against the displayed name.</summary>
     private string? studyTarget;
 
-    private bool heartSoulTried;
+    /// <summary>
+    /// Explicit consent to spend Crafter's Delineations. Every specialist action costs one —
+    /// Careful Observation included, three per craft — so an unattended loop firing them would
+    /// burn real currency by the hundred. Off unless the operator asks for it by name.
+    /// </summary>
+    private bool spendDelineations;
 
     public CraftDataRecorder(IDalamudPluginInterface pluginInterface, IFramework framework, IGameGui gameGui,
                              IObjectTable objectTable, IPlayerState playerState, IDataManager dataManager,
@@ -184,11 +190,12 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void Start(RecorderMode mode, string? studyTargetCondition = null)
+    public void Start(RecorderMode mode, string? studyTargetCondition = null, bool allowDelineations = false)
     {
         if (mode == RecorderMode.Off) { Stop(); return; }
 
-        studyTarget = string.IsNullOrWhiteSpace(studyTargetCondition) ? null : studyTargetCondition.Trim();
+        studyTarget       = string.IsNullOrWhiteSpace(studyTargetCondition) ? null : studyTargetCondition.Trim();
+        spendDelineations = allowDelineations;
 
         if (Mode != RecorderMode.Off)
         {
@@ -211,7 +218,6 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         pending  = null;
         confirmWindowUntil  = 0;
         loggedUnknownDialog = false;
-        heartSoulTried      = false;
 
         Mode = mode;
         log.Information($"[CraftRecorder] Started in {mode}. Writing to {OutputPath}");
@@ -234,8 +240,9 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             return "No craft actions resolved — log in on a crafter with the recipe's job.";
 
         var specialist = carefulObsActionId == 0
-            ? "reroll=<none: not a specialist>"
-            : $"reroll={carefulObsName} ({carefulObsActionId}), forceGood={heartSoulName} ({heartSoulActionId})";
+            ? "specialist=<none: not a specialist>"
+            : $"reroll={carefulObsName} ({carefulObsActionId}), {heartSoulName} ({heartSoulActionId}) " +
+              "— every specialist action costs a Crafter's Delineation and none fire without --spend";
 
         return $"filler={fillerName} ({fillerActionId}), observe={observeName} ({observeActionId}), " +
                $"buff={appraisalName} ({appraisalActionId}), {specialist}";
@@ -428,8 +435,17 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             return;
         }
 
-        if (pending == null) return;
         if (now - lastActionTick < ActionIntervalMs) return;
+
+        // An action that advances neither the step counter nor the condition moves nothing the
+        // detection above watches, so `pending` would stay null and the driver would idle until
+        // the stall guard fired. Recapture once the action interval has elapsed — by then a
+        // normal action has already advanced the step and refilled it, so this only fires for
+        // the genuinely step-neutral case.
+        //
+        // The "continue" trigger is itself a measurement: one appearing directly after a reroll
+        // means the reroll returned the condition it started from.
+        pending ??= CaptureStep(synth, step, "continue");
 
         var actionId = Mode == RecorderMode.Study
             ? ChooseStudyAction(pending)
@@ -533,7 +549,6 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         inCraft       = false;
         lastStep      = -1;
         lastCondition = string.Empty;
-        heartSoulTried = false;
         SessionsRecorded++;
     }
 
@@ -553,43 +568,36 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     }
 
     /// <summary>
-    /// Study policy. Unlike <see cref="ChooseAction"/> this is deliberately condition-aware,
-    /// because the questions it exists to answer are about what specialist actions do:
+    /// Study policy.
     ///
-    ///   * a cheap buff is put up first, so a later reroll reveals whether a step-neutral
-    ///     action ticks buff timers — asserted earlier in planning, never verified;
-    ///   * rerolls are aimed at <see cref="studyTarget"/> when one is set, to measure whether
-    ///     a telegraph survives being rerolled away. That is the difference between Careful
-    ///     Observation on a telegraph being free information or a blunder;
-    ///   * leftover charges are spent once CP runs low rather than wasted.
+    /// <para>Every specialist action costs a Crafter's Delineation — Careful Observation three
+    /// times per craft, Heart and Soul and Quick Innovation once each — so none of them fire
+    /// unless <see cref="spendDelineations"/> was set explicitly. An unattended loop spending
+    /// four of a real currency per craft is not a default anybody should get by accident.</para>
     ///
-    /// Charges are not counted here. An exhausted or unavailable action fails
-    /// <see cref="SendAction"/>'s status check and the next candidate is tried instead, which
-    /// also makes the whole mode a no-op on a non-specialist character.
+    /// <para>Most of what this mode was built to measure is now answered from tooltips: Careful
+    /// Observation "preserves the status of any actions presently in effect", so step-neutral
+    /// actions do not tick buff timers; Robust and Good Omen state their guarantees outright.
+    /// What remains is the reroll's own draw distribution, which is only worth a Delineation if
+    /// you decide it is.</para>
+    ///
+    /// <para>Reroll <em>detection</em> is unconditional and free, so ordinary Observe recording
+    /// captures any specialist action the player fires by hand.</para>
     /// </summary>
     private uint ChooseStudyAction(CraftStepSample state)
     {
         ResolveActions();
 
-        var endgame = state.Cp < ObserveCpCost * 10;
-
-        // Cheapest buff in the game; its only job here is to have a timer worth watching.
-        if (appraisalActionId != 0 && state.Effects.Length == 0 && state.Cp > 200 &&
-            IsUsable(appraisalActionId))
-            return appraisalActionId;
+        if (!spendDelineations) return ChooseAction(state.Cp);
 
         if (carefulObsActionId != 0 && IsUsable(carefulObsActionId))
         {
             var onTarget = studyTarget != null &&
                            string.Equals(state.Condition, studyTarget, StringComparison.OrdinalIgnoreCase);
-            if (onTarget || studyTarget == null || endgame)
-                return carefulObsActionId;
-        }
+            var endgame  = state.Cp < ObserveCpCost * 10;
 
-        if (!heartSoulTried && endgame && heartSoulActionId != 0 && IsUsable(heartSoulActionId))
-        {
-            heartSoulTried = true;
-            return heartSoulActionId;
+            if (onTarget || (studyTarget == null && endgame))
+                return carefulObsActionId;
         }
 
         return ChooseAction(state.Cp);
@@ -634,8 +642,10 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         int fillerLevel = int.MaxValue, observeLevel = int.MaxValue, appraisalLevel = int.MaxValue;
         string fillerN = "?", observeN = "?", appraisalN = "?";
 
-        // The two specialist actions are both 0 CP, so level separates them: the reroll is the
-        // low-level one, the force-Good is the high-level one.
+        // Three specialist actions exist, all 0 CP and all costing a Crafter's Delineation:
+        // Careful Observation, Heart and Soul, Quick Innovation. Level orders them, so the
+        // reroll is the lowest. All three are collected so the roster can be reported honestly
+        // rather than the two that were originally assumed.
         var specialists = new List<(int Level, uint Id, string Name)>();
 
         foreach (var row in sheet)
@@ -682,9 +692,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
         resolvedForJob = job;
 
+        var roster = string.Join(", ", specialists.Select(s => $"{s.Name} ({s.Id}, lv{s.Level})"));
         log.Information($"[CraftRecorder] Actions for job {job}: filler={fillerN} ({filler}), " +
-                        $"observe={observeN} ({observe}), buff={appraisalN} ({appraisal}), " +
-                        $"reroll={carefulObsName} ({carefulObsActionId}), forceGood={heartSoulName} ({heartSoulActionId})");
+                        $"observe={observeN} ({observe}), buff={appraisalN} ({appraisal})");
+        log.Information($"[CraftRecorder] Specialist actions (each costs a Crafter's Delineation): " +
+                        $"{(roster.Length > 0 ? roster : "<none — not a specialist>")}");
     }
 
     // ── Restarting the craft ──────────────────────────────────────────────────

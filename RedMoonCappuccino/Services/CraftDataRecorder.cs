@@ -44,8 +44,16 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         Off,
         /// <summary>Record steps from crafts the player drives by hand.</summary>
         Observe,
-        /// <summary>Record and drive trial syntheses in a loop.</summary>
+        /// <summary>Record and drive trial syntheses in a loop, condition-blind.</summary>
         Auto,
+        /// <summary>
+        /// Drive as Auto, but deliberately spend specialist actions to measure behaviour the
+        /// condition-blind runs cannot reach: what a Careful Observation reroll draws from,
+        /// whether a telegraph survives being rerolled, and whether buff timers tick across
+        /// a step-neutral action. Deliberately biased — this data answers mechanics questions
+        /// and must never be pooled into a weight fit.
+        /// </summary>
+        Study,
     }
 
     // ── Services ──────────────────────────────────────────────────────────────
@@ -119,6 +127,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private string  sessionId  = string.Empty;
     private bool    inCraft;
     private int     lastStep = -1;
+    private string  lastCondition = string.Empty;
     private long    lastPollTick;
     private long    lastActionTick;
     private long    craftEndedTick;
@@ -137,6 +146,20 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private string fillerName  = "?";
     private string observeName = "?";
     private uint   resolvedForJob;
+
+    // Study mode only. Charges are not tracked locally: GetActionStatus already reports an
+    // exhausted or unavailable action, so an attempt that fails simply falls through.
+    private uint carefulObsActionId;   // specialist, 0 CP, lower level — rerolls the condition
+    private uint heartSoulActionId;    // specialist, 0 CP, higher level — forces Good
+    private uint appraisalActionId;    // 1 CP — the cheapest buff, used to expose timer ticks
+    private string carefulObsName = "?";
+    private string heartSoulName  = "?";
+    private string appraisalName  = "?";
+
+    /// <summary>Condition to spend rerolls on, when set. Matched against the displayed name.</summary>
+    private string? studyTarget;
+
+    private bool heartSoulTried;
 
     public CraftDataRecorder(IDalamudPluginInterface pluginInterface, IFramework framework, IGameGui gameGui,
                              IObjectTable objectTable, IPlayerState playerState, IDataManager dataManager,
@@ -161,9 +184,11 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void Start(RecorderMode mode)
+    public void Start(RecorderMode mode, string? studyTargetCondition = null)
     {
         if (mode == RecorderMode.Off) { Stop(); return; }
+
+        studyTarget = string.IsNullOrWhiteSpace(studyTargetCondition) ? null : studyTargetCondition.Trim();
 
         if (Mode != RecorderMode.Off)
         {
@@ -181,10 +206,12 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         SessionsRecorded = 0;
         conditionCounts.Clear();
         lastStep = -1;
+        lastCondition = string.Empty;
         inCraft  = false;
         pending  = null;
         confirmWindowUntil  = 0;
         loggedUnknownDialog = false;
+        heartSoulTried      = false;
 
         Mode = mode;
         log.Information($"[CraftRecorder] Started in {mode}. Writing to {OutputPath}");
@@ -203,9 +230,15 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     public string DescribeActions()
     {
         ResolveActions();
-        return fillerActionId == 0 && observeActionId == 0
-            ? "No craft actions resolved — log in on a crafter with the recipe's job."
-            : $"filler={fillerName} ({fillerActionId}), observe={observeName} ({observeActionId})";
+        if (fillerActionId == 0 && observeActionId == 0)
+            return "No craft actions resolved — log in on a crafter with the recipe's job.";
+
+        var specialist = carefulObsActionId == 0
+            ? "reroll=<none: not a specialist>"
+            : $"reroll={carefulObsName} ({carefulObsActionId}), forceGood={heartSoulName} ({heartSoulActionId})";
+
+        return $"filler={fillerName} ({fillerActionId}), observe={observeName} ({observeActionId}), " +
+               $"buff={appraisalName} ({appraisalActionId}), {specialist}";
     }
 
     /// <summary>
@@ -354,17 +387,29 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             lastStepTick = now;
         }
 
-        if (step != lastStep)
+        var condition = ReadText(synth->Condition);
+
+        // A condition that changes while the step counter does not is a reroll — Careful
+        // Observation is step-neutral, so watching the step alone made it invisible. Empty
+        // reads are ignored rather than treated as a change, since a mid-update addon can
+        // briefly return nothing.
+        var stepChanged      = step != lastStep;
+        var conditionChanged = !stepChanged
+                            && lastCondition.Length > 0
+                            && condition.Length > 0
+                            && condition != lastCondition;
+
+        if (stepChanged || conditionChanged)
         {
             lastStepTick = now;
 
-            // Previous step's action never landed (player acted, or craft moved on) — record what we have.
+            // Previous state's action never landed (player acted, or craft moved on) — record what we have.
             FlushPending(0);
 
-            lastStep = step;
-            pending  = CaptureStep(synth, step);
+            lastStep      = step;
+            lastCondition = condition;
+            pending       = CaptureStep(synth, step, stepChanged ? "step" : "reroll");
 
-            var condition = pending.Condition;
             conditionCounts.TryGetValue(condition, out var seen);
             conditionCounts[condition] = seen + 1;
 
@@ -373,7 +418,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                 FlushPending(0);
         }
 
-        if (Mode != RecorderMode.Auto) return;
+        if (Mode is not (RecorderMode.Auto or RecorderMode.Study)) return;
 
         if (now - lastStepTick > StallTimeoutMs)
         {
@@ -386,7 +431,9 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         if (pending == null) return;
         if (now - lastActionTick < ActionIntervalMs) return;
 
-        var actionId = ChooseAction(pending.Cp);
+        var actionId = Mode == RecorderMode.Study
+            ? ChooseStudyAction(pending)
+            : ChooseAction(pending.Cp);
         if (actionId == 0) return;
 
         if (SendAction(actionId))
@@ -398,12 +445,13 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
     // ── Sampling ──────────────────────────────────────────────────────────────
 
-    private CraftStepSample CaptureStep(AddonSynthesis* synth, int step) => new()
+    private CraftStepSample CaptureStep(AddonSynthesis* synth, int step, string trigger) => new()
     {
         SessionId  = sessionId,
         Step       = step,
         Condition  = ReadText(synth->Condition),
         ActionId   = 0,
+        Trigger    = trigger,
         Progress   = ReadInt(synth->CurrentProgress),
         Quality    = ReadInt(synth->CurrentQuality),
         Durability = ReadInt(synth->CurrentDurability),
@@ -482,8 +530,10 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private void EndSession()
     {
         FlushPending(0);
-        inCraft  = false;
-        lastStep = -1;
+        inCraft       = false;
+        lastStep      = -1;
+        lastCondition = string.Empty;
+        heartSoulTried = false;
         SessionsRecorded++;
     }
 
@@ -500,6 +550,56 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         ResolveActions();
         if (observeActionId != 0 && cp >= ObserveCpCost) return observeActionId;
         return fillerActionId;
+    }
+
+    /// <summary>
+    /// Study policy. Unlike <see cref="ChooseAction"/> this is deliberately condition-aware,
+    /// because the questions it exists to answer are about what specialist actions do:
+    ///
+    ///   * a cheap buff is put up first, so a later reroll reveals whether a step-neutral
+    ///     action ticks buff timers — asserted earlier in planning, never verified;
+    ///   * rerolls are aimed at <see cref="studyTarget"/> when one is set, to measure whether
+    ///     a telegraph survives being rerolled away. That is the difference between Careful
+    ///     Observation on a telegraph being free information or a blunder;
+    ///   * leftover charges are spent once CP runs low rather than wasted.
+    ///
+    /// Charges are not counted here. An exhausted or unavailable action fails
+    /// <see cref="SendAction"/>'s status check and the next candidate is tried instead, which
+    /// also makes the whole mode a no-op on a non-specialist character.
+    /// </summary>
+    private uint ChooseStudyAction(CraftStepSample state)
+    {
+        ResolveActions();
+
+        var endgame = state.Cp < ObserveCpCost * 10;
+
+        // Cheapest buff in the game; its only job here is to have a timer worth watching.
+        if (appraisalActionId != 0 && state.Effects.Length == 0 && state.Cp > 200 &&
+            IsUsable(appraisalActionId))
+            return appraisalActionId;
+
+        if (carefulObsActionId != 0 && IsUsable(carefulObsActionId))
+        {
+            var onTarget = studyTarget != null &&
+                           string.Equals(state.Condition, studyTarget, StringComparison.OrdinalIgnoreCase);
+            if (onTarget || studyTarget == null || endgame)
+                return carefulObsActionId;
+        }
+
+        if (!heartSoulTried && endgame && heartSoulActionId != 0 && IsUsable(heartSoulActionId))
+        {
+            heartSoulTried = true;
+            return heartSoulActionId;
+        }
+
+        return ChooseAction(state.Cp);
+    }
+
+    private bool IsUsable(uint actionId)
+    {
+        var am = ActionManager.Instance();
+        return am != null &&
+               am->GetActionStatus(ActionType.CraftAction, actionId, NoTarget, false, false, null) == 0;
     }
 
     private bool SendAction(uint actionId)
@@ -530,16 +630,26 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         var sheet = dataManager.GetExcelSheet<CraftAction>();
         if (sheet == null) return;
 
-        uint filler = 0, observe = 0;
-        int fillerLevel = int.MaxValue, observeLevel = int.MaxValue;
-        string fillerN = "?", observeN = "?";
+        uint filler = 0, observe = 0, appraisal = 0;
+        int fillerLevel = int.MaxValue, observeLevel = int.MaxValue, appraisalLevel = int.MaxValue;
+        string fillerN = "?", observeN = "?", appraisalN = "?";
+
+        // The two specialist actions are both 0 CP, so level separates them: the reroll is the
+        // low-level one, the force-Good is the high-level one.
+        var specialists = new List<(int Level, uint Id, string Name)>();
 
         foreach (var row in sheet)
         {
             if (row.RowId == 0) continue;
             if (row.ClassJob.RowId != job) continue;
-            if (row.Specialist) continue;
             if (row.ClassJobLevel > playerState.Level) continue;
+
+            if (row.Specialist)
+            {
+                if (row.Cost == 0)
+                    specialists.Add((row.ClassJobLevel, row.RowId, row.Name.ExtractText()));
+                continue;
+            }
 
             if (row.Cost == 0 && row.ClassJobLevel < fillerLevel)
             {
@@ -549,15 +659,32 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             {
                 observe = row.RowId; observeLevel = row.ClassJobLevel; observeN = row.Name.ExtractText();
             }
+            else if (row.Cost == 1 && row.ClassJobLevel < appraisalLevel)
+            {
+                appraisal = row.RowId; appraisalLevel = row.ClassJobLevel; appraisalN = row.Name.ExtractText();
+            }
         }
+
+        specialists.Sort((a, b) => a.Level.CompareTo(b.Level));
 
         fillerActionId  = filler;
         observeActionId = observe;
         fillerName      = fillerN;
         observeName     = observeN;
-        resolvedForJob  = job;
 
-        log.Information($"[CraftRecorder] Actions for job {job}: filler={fillerN} ({filler}), observe={observeN} ({observe})");
+        appraisalActionId = appraisal;
+        appraisalName     = appraisalN;
+
+        carefulObsActionId = specialists.Count > 0 ? specialists[0].Id : 0;
+        carefulObsName     = specialists.Count > 0 ? specialists[0].Name : "?";
+        heartSoulActionId  = specialists.Count > 1 ? specialists[1].Id : 0;
+        heartSoulName      = specialists.Count > 1 ? specialists[1].Name : "?";
+
+        resolvedForJob = job;
+
+        log.Information($"[CraftRecorder] Actions for job {job}: filler={fillerN} ({filler}), " +
+                        $"observe={observeN} ({observe}), buff={appraisalN} ({appraisal}), " +
+                        $"reroll={carefulObsName} ({carefulObsActionId}), forceGood={heartSoulName} ({heartSoulActionId})");
     }
 
     // ── Restarting the craft ──────────────────────────────────────────────────
@@ -830,6 +957,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         seen.Sort(StringComparer.Ordinal);
 
         var tally = StepsRecorded > 0 ? string.Join(", ", seen) : "no steps yet";
-        return $"Craft recorder: {Mode}. {SessionsRecorded} craft(s), {StepsRecorded} step(s). [{tally}] → {OutputPath}";
+        var target = Mode == RecorderMode.Study && studyTarget != null ? $" target={studyTarget}" : string.Empty;
+        return $"Craft recorder: {Mode}{target}. {SessionsRecorded} craft(s), {StepsRecorded} step(s). [{tally}] → {OutputPath}";
     }
 }

@@ -135,7 +135,7 @@ public sealed class Plugin : IDalamudPlugin
         });
         CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
         {
-            HelpMessage = "Craft condition recorder: start | auto | stop | actions | probe.",
+            HelpMessage = "Craft condition recorder: start | auto | study | stop | actions | probe.",
         });
 
         // UI hooks
@@ -236,7 +236,10 @@ public sealed class Plugin : IDalamudPlugin
     /// </summary>
     private void OnCraftCommand(string command, string args)
     {
-        switch (args.Trim().ToLowerInvariant())
+        var parts = args.Trim().Split(' ', 2);
+        var rest  = parts.Length > 1 ? parts[1].Trim() : null;
+
+        switch (parts[0].ToLowerInvariant())
         {
             case "start":
                 CraftRecorder.Start(CraftDataRecorder.RecorderMode.Observe);
@@ -246,6 +249,14 @@ public sealed class Plugin : IDalamudPlugin
             case "auto":
                 CraftRecorder.Start(CraftDataRecorder.RecorderMode.Auto);
                 ChatGui_Print("Craft recorder started (auto). Open the crafting log with an expert recipe selected.");
+                break;
+
+            case "study":
+                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Study, rest);
+                ChatGui_Print(rest == null
+                    ? "Study mode started. Rerolls fire whenever a charge is available."
+                    : $"Study mode started, spending rerolls on '{rest}'.");
+                ChatGui_Print("This data is deliberately biased — do not pool it into a weight fit.");
                 break;
 
             case "stop":
@@ -266,7 +277,7 @@ public sealed class Plugin : IDalamudPlugin
 
             default:
                 ChatGui_Print(CraftRecorder.Summarise());
-                ChatGui_Print("Usage: /rmccraft start | auto | stop | actions | probe");
+                ChatGui_Print("Usage: /rmccraft start | auto | study [condition] | stop | actions | probe");
                 break;
         }
     }

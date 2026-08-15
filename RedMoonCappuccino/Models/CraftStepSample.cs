@@ -22,8 +22,18 @@ public sealed record CraftStepSample
     /// <summary>Condition name as displayed, in the client's language.</summary>
     public required string Condition { get; init; }
 
-    /// <summary>Action sent from this step, or 0 if the craft ended here.</summary>
+    /// <summary>Action sent from this state, or 0 if none was (craft ended, or observe-only mode).</summary>
     public required uint ActionId { get; init; }
+
+    /// <summary>
+    /// What produced this sample. <c>step</c> is the ordinary case. <c>reroll</c> means the
+    /// condition changed while the step counter did not — the signature of Careful Observation,
+    /// which the recorder was previously blind to because it only emitted on step changes.
+    ///
+    /// A reroll sample shares its <see cref="Step"/> with the sample immediately before it, so
+    /// the pair gives the source condition, the action that rerolled it, and the result.
+    /// </summary>
+    public required string Trigger { get; init; }
 
     public required int Progress    { get; init; }
     public required int Quality     { get; init; }

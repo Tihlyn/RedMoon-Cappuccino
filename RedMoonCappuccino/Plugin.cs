@@ -47,6 +47,14 @@ public sealed class Plugin : IDalamudPlugin
     public readonly SubmarineRouteService SubmarineRoutes;
     public readonly SubmarineGameData     SubmarineGame;
     public readonly CraftDataRecorder     CraftRecorder;
+
+    /// <summary>
+    /// Fitted condition models, one per <c>ConditionsFlag</c>, and the gate that decides
+    /// whether the solver may use any given one. The solver must obtain weights through
+    /// <see cref="Services.Crafting.ConditionModelRegistry.TryGetAdmissible"/> and handle a
+    /// refusal — an uncharacterised flag is genuinely unknown, not approximately known.
+    /// </summary>
+    public readonly Services.Crafting.ConditionModelRegistry ConditionModels = new();
     public readonly WindowSystem      WindowSystem = new("RedMoonCappuccino");
     private readonly MainWindow   mainWindow;
     private readonly ConfigWindow configWindow;
@@ -90,7 +98,7 @@ public sealed class Plugin : IDalamudPlugin
         SubmarineGame   = new SubmarineGameData(SubmarineRoutes, Configuration, Framework, Log);
 
         // Condition-sample collection for the crafting solver. Idle until /rmccraft starts it.
-        CraftRecorder = new CraftDataRecorder(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, Log);
+        CraftRecorder = new CraftDataRecorder(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, GameInterop, Log);
 
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
@@ -135,7 +143,7 @@ public sealed class Plugin : IDalamudPlugin
         });
         CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
         {
-            HelpMessage = "Craft condition recorder: start | auto | study | stop | actions | probe.",
+            HelpMessage = "Craft condition recorder: start | auto | study | quality | stop | actions | probe.",
         });
 
         // UI hooks
@@ -276,6 +284,12 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             }
 
+            case "quality":
+                CraftRecorder.Start(CraftDataRecorder.RecorderMode.Quality);
+                ChatGui_Print("Quality mode started: touch rotation so quality gains are labelled. "
+                            + "Spends no Delineations.");
+                break;
+
             case "stop":
                 CraftRecorder.Stop();
                 ChatGui_Print("Craft recorder stopped.");
@@ -292,9 +306,26 @@ public sealed class Plugin : IDalamudPlugin
                     ChatGui.Print(line);
                 break;
 
+            case "models":
+            {
+                // Refits from everything on disk. Cheap enough to do on demand, and doing it
+                // on demand means the answer always reflects the data actually collected
+                // rather than whatever was loaded at startup.
+                var dir   = System.IO.Path.Combine(PluginInterface.GetPluginConfigDirectory(), "craftdata");
+                var count = ConditionModels.LoadFrom(dir);
+
+                ChatGui_Print($"Fitted {count} transitions.");
+                if (ConditionModels.MalformedLines > 0)
+                    ChatGui_Print($"WARNING: {ConditionModels.MalformedLines} line(s) unreadable — the record schema may have moved.");
+
+                foreach (var line in ConditionModels.Summarise().Split('\n'))
+                    ChatGui.Print(line);
+                break;
+            }
+
             default:
                 ChatGui_Print(CraftRecorder.Summarise());
-                ChatGui_Print("Usage: /rmccraft start | auto | study [condition] [--spend] | stop | actions | probe");
+                ChatGui_Print("Usage: /rmccraft start | auto | study [condition] [--spend] | quality | stop | actions | probe | models");
                 break;
         }
     }

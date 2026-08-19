@@ -122,9 +122,17 @@ public static class ConditionEffects
         condition == CraftCondition.Pliant ? 0.50 : 1.00;
 
     /// <summary>
-    /// Added success rate, as a percentage. Centered's +25% is near-irrelevant while every
-    /// action the solver drives with is already certain, but it is modelled rather than
-    /// dropped so that adding a fallible action later does not silently change behaviour.
+    /// Added success rate, as a percentage.
+    ///
+    /// <para>Centered is irrelevant only because of a choice made elsewhere: the solver's
+    /// candidate set excludes fallible actions, so nothing it considers can benefit. Human expert
+    /// play does the opposite — community guidance is consistent that Centered exists to make
+    /// Rapid Synthesis and Hasty Touch worth casting, and a recorded human craft duly opens with
+    /// three Rapid Syntheses. Two of those missed.</para>
+    ///
+    /// <para>So this is a live cost of refusing gambles, not a dead mechanic. Modelled in full
+    /// so that admitting fallible actions later is a policy change rather than a simulator
+    /// change.</para>
     /// </summary>
     public static int SuccessBonus(CraftCondition condition) =>
         condition == CraftCondition.Centered ? 25 : 0;

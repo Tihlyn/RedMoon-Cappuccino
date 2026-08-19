@@ -134,8 +134,13 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
 
         try
         {
-            if (result && actionType == ActionType.CraftAction && actions != null
-                && actions.TryResolve(actionId, out var resolved))
+            // Both action types, because the crafting actions are split across two sheets and the
+            // split carries through to here: Reflect arrives as a CraftAction, Manipulation as an
+            // Action. Listening for only the first captured the opener and then nothing, which read
+            // as the advisor losing track one step into every craft. The id spaces do not overlap,
+            // so the map alone decides whether a given id is one of ours.
+            if (result && actionType is ActionType.CraftAction or ActionType.Action
+                && actions != null && actions.TryResolve(actionId, out var resolved))
                 pending = resolved;
         }
         catch (Exception ex)
@@ -408,11 +413,12 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
 
         var manager = ActionManager.Instance();
         if (manager == null) return;
-        if (manager->GetActionStatus(ActionType.CraftAction, gameId, NoTarget, false, false, null) != 0) return;
+
+        var type = actions.TypeOf(Advice.Recommended);
+        if (manager->GetActionStatus(type, gameId, NoTarget, false, false, null) != 0) return;
 
         lastAutoActionMs = now;
-        if (manager->UseAction(ActionType.CraftAction, gameId, NoTarget, 0,
-                               ActionManager.UseActionMode.None, 0, null))
+        if (manager->UseAction(type, gameId, NoTarget, 0, ActionManager.UseActionMode.None, 0, null))
             AutoActions++;
     }
 

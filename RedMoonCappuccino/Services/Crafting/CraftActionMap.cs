@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
 using RedMoonCappuccino.Models.Crafting;
 using SheetCraftAction = Lumina.Excel.Sheets.CraftAction;
@@ -24,6 +25,7 @@ public sealed class CraftActionMap
 {
     private readonly Dictionary<uint, SolverAction> byGameId = new();
     private readonly Dictionary<SolverAction, uint> toGameId = new();
+    private readonly HashSet<SolverAction> generalSheet = new();
     private readonly Dictionary<SolverAction, uint> icons = new();
     private readonly List<SolverAction> unresolved = new();
     private readonly List<(uint Id, string Name, int Level, bool Specialist)> offered = new();
@@ -109,6 +111,7 @@ public sealed class CraftActionMap
                     if (toGameId.ContainsKey(action)) continue;
 
                     offered.Add((row.RowId, row.Name.ExtractText() + " (Action sheet)", row.ClassJobLevel, false));
+                    generalSheet.Add(action);
                     byGameId[row.RowId] = action;
                     toGameId[action] = row.RowId;
                     icons[action] = row.Icon;
@@ -126,6 +129,18 @@ public sealed class CraftActionMap
 
     public bool TryGameId(SolverAction action, out uint gameActionId) =>
         toGameId.TryGetValue(action, out gameActionId);
+
+    /// <summary>
+    /// Which action type the client expects for this action.
+    ///
+    /// <para>The crafting actions are split across two sheets and the split carries through to how
+    /// they are used: a row from CraftAction is sent and reported as
+    /// <see cref="ActionType.CraftAction"/>, one from Action as <see cref="ActionType.Action"/>.
+    /// Manipulation, Innovation, Veneration, Great Strides and both Waste Nots are all in the second
+    /// group, so treating every craft action as the first kind silently loses most of the buffs.</para>
+    /// </summary>
+    public ActionType TypeOf(SolverAction action) =>
+        generalSheet.Contains(action) ? ActionType.Action : ActionType.CraftAction;
 
     /// <summary>Icon id for an action, or 0 when it is not on this job's list.</summary>
     public uint Icon(SolverAction action) => icons.GetValueOrDefault(action);

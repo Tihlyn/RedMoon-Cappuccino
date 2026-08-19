@@ -35,6 +35,7 @@
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModelRegistry.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\QualityBound.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DeterministicSolver.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\FrontierSolver.cs" />
   </ItemGroup>
 
 </Project>

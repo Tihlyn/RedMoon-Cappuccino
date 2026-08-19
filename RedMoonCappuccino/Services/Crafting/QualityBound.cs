@@ -38,6 +38,16 @@ public sealed class QualityBound
     /// <summary>table[cp * (maxDurability + 1) + durability] — max quality obtainable from that budget.</summary>
     private readonly int[] table;
 
+    /// <summary>
+    /// Max progress obtainable from a (cp, durability) budget, same knapsack as quality.
+    ///
+    /// <para>Quality feasibility alone is not enough to keep a search honest. A state that has
+    /// poured everything into quality can still look reachable on quality while having no way
+    /// left to finish progress — and a craft that never completes scores nothing at all. Without
+    /// this, a bounded-frontier search fills entirely with such states and returns no line.</para>
+    /// </summary>
+    private readonly int[] progressTable;
+
     /// <summary>Flat allowance for the durability-free cast Trained Perfection grants.</summary>
     private readonly int freeAction;
 
@@ -131,9 +141,44 @@ public sealed class QualityBound
         foreach (var (_, gain) in gains) freeCast = Math.Max(freeCast, gain);
         freeAction = freeCast * CraftActions.TrainedPerfectionCharges;
 
+        // Progress moves, priced with the same optimism as the quality ones.
+        var progressMoves = new List<(int Cp, int Dur, int Gain)>();
+        foreach (var action in CraftActions.All)
+        {
+            var spec = CraftActions.Spec(action);
+            if (spec.ProgressEfficiency == 0) continue;
+            if (spec.Kind == ActionKind.Specialist) continue;
+
+            var d = MinimumDurability(spec.DurabilityCost, sim.Recipe.ConditionsFlag);
+            var g = (int)((long)sim.BaseProgress * spec.ProgressEfficiency * ProgressEffectMod * progressCondition / 2000);
+            if (g > 0 && d > 0) progressMoves.Add((spec.CpCost, d, g));
+        }
+
+        progressTable = new int[(maxCp + 1) * stride];
+
         for (var cp = 0; cp <= maxCp; cp++)
         for (var dur = 0; dur <= maxDurability; dur++)
         {
+            var bestProgress = 0;
+
+            foreach (var (mCp, mDur, mGain) in progressMoves)
+            {
+                if (mCp > cp || mDur > dur) continue;
+                var candidate = mGain + progressTable[(cp - mCp) * stride + (dur - mDur)];
+                if (candidate > bestProgress) bestProgress = candidate;
+            }
+
+            foreach (var (rCp, rDur) in repairs)
+            {
+                if (rCp > cp) continue;
+                var restored = Math.Min(maxDurability, dur + rDur);
+                if (restored <= dur) continue;
+                var candidate = progressTable[(cp - rCp) * stride + restored];
+                if (candidate > bestProgress) bestProgress = candidate;
+            }
+
+            progressTable[cp * stride + dur] = bestProgress;
+
             var best = 0;
 
             foreach (var (mCp, mDur, mGain) in moves)
@@ -178,6 +223,24 @@ public sealed class QualityBound
 
         var headroom = Math.Max(0, recipe.MaxQuality - state.Quality);
         return Math.Min(table[cp * (maxDurability + 1) + dur] + allowance, headroom);
+    }
+
+    /// <summary>
+    /// Whether the state can still finish progress at all. A craft that cannot complete scores
+    /// nothing regardless of how much quality it banked, so this is the first thing worth asking.
+    /// </summary>
+    public bool CanStillComplete(CraftState state, RecipeSpec recipe)
+    {
+        if (state.Completed) return true;
+        if (state.Failed) return false;
+
+        var remaining = recipe.Difficulty - state.Progress;
+        if (remaining <= 0) return true;
+
+        var cp  = Math.Clamp(state.Cp, 0, maxCp);
+        var dur = Math.Clamp(state.Durability, 0, maxDurability);
+
+        return progressTable[cp * (maxDurability + 1) + dur] >= remaining;
     }
 
     /// <summary>

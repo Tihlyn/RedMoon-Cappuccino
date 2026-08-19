@@ -49,6 +49,9 @@ public static class Program
         Section("G. Macro replay — the quality path against live play");
         MacroReplayChecks();
 
+        Section("H. Real-recipe scale probe");
+        ScaleProbe();
+
         Console.WriteLine();
         Console.WriteLine(new string('=', 72));
         Console.WriteLine(failures == 0
@@ -878,6 +881,15 @@ public static class Program
         Check($"an unreachable target is pruned immediately ({hopeless.NodesExpanded} nodes)",
             hopeless.Quality < 0 && hopeless.NodesExpanded <= 2);
 
+        // The honest test of a heuristic search: on a recipe small enough for the exact solver to
+        // prove an optimum, does the beam actually find it? Anything less and its answers on
+        // large recipes are guesses with no calibration behind them.
+        var beamSmall = new FrontierSolver(sim, bound, width: 6000).Solve();
+        Console.WriteLine($"   frontier on the small recipe: quality {beamSmall.Quality} "
+                        + $"vs proven optimum {full.Quality}");
+        Check($"the frontier finds the proven optimum where one is known ({beamSmall.Quality} vs {full.Quality})",
+            beamSmall.Quality == full.Quality);
+
         Check("solving twice gives the same answer",
             new DeterministicSolver(sim, bound, 0, 4_000_000).SolveBest().Quality == full.Quality);
     }
@@ -995,6 +1007,100 @@ public static class Program
         Console.WriteLine($"   {label}: {(diffs.Count == 0 ? "exact" : diffs.Count + " divergence(s)")}");
         foreach (var d in diffs) Console.WriteLine($"     ! {d}");
         Check($"{label} replays exactly against the client", diffs.Count == 0);
+    }
+
+
+    // ── H. Real-recipe scale probe ────────────────────────────────────────────
+
+    /// <summary>
+    /// Phase 1's gate, run against a recipe that was actually crafted rather than a toy.
+    ///
+    /// <para>The plan names Raphael as the oracle here, which needs a second tool. The recorded
+    /// macro is a better one for the same purpose and costs nothing: a human line on a real
+    /// standard recipe that reached maximum quality and completed. A solver that cannot match it
+    /// under all-Normal conditions — strictly harder, since the macro got three Good rolls — has
+    /// something wrong with it.</para>
+    ///
+    /// <para>This also measures whether exhaustive deterministic search survives real scale at
+    /// all, which decides how much Phase 2 has to lean on depth limiting.</para>
+    /// </summary>
+    private static void ScaleProbe()
+    {
+        var recipe = new RecipeSpec
+        {
+            RecipeId = 38244, ConditionsFlag = 15, IsExpert = false, RecipeJobLevel = 100,
+            Difficulty = 5622, MaxQuality = 14204, Durability = 35, RequiredQuality = 14200,
+            ProgressDivider = 189, QualityDivider = 207, ProgressModifier = 100, QualityModifier = 100,
+        };
+        var player = new PlayerSpec
+        {
+            Craftsmanship = 5909, Control = 5610, MaxCp = 771, Level = 100, GoodMultiplier = 1.75,
+        };
+
+        var sim = new CraftSim(recipe, player);
+        var bound = new QualityBound(sim);
+
+        var initial = sim.Initial();
+        Console.WriteLine($"   recipe 38244: difficulty {recipe.Difficulty}, durability {recipe.Durability}, "
+                        + $"max quality {recipe.MaxQuality}, {player.MaxCp} CP");
+        Console.WriteLine($"   bound at start: {bound.Remaining(initial, recipe)} "
+                        + $"(cap {recipe.MaxQuality}, so {(bound.Remaining(initial, recipe) >= recipe.MaxQuality ? "saturated" : "binding")})");
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var solver = new DeterministicSolver(sim, bound, targetQuality: recipe.RequiredQuality, nodeLimit: 8_000_000);
+        var result = solver.Solve(initial, recipe.RequiredQuality);
+        sw.Stop();
+
+        Console.WriteLine($"   clear search: quality {result.Quality}, {result.NodesExpanded} nodes, "
+                        + $"exhaustive={result.Exhaustive}, {sw.ElapsedMilliseconds} ms");
+        if (result.Quality >= 0)
+            Console.WriteLine($"   line: {string.Join(" > ", result.Actions)}");
+
+        // Not asserted. The exhaustive solver demonstrably cannot reach a verdict here, and a
+        // check that passes because the search gave up is worse than no check at all — it reads
+        // green while reporting quality 0. The scalable solver is measured against this instead.
+        Console.WriteLine(result.Exhaustive
+            ? "   exhaustive at real scale"
+            : "   NOT exhaustive at real scale — the exact DFS does not reach a verdict here");
+
+        // The scalable solver, on the same recipe the macro was actually played on.
+        var sw2 = System.Diagnostics.Stopwatch.StartNew();
+        var beam = new FrontierSolver(sim, bound).Solve();
+        sw2.Stop();
+
+        Console.WriteLine($"   frontier: quality {beam.Quality} in {beam.Actions.Count} actions, "
+                        + $"{beam.NodesExpanded} expansions, {sw2.ElapsedMilliseconds} ms");
+        if (beam.Actions.Count > 0)
+            Console.WriteLine($"   line: {string.Join(" > ", beam.Actions)}");
+
+        Check($"the frontier solver reaches a verdict where the exact search cannot (quality {beam.Quality})",
+            beam.Quality >= 0);
+
+        // Phase 1's gate, met against the macro rather than against Raphael. The human line
+        // reached 14204 with three Good rolls helping it; the solver reaches the same maximum
+        // under all-Normal, which is strictly harder. That the beam is calibrated against a
+        // proven optimum on the small recipe is what makes this figure worth anything.
+        Console.WriteLine($"   requirement {recipe.RequiredQuality}; macro reached 14204 with Good rolls, "
+                        + $"solver reaches {beam.Quality} without them");
+
+        // Widening tells us whether the beam is limited by width or by its ranking heuristic.
+        var narrow = new FrontierSolver(sim, bound, width: 6000).Solve();
+        Console.WriteLine($"   at width 6000: quality {narrow.Quality} ({narrow.Quality - beam.Quality})");
+        Check($"the default width reaches the recipe's maximum quality ({beam.Quality} of {recipe.MaxQuality})",
+            beam.Quality >= recipe.MaxQuality);
+        Check($"and therefore clears the requirement under all-Normal ({beam.Quality} vs {recipe.RequiredQuality})",
+            beam.Cleared);
+
+        // Replaying the line must reproduce the score, or it is decoration.
+        var st = sim.Initial();
+        foreach (var a in beam.Actions)
+        {
+            var r = sim.Apply(st, a, CraftCondition.Normal);
+            if (!r.Ok) break;
+            st = r.State;
+        }
+        Check($"the frontier line replays to its reported score ({st.Quality} vs {beam.Quality}, completed={st.Completed})",
+            st.Quality == beam.Quality && st.Completed);
     }
 
     // ── shared corpus loading ─────────────────────────────────────────────────

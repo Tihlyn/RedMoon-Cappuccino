@@ -47,9 +47,13 @@ public sealed class DecisionRouter : ICraftPolicy
     private readonly CraftAction[] opening;
     private int openingCursor;
 
+    private readonly DecisionCache? cache;
+
     public DecisionRouter(CraftSim sim, QualityBound bound, ConditionModel model,
-                          int gambleBudget = 0, CraftAction[]? opening = null)
+                          int gambleBudget = 0, CraftAction[]? opening = null,
+                          DecisionCache? cache = null)
     {
+        this.cache = cache;
         this.sim          = sim;
         this.bound        = bound;
         this.model        = model;
@@ -59,7 +63,16 @@ public sealed class DecisionRouter : ICraftPolicy
 
     public string Name => gambleBudget > 0 ? $"router, {gambleBudget} gambles" : "router";
 
-    public CraftAction Choose(CraftState state) => Resolve(state).Action;
+    public CraftAction Choose(CraftState state)
+    {
+        // The opener is stateful, so it stays outside the cache; everything after it is a pure
+        // function of the position and is worth remembering.
+        if (openingCursor < opening.Length) return Resolve(state).Action;
+
+        return cache is null
+            ? Resolve(state).Action
+            : cache.GetOrAdd(state, s => Resolve(s).Action);
+    }
 
     /// <summary>The decision and its owner, so a craft can be traced rather than guessed at.</summary>
     public Decision Resolve(CraftState state)

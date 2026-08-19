@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using RedMoonCappuccino.Models.Crafting;
 
 namespace RedMoonCappuccino.Services.Crafting;
@@ -146,9 +148,13 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
     private readonly CraftAction[] opening;
     private int openingCursor;
 
+    private readonly DecisionCache? cache;
+
     public ExpectimaxPolicy(CraftSim sim, QualityBound bound, ConditionModel model,
-                            int gambleBudget = 0, CraftAction[]? opening = null)
+                            int gambleBudget = 0, CraftAction[]? opening = null,
+                            DecisionCache? cache = null)
     {
+        this.cache = cache;
         this.opening = opening ?? Array.Empty<CraftAction>();
         this.sim          = sim;
         this.bound        = bound;
@@ -171,6 +177,14 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
         + (gambleBudget > 0 ? $"expectimax, {gambleBudget} gambles" : "expectimax");
 
     public CraftAction Choose(CraftState state)
+    {
+        if (openingCursor >= opening.Length && cache is not null)
+            return cache.GetOrAdd(state, Decide);
+
+        return Decide(state);
+    }
+
+    private CraftAction Decide(CraftState state)
     {
         while (openingCursor < opening.Length)
         {
@@ -389,38 +403,53 @@ public sealed class PolicyEvaluator
         public double ClearRate => Trials == 0 ? 0 : (double)Cleared / Trials;
     }
 
+    /// <summary>
+    /// Runs a policy across independent trials.
+    ///
+    /// <para>Parallel because the trials genuinely are independent — each seeds its own generator
+    /// and builds its own policy — and because this is a tuning loop where the wall clock is the
+    /// thing actually limiting how many ideas get tested.</para>
+    /// </summary>
     public Outcome Run(Func<ICraftPolicy> makePolicy, int trials, int seed)
     {
         var cleared = 0;
         var completed = 0;
-        var qualityTotal = 0L;
+        long qualityTotal = 0;
         var name = makePolicy().Name;
 
-        for (var trial = 0; trial < trials; trial++)
-        {
-            // Seeded per trial so every policy meets the identical condition sequence.
-            var rng = new Random(seed + trial);
-            var policy = makePolicy();
-            var state = sim.Initial();
-
-            for (var step = 0; step < maxSteps && !state.IsTerminal; step++)
+        Parallel.For(0, trials, () => (Cleared: 0, Completed: 0, Quality: 0L),
+            (trial, _, local) =>
             {
-                var action = policy.Choose(state);
-                if (action == CraftAction.None) break;
+                // Seeded per trial so every policy meets the identical condition sequence,
+                // regardless of the order threads happen to run them in.
+                var rng = new Random(seed + trial);
+                var policy = makePolicy();
+                var state = sim.Initial();
 
-                var spec = CraftActions.Spec(action);
-                var succeeded = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
-                var nextCondition = sampler.Next(state.Condition, rng);
+                for (var step = 0; step < maxSteps && !state.IsTerminal; step++)
+                {
+                    var action = policy.Choose(state);
+                    if (action == CraftAction.None) break;
 
-                var result = sim.Apply(state, action, nextCondition, succeeded);
-                if (!result.Ok) break;
-                state = result.State;
-            }
+                    var spec = CraftActions.Spec(action);
+                    var succeeded = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+                    var nextCondition = sampler.Next(state.Condition, rng);
 
-            if (state.Completed) completed++;
-            if (sim.IsClear(state)) cleared++;
-            qualityTotal += state.Quality;
-        }
+                    var result = sim.Apply(state, action, nextCondition, succeeded);
+                    if (!result.Ok) break;
+                    state = result.State;
+                }
+
+                return (local.Cleared + (sim.IsClear(state) ? 1 : 0),
+                        local.Completed + (state.Completed ? 1 : 0),
+                        local.Quality + state.Quality);
+            },
+            local =>
+            {
+                Interlocked.Add(ref cleared, local.Cleared);
+                Interlocked.Add(ref completed, local.Completed);
+                Interlocked.Add(ref qualityTotal, local.Quality);
+            });
 
         return new Outcome(name, trials, cleared, completed, (double)qualityTotal / trials);
     }

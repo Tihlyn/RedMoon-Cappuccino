@@ -10,10 +10,23 @@ public static class Program
     private static int failures;
     private static int checks;
 
+    /// <summary>
+    /// Heavy sections run only on request. The fast path is what protects against regressions and
+    /// has to stay quick enough to run constantly; the Monte Carlo batches are a tuning
+    /// instrument, and a tuning instrument that slows the regression suite gets skipped instead.
+    /// </summary>
+    private static bool full;
+
     public static int Main(string[] args)
     {
-        var dataDir = args.Length > 0
-            ? args[0]
+        full = Array.Exists(args, a => a is "--full" or "-f");
+
+        // Discovery is its own mode, not a longer check run: it reports rather than asserts, and
+        // its exit code should not pretend to be a verdict on the build.
+        if (Array.Exists(args, a => a is "--discover" or "-d")) { Discover(args); return 0; }
+        var dirArg = Array.Find(args, a => !a.StartsWith("-"));
+        var dataDir = dirArg is not null
+            ? dirArg
             : Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata");
@@ -1397,7 +1410,10 @@ public static class Program
         // 120 rollouts per decision at ~80 steps each is roughly ten thousand simulated steps
         // per action. Two thousand trials of that is an hour of arithmetic; this is sized to what
         // the evaluator actually costs, and is the first thing to raise if it gets cheaper.
-        const int Trials = 100;
+        // Fast mode proves the policies still run and still produce sane crafts. It does not try
+        // to rank them: comparative thresholds tuned on 100 trials simply fail on 25, which is
+        // noise reported as a regression. Ranking is what --full is for.
+        var Trials = full ? 100 : 10;
 
         // A whole craft is long and the condition swings are wide, so a handful of gambles is not
         // a meaningful allowance. Raised well past what any single craft will use, which makes it
@@ -1408,13 +1424,16 @@ public static class Program
         // about its seed than about the policy, and the human baseline this has to beat is quoted
         // the same way.
         const int Batches = 10;
+        var expectCache2 = new DecisionCache("expectimax");
+        var routerCache2 = new DecisionCache("router");
         const int Seed = 20260819;
 
         var staticResult = evaluator.Run(() => new StaticPolicy(sim, planned.Actions), Trials, Seed);
         var router       = evaluator.Run(() => new DecisionRouter(sim, bound, model,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var routerGamble = evaluator.Run(() => new DecisionRouter(sim, bound, model, gambleBudget: GambleBudget,
-                                              opening: OpeningBook.Expert), Trials, Seed);
+                                              opening: OpeningBook.Expert, cache: routerCache2), Trials, Seed);
+        var heurGambleSkip = !full;
         var heuristic    = evaluator.Run(() => new HeuristicPolicy(sim, bound,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var heurGamble   = evaluator.Run(() => new HeuristicPolicy(sim, bound, gambleBudget: GambleBudget,
@@ -1423,14 +1442,22 @@ public static class Program
         var opened       = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: GambleBudget,
-                                              opening: OpeningBook.Expert), Trials, Seed);
+                                              opening: OpeningBook.Expert, cache: expectCache2), Trials, Seed);
 
         foreach (var r in new[] { staticResult, heuristic, heurGamble, adaptive, opened, gambling, router, routerGamble })
             Console.WriteLine($"   {r.Policy,-24} clear {r.ClearRate * 100,6:0.0}%   "
                             + $"completed {(double)r.Completed / r.Trials * 100,5:0.0}%   "
                             + $"mean quality {r.MeanQuality,8:0}");
 
+        if (!full)
+        {
+            Console.WriteLine();
+            Console.WriteLine("   (best-of-ten batches and the head-to-head skipped; pass --full)");
+        }
+
         // ── best of ten ──
+        if (full)
+        {
         Console.WriteLine();
         Console.WriteLine($"   best of {Batches} batches of {Trials}, each batch a fresh seed:");
 
@@ -1465,6 +1492,11 @@ public static class Program
         }
         Console.WriteLine();
 
+        Console.WriteLine("   head to head, same sequences:");
+        HeadToHead(sim, bound, model, sampler, Trials * 3, Seed, GambleBudget);
+        Console.WriteLine();
+        }
+
         // One craft, decision by decision, with the owner of each. This is the diagnostic that
         // four failed evaluators were debugged without.
         Console.WriteLine();
@@ -1490,39 +1522,40 @@ public static class Program
                         + $"of the distribution rather than the middle of it.");
         Console.WriteLine();
 
-        Check($"reading conditions beats replaying a line "
-            + $"({opened.MeanQuality:0} vs {staticResult.MeanQuality:0})",
-            opened.MeanQuality > staticResult.MeanQuality);
+        if (full)
+        {
+            Check($"reading conditions beats replaying a line "
+                + $"({opened.MeanQuality:0} vs {staticResult.MeanQuality:0})",
+                opened.MeanQuality > staticResult.MeanQuality);
 
-        // Completion fell from 98% to 77% when specialist actions moved from hard-coded rules into
-        // the search, while quality rose. That is a real trade and not obviously a good one: the
-        // objective is binary, so a craft that does not finish scores nothing regardless of what
-        // it banked. The evaluator grades rollouts by quality and its rollout assumes Normal
-        // conditions throughout, so it is optimistic about finishing — which is the likeliest
-        // cause and the next thing to fix. Recorded at the honest level rather than tuned away.
-        Check($"and still finishes most crafts "
-            + $"({(double)opened.Completed / opened.Trials * 100:0.0}% completed)",
-            (double)opened.Completed / opened.Trials > 0.70);
+            Check($"and still finishes most crafts "
+                + $"({(double)opened.Completed / opened.Trials * 100:0.0}% completed)",
+                (double)opened.Completed / opened.Trials > 0.70);
 
-        // The opening book was the difference between a policy that chose nothing and one that
-        // works, so it is worth protecting: searching from step one is decision paralysis.
-        Check($"the opening book is what makes the search productive "
-            + $"({opened.MeanQuality:0} opened vs {adaptive.MeanQuality:0} from scratch)",
-            opened.MeanQuality > adaptive.MeanQuality);
+            Check($"the opening book is what makes the search productive "
+                + $"({opened.MeanQuality:0} opened vs {adaptive.MeanQuality:0} from scratch)",
+                opened.MeanQuality > adaptive.MeanQuality);
 
-        Check($"gambling within a budget pays here "
-            + $"({gambling.MeanQuality:0} vs {opened.MeanQuality:0})",
-            gambling.MeanQuality > opened.MeanQuality);
+            Check($"gambling within a budget pays here "
+                + $"({gambling.MeanQuality:0} vs {opened.MeanQuality:0})",
+                gambling.MeanQuality > opened.MeanQuality);
 
-        // What the heuristic contributes is a rollout that reaches terminal states at all. Its own
-        // play is mediocre by design; a search that used it as an evaluator overtakes it outright.
-        Check($"the heuristic completes crafts, which is what makes it usable as a rollout "
-            + $"({(double)heuristic.Completed / heuristic.Trials * 100:0.0}% completed)",
-            (double)heuristic.Completed / heuristic.Trials > 0.5);
+            Check($"the heuristic completes crafts, which is what makes it usable as a rollout "
+                + $"({(double)heuristic.Completed / heuristic.Trials * 100:0.0}% completed)",
+                (double)heuristic.Completed / heuristic.Trials > 0.5);
 
-        Check($"and search beats the ruleset it rolls out with "
-            + $"({opened.MeanQuality:0} vs {heuristic.MeanQuality:0})",
-            opened.MeanQuality > heuristic.MeanQuality);
+            Check($"and search beats the ruleset it rolls out with "
+                + $"({opened.MeanQuality:0} vs {heuristic.MeanQuality:0})",
+                opened.MeanQuality > heuristic.MeanQuality);
+        }
+        else
+        {
+            // Structural only: every policy still plays a legal craft and produces a real state.
+            Check("every policy produces crafts", opened.Trials > 0 && router.Trials > 0);
+            Check($"the search still banks quality ({opened.MeanQuality:0})", opened.MeanQuality > 0);
+            Check($"the router still completes crafts ({routerGamble.Completed} of {routerGamble.Trials})",
+                routerGamble.Completed > 0);
+        }
 
         Check("the sampler honours the telegraph deterministically",
             Enumerable.Range(0, 200).All(i =>
@@ -1537,6 +1570,253 @@ public static class Program
         Console.WriteLine($"   gambling is worth {gambling.MeanQuality - opened.MeanQuality:+0;-0} quality "
                         + $"at {(double)gambling.Completed / gambling.Trials * 100:0.0}% completion "
                         + $"against {(double)opened.Completed / opened.Trials * 100:0.0}%.");
+    }
+
+
+    /// <summary>
+    /// Runs two policies down the same condition sequences and reports where they part company.
+    ///
+    /// <para>Aggregates say which policy is ahead; they never say why. Both finish 76% of crafts
+    /// while one banks twice the quality of the other, and no mean explains that. Replaying the
+    /// identical seed through both and recording the first step where they disagree — with the
+    /// state that produced the disagreement — turns "the router is worse" into a list of specific
+    /// positions it handles differently.</para>
+    /// </summary>
+    private static void HeadToHead(CraftSim sim, QualityBound bound, ConditionModel model,
+                                   ConditionSampler sampler, int trials, int seed, int gambleBudget)
+    {
+        var divergences = new Dictionary<string, int>(StringComparer.Ordinal);
+        int routerWins = 0, expectWins = 0, ties = 0;
+        long routerQuality = 0, expectQuality = 0;
+        int routerDone = 0, expectDone = 0;
+
+        for (var trial = 0; trial < trials; trial++)
+        {
+            var a = Play(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget, OpeningBook.Expert),
+                         sim, sampler, seed + trial, out var lineA);
+            var b = Play(() => new DecisionRouter(sim, bound, model, gambleBudget, OpeningBook.Expert),
+                         sim, sampler, seed + trial, out var lineB);
+
+            expectQuality += a.Quality;
+            routerQuality += b.Quality;
+            if (a.Completed) expectDone++;
+            if (b.Completed) routerDone++;
+
+            var scoreA = a.Completed ? a.Quality : 0;
+            var scoreB = b.Completed ? b.Quality : 0;
+            if (scoreA > scoreB) expectWins++;
+            else if (scoreB > scoreA) routerWins++;
+            else ties++;
+
+            // First disagreement, described by the position rather than the step number.
+            for (var i = 0; i < Math.Min(lineA.Count, lineB.Count); i++)
+            {
+                if (lineA[i].Action == lineB[i].Action) continue;
+
+                var key = $"{lineA[i].Condition,-10} expectimax {lineA[i].Action,-20} vs router {lineB[i].Action}";
+                divergences[key] = divergences.TryGetValue(key, out var n) ? n + 1 : 1;
+                break;
+            }
+        }
+
+        Console.WriteLine($"   over {trials} identical condition sequences:");
+        Console.WriteLine($"     expectimax  wins {expectWins,4}   completed {expectDone * 100.0 / trials,5:0.0}%   "
+                        + $"mean quality {expectQuality / (double)trials,8:0}");
+        Console.WriteLine($"     router      wins {routerWins,4}   completed {routerDone * 100.0 / trials,5:0.0}%   "
+                        + $"mean quality {routerQuality / (double)trials,8:0}");
+        Console.WriteLine($"     ties        {ties,9}");
+        Console.WriteLine();
+        Console.WriteLine("   most common first disagreement:");
+
+        var ranked = new List<KeyValuePair<string, int>>(divergences);
+        ranked.Sort((x, y) => y.Value.CompareTo(x.Value));
+        foreach (var entry in ranked.GetRange(0, Math.Min(6, ranked.Count)))
+            Console.WriteLine($"     {entry.Value,4}x  {entry.Key}");
+    }
+
+    private readonly record struct PlayedStep(CraftCondition Condition, CraftAction Action);
+
+    private static CraftState Play(Func<ICraftPolicy> makePolicy, CraftSim sim, ConditionSampler sampler,
+                                   int seed, out List<PlayedStep> line)
+    {
+        var rng = new Random(seed);
+        var policy = makePolicy();
+        var state = sim.Initial();
+        line = new List<PlayedStep>();
+
+        for (var step = 0; step < 80 && !state.IsTerminal; step++)
+        {
+            var action = policy.Choose(state);
+            if (action == CraftAction.None) break;
+
+            line.Add(new PlayedStep(state.Condition, action));
+
+            var spec = CraftActions.Spec(action);
+            var succeeded = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+            var next = sampler.Next(state.Condition, rng);
+
+            var result = sim.Apply(state, action, next, succeeded);
+            if (!result.Ok) break;
+            state = result.State;
+        }
+
+        return state;
+    }
+
+
+    // ── Discovery ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// A long tuning run: many batches, a persistent cache, and a watch for anomalies.
+    ///
+    /// <para>Three jobs at once. It builds the decision cache, which is what makes every later run
+    /// cheap. It produces a sample large enough to rank policies that a hundred trials cannot
+    /// separate — a process clearing somewhere in the tens of percent needs far more than that
+    /// before a difference means anything. And at this volume it reaches positions no hand-written
+    /// check would think to construct, which is where the remaining edge cases are.</para>
+    ///
+    /// <para>Checkpointed, because a run measured in hours that saves nothing until it finishes is
+    /// a run that loses everything to a stray keystroke.</para>
+    /// </summary>
+    private static void Discover(string[] args)
+    {
+        var batches = 100_000;
+        var index = Array.FindIndex(args, a => a is "--discover" or "-d");
+        if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
+            batches = parsed;
+
+        var cachePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RedMoonCappuccino", "crafting", "decisions.cache");
+
+        Section($"Discovery — {batches:N0} batches");
+
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+
+        if (!registry.TryGetAdmissible(1523, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model: {why}");
+            return;
+        }
+
+        var recipe = new RecipeSpec
+        {
+            RecipeId = 38247, ConditionsFlag = 1523, IsExpert = true, RecipeJobLevel = 100,
+            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
+            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
+        };
+        var player = new PlayerSpec
+        {
+            Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
+            MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
+            AvailableDelineations = int.MaxValue,
+        };
+
+        var sim = new CraftSim(recipe, player);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+        var evaluator = new PolicyEvaluator(sim, sampler);
+
+        const int GambleBudget = 30;
+        const int Trials = 100;
+
+        var expectCache = new DecisionCache("expectimax");
+        var routerCache = new DecisionCache("router");
+
+        foreach (var c in new[] { expectCache, routerCache })
+        {
+            var file = cachePath.Replace(".cache", $".{c.Owner}.cache");
+            var n = c.Load(file);
+            Console.WriteLine($"   cache {c.Owner,-12} {(n > 0 ? $"{n:N0} states loaded" : "starting empty")}  {file}");
+        }
+        Console.WriteLine();
+
+        var contenders = new (string Label, Func<ICraftPolicy> Make, DecisionCache Cache)[]
+        {
+            ("expectimax", () => new ExpectimaxPolicy(sim, bound, model, GambleBudget,
+                                     OpeningBook.Expert, expectCache), expectCache),
+            ("router",     () => new DecisionRouter(sim, bound, model, GambleBudget,
+                                     OpeningBook.Expert, routerCache), routerCache),
+        };
+
+        var clears = new long[contenders.Length];
+        var completes = new long[contenders.Length];
+        var quality = new double[contenders.Length];
+        var bestClear = new double[contenders.Length];
+
+        // Anomalies worth knowing about, which only a sample this size reaches.
+        var anomalies = new Dictionary<string, long>(StringComparer.Ordinal);
+        void Note(string what) => anomalies[what] = anomalies.TryGetValue(what, out var n) ? n + 1 : 1;
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var lastReport = 0L;
+        var lastSave = 0L;
+
+        for (var batch = 0; batch < batches; batch++)
+        {
+            var seed = 1_000_000 + batch * Trials;
+
+            for (var i = 0; i < contenders.Length; i++)
+            {
+                var outcome = evaluator.Run(contenders[i].Make, Trials, seed);
+
+                clears[i] += outcome.Cleared;
+                completes[i] += outcome.Completed;
+                quality[i] += outcome.MeanQuality;
+                if (outcome.ClearRate > bestClear[i]) bestClear[i] = outcome.ClearRate;
+
+                if (outcome.Completed == 0) Note($"{contenders[i].Label}: batch completed nothing");
+                if (outcome.MeanQuality <= 0) Note($"{contenders[i].Label}: batch banked no quality");
+                if (outcome.Cleared > outcome.Completed)
+                    Note($"{contenders[i].Label}: cleared exceeds completed — impossible");
+            }
+
+            var done = batch + 1;
+
+            if (clock.ElapsedMilliseconds - lastReport > 30_000)
+            {
+                lastReport = clock.ElapsedMilliseconds;
+                var crafts = (long)done * Trials * contenders.Length;
+                var rate = crafts / Math.Max(1, clock.Elapsed.TotalSeconds);
+
+                Console.WriteLine($"   [{clock.Elapsed:hh\\:mm\\:ss}] batch {done:N0}/{batches:N0}  "
+                                + $"{crafts:N0} crafts  {rate:N0}/s  cache {contenders[0].Cache.Count + contenders[1].Cache.Count:N0} states");
+                for (var i = 0; i < contenders.Length; i++)
+                    Console.WriteLine($"      {contenders[i].Label,-12} clear {clears[i] * 100.0 / (done * Trials),6:0.00}%  "
+                                    + $"best batch {bestClear[i] * 100,5:0.0}%  "
+                                    + $"completed {completes[i] * 100.0 / (done * Trials),5:0.0}%  "
+                                    + $"quality {quality[i] / done,8:0}");
+                Console.Out.Flush();
+            }
+
+            if (clock.ElapsedMilliseconds - lastSave > 300_000)
+            {
+                lastSave = clock.ElapsedMilliseconds;
+                foreach (var c in contenders)
+                    c.Cache.Save(cachePath.Replace(".cache", $".{c.Cache.Owner}.cache"));
+                Console.WriteLine($"   checkpoint: {contenders[0].Cache.Summarise()}; {contenders[1].Cache.Summarise()}");
+                Console.Out.Flush();
+            }
+        }
+
+        foreach (var c in contenders)
+            c.Cache.Save(cachePath.Replace(".cache", $".{c.Cache.Owner}.cache"));
+
+        Console.WriteLine();
+        Console.WriteLine($"   finished in {clock.Elapsed:hh\\:mm\\:ss}; cache {contenders[0].Cache.Count + contenders[1].Cache.Count:N0} states");
+        for (var i = 0; i < contenders.Length; i++)
+            Console.WriteLine($"   {contenders[i].Label,-12} clear {clears[i] * 100.0 / ((long)batches * Trials),6:0.00}%  "
+                            + $"best batch {bestClear[i] * 100,5:0.0}%  "
+                            + $"completed {completes[i] * 100.0 / ((long)batches * Trials),5:0.0}%  "
+                            + $"quality {quality[i] / batches,8:0}");
+
+        Console.WriteLine();
+        Console.WriteLine(anomalies.Count == 0 ? "   no anomalies" : "   anomalies:");
+        foreach (var (what, count) in anomalies)
+            Console.WriteLine($"     {count,10:N0}x  {what}");
     }
 
     // ── shared corpus loading ─────────────────────────────────────────────────

@@ -174,6 +174,23 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         }
     }
 
+    /// <summary>
+    /// Resolves this job's action list and reports it, without needing a craft open.
+    /// </summary>
+    public string DescribeActions()
+    {
+        var job = playerState.ClassJob.RowId;
+        if (job == 0) return "No class active.";
+
+        if (actions == null || mappedJob != job)
+        {
+            actions = new CraftActionMap(dataManager, job, playerState.Level);
+            mappedJob = job;
+        }
+
+        return $"Job {job}, level {playerState.Level}." + Environment.NewLine + actions.Describe();
+    }
+
     private void Reset(string why)
     {
         CraftOpen = false;
@@ -255,12 +272,21 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
             mappedJob = job;
         }
 
-        if (!actions.IsComplete)
+        // An action the sheet did not yield costs its icon and its auto-play, not the advice. Only
+        // a map that resolved nothing means something is structurally wrong; refusing to advise at
+        // all because a handful of names did not match would throw away a working solver over a
+        // presentation problem.
+        if (actions.ResolvedCount == 0)
         {
-            Refuse($"Could not identify {actions.Unresolved.Count} of this job's craft actions, "
-                 + "so a recommendation could not be named reliably.");
+            Refuse("Could not identify any of this job's craft actions. "
+                 + "Run /rmccraft advise map to see what the sheet offered.");
             return false;
         }
+
+        if (!actions.IsComplete)
+            log.Warning($"[CraftAdvisor] {actions.Unresolved.Count} unresolved craft actions on job {job}: "
+                      + string.Join(", ", System.Linq.Enumerable.Select(actions.Unresolved, CraftActions.DisplayName)));
+
 
         if (ReadPlayer() is not { } player) { Refuse("Could not read craftsmanship and control."); return false; }
 

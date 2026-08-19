@@ -302,6 +302,11 @@ public sealed class Plugin : IDalamudPlugin
                 ChatGui_Print("Craft recorder stopped.");
                 break;
 
+            case "advise" when rest != null && rest.Trim().Equals("map", System.StringComparison.OrdinalIgnoreCase):
+                foreach (var line in CraftAdvisor.DescribeActions().Split(System.Environment.NewLine))
+                    if (!string.IsNullOrWhiteSpace(line)) ChatGui_Print(line.TrimEnd());
+                break;
+
             case "advise":
                 craftAdvisorWindow.IsOpen = !craftAdvisorWindow.IsOpen;
                 ChatGui_Print(craftAdvisorWindow.IsOpen

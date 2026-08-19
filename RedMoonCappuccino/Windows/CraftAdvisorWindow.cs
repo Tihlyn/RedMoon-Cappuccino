@@ -177,6 +177,14 @@ public sealed class CraftAdvisorWindow : ThemedWindow
                                     + $"step {state.Step}");
         }
 
+        // Said once, quietly, rather than in the refusal: it costs an icon, not the advice.
+        var map = advisor.Actions;
+        if (map is { IsComplete: false })
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextUnformatted($"{map.Unresolved.Count} actions unnamed — /rmccraft advise map");
+        }
+
         DrawFooter(advice);
         DrawInternals(advice);
     }

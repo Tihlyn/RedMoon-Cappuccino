@@ -160,7 +160,6 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
         {
             if (action == CraftAction.None) continue;
             var spec = CraftActions.Spec(action);
-            if (spec.CostsDelineation && sim.Player.AvailableDelineations <= 0) continue;
             if (spec.SuccessRate < 100 && gambleBudget <= 0) continue;
             usable.Add(action);
         }
@@ -173,8 +172,6 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
 
     public CraftAction Choose(CraftState state)
     {
-        // Play the book out first. An entry that has become illegal is skipped rather than
-        // abandoning the rest, so a condition that blocks one step does not discard the opening.
         while (openingCursor < opening.Length)
         {
             var scripted = opening[openingCursor++];
@@ -186,41 +183,103 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
 
         foreach (var action in candidates)
         {
-            var spec = CraftActions.Spec(action);
-            if (sim.Legality(state, action) != ActionLegality.Usable) continue;
-            if (spec.SuccessRate < 100 && state.GamblesUsed >= gambleBudget) continue;
+            if (!Allowed(state, action)) continue;
 
-            double value;
-            if (spec.SuccessRate < 100)
-            {
-                var p = spec.SuccessRate / 100.0;
-                var hit  = ExpectOverConditions(state, action, true);
-                var miss = ExpectOverConditions(state, action, false);
-                if (double.IsNegativeInfinity(hit) || double.IsNegativeInfinity(miss)) continue;
-                value = p * hit + (1 - p) * miss;
-            }
-            else
-            {
-                value = ExpectOverConditions(state, action, true);
-            }
-
-            if (value > bestValue)
-            {
-                bestValue = value;
-                best = action;
-            }
+            var value = ScoreAction(state, action, 0);
+            if (value > bestValue) { bestValue = value; best = action; }
         }
 
         return best;
     }
 
-    /// <summary>Expectation over the next condition, weighted by the fitted model.</summary>
-    private double ExpectOverConditions(CraftState state, CraftAction action, bool succeeded)
+    /// <summary>Charges left, delineation budget respected, and legal from here.</summary>
+    private bool Allowed(CraftState state, CraftAction action)
     {
+        var spec = CraftActions.Spec(action);
+        if (spec.SuccessRate < 100 && state.GamblesUsed >= gambleBudget) return false;
+        if (spec.CostsDelineation && sim.Player.AvailableDelineations <= 0) return false;
+        return sim.Legality(state, action) == ActionLegality.Usable;
+    }
+
+    /// <summary>
+    /// How deep a chain of step-neutral actions is followed inside one decision.
+    ///
+    /// <para>One. A continuation costs a full candidate scan, so each level of depth multiplies
+    /// the branching — at four it was slow enough to abandon the run. One also matches what the
+    /// actions are for: pause, then act. Chaining two specialists before doing anything is not a
+    /// line worth finding, and the next decision re-evaluates from the new state anyway, so
+    /// nothing is lost that the following step does not recover.</para>
+    /// </summary>
+    private const int MaxContinuations = 1;
+
+    /// <summary>
+    /// Value of taking an action.
+    ///
+    /// <para>Step-neutral actions are looked <em>through</em> rather than scored on their own.
+    /// Careful Observation, Heart and Soul and Quick Innovation add no quality and no progress, so
+    /// judged in isolation they are worthless and a search would never take one — which is why
+    /// their use previously had to be hard-coded into the heuristic. They do not end the decision:
+    /// no step passes, so what they are worth is whatever they enable. Scoring them by their best
+    /// continuation is the treatment a combo gets, not a cost to budget around.</para>
+    ///
+    /// <para>Careful Observation also redraws the condition, so it opens a chance node; the other
+    /// two leave the condition standing and simply continue.</para>
+    /// </summary>
+    private double ScoreAction(CraftState state, CraftAction action, int depth)
+    {
+        var spec = CraftActions.Spec(action);
+
+        if (!spec.AdvancesStep && depth < MaxContinuations)
+        {
+            return action == CraftAction.CarefulObservation
+                ? ExpectOverConditions(state, action, true, depth + 1)
+                : ContinueFrom(sim.Apply(state, action, state.Condition), depth + 1);
+        }
+
+        if (spec.SuccessRate < 100)
+        {
+            var p = spec.SuccessRate / 100.0;
+            var hit  = ExpectOverConditions(state, action, true, depth);
+            var miss = ExpectOverConditions(state, action, false, depth);
+            if (double.IsNegativeInfinity(hit) || double.IsNegativeInfinity(miss))
+                return double.NegativeInfinity;
+            return p * hit + (1 - p) * miss;
+        }
+
+        return ExpectOverConditions(state, action, true, depth);
+    }
+
+    /// <summary>Best action available after a continuation, or the state's own value if none is.</summary>
+    private double ContinueFrom(StepResult step, int depth)
+    {
+        if (!step.Ok) return double.NegativeInfinity;
+        if (depth >= MaxContinuations) return Evaluate(step.State);
+
+        var best = double.NegativeInfinity;
+        foreach (var action in candidates)
+        {
+            if (!Allowed(step.State, action)) continue;
+            var value = ScoreAction(step.State, action, depth);
+            if (value > best) best = value;
+        }
+
+        return double.IsNegativeInfinity(best) ? Evaluate(step.State) : best;
+    }
+
+
+    /// <summary>Expectation over the next condition, weighted by the fitted model.</summary>
+    private double ExpectOverConditions(CraftState state, CraftAction action, bool succeeded, int depth)
+    {
+        // The depth test belongs here as well as at the call site. Without it an exhausted
+        // continuation still reports itself as neutral, continues at the same depth, and recurses
+        // forever — the guard has to hold wherever the decision to look through is made.
+        var neutral = !CraftActions.Spec(action).AdvancesStep && depth < MaxContinuations;
+
         if (model.IsTelegraphed(state.Condition))
         {
             var only = sim.Apply(state, action, model.TelegraphTarget, succeeded);
-            return only.Ok ? Evaluate(only.State) : double.NegativeInfinity;
+            if (!only.Ok) return double.NegativeInfinity;
+            return neutral ? ContinueFrom(only, depth) : Evaluate(only.State);
         }
 
         var total = 0.0;
@@ -234,7 +293,7 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
             var step = sim.Apply(state, action, model.Members[i], succeeded);
             if (!step.Ok) return double.NegativeInfinity;
 
-            total  += p * Evaluate(step.State);
+            total  += p * (neutral ? ContinueFrom(step, depth) : Evaluate(step.State));
             weight += p;
         }
 

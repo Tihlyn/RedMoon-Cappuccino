@@ -18,8 +18,10 @@ namespace RedMoonCappuccino.Services.Crafting;
 /// could not. An evaluator that never reaches a terminal state returns zero for every candidate
 /// and gives a search nothing to rank; one that plays a real craft to the end returns a signal.</para>
 ///
-/// <para>Deliberately not optimal. Its job is to be reasonable everywhere and to complete, so that
-/// search can be spent only where reasonable is not good enough.</para>
+/// <para>Deliberately not optimal, and deliberately not complete. It covers the ordinary steps —
+/// plain conditions, no gamble on offer, no specialist charge worth spending — and leaves the rest
+/// to the search. Anything it decides is something the search never gets to weigh, so the rules
+/// here stop where real decisions begin.</para>
 /// </summary>
 public sealed class HeuristicPolicy : ICraftPolicy
 {
@@ -142,39 +144,10 @@ public sealed class HeuristicPolicy : ICraftPolicy
                 return CraftAction.Veneration;
         }
 
-        // ── Specialist actions ──
-        // They carry no efficiency of their own, so a best-by-gain search would never reach for
-        // them. Each is spent where its effect is worth most rather than as soon as it is legal:
-        // there are only three Careful Observations and one of each other per synthesis, and the
-        // limit that matters is the charge, not the currency.
-
-        // Great Strides is about to be cashed and the condition is the worst one available.
-        // Careful Observation redraws it without spending a step or any buff duration, which is
-        // the cheapest way to turn the biggest touch of the craft into a Good one.
-        if (state.Condition == CraftCondition.Normal
-            && state.HasBuff(CraftBuff.GreatStrides)
-            && state.InnerQuiet >= CraftActions.MaxInnerQuiet
-            && Usable(state, CraftAction.CarefulObservation))
-            return CraftAction.CarefulObservation;
-
-        // Heart and Soul buys a Precise Touch off-condition: 150% and two Inner Quiet instead of
-        // one. Worth its charge only while there are stacks left to gain.
-        if (state.InnerQuiet < CraftActions.MaxInnerQuiet
-            && state.HasBuff(CraftBuff.Innovation)
-            && state.Condition is not (CraftCondition.Good or CraftCondition.Excellent)
-            && !state.HeartAndSoulActive
-            && Usable(state, CraftAction.HeartAndSoul))
-            return CraftAction.HeartAndSoul;
-
-        if (state.HeartAndSoulActive && Usable(state, CraftAction.PreciseTouch))
-            return CraftAction.PreciseTouch;
-
-        // Quick Innovation is Innovation without the 18 CP, and cannot be cast over a running one.
-        // Saved for when CP is the binding constraint rather than spent early for convenience.
-        if (!state.HasBuff(CraftBuff.Innovation)
-            && state.Cp < 120
-            && Usable(state, CraftAction.QuickInnovation))
-            return CraftAction.QuickInnovation;
+        // Specialist actions are deliberately absent here. They are decisions, not defaults:
+        // each is worth whatever it enables, which depends on the state, and the search values
+        // them properly by looking through them. Hard-coding a rule for when to spend one made
+        // this policy the whole strategy instead of the part that fills the gaps.
 
         // Cash Inner Quiet in before it can be wasted, under the biggest multiplier available.
         if (state.InnerQuiet >= CraftActions.MaxInnerQuiet

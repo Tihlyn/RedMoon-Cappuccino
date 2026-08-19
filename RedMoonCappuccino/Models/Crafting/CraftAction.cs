@@ -21,6 +21,7 @@ public enum CraftAction : byte
     Groundwork,
     IntensiveSynthesis,
     MuscleMemory,
+    Reflect,
     DelicateSynthesis,
 
     // ── Quality ──
@@ -209,6 +210,16 @@ public static class CraftActions
         Add(new ActionSpec { Action = CraftAction.DelicateSynthesis, Kind = ActionKind.Progress, ProgressEfficiency = 150, QualityEfficiency = 100, CpCost = 32, DurabilityCost = 10, GrantsInnerQuiet = true });
 
         // ── Quality ───────────────────────────────────────────────────────────
+        // Reflect: the quality-side opener, first step only. Two Inner Quiet after one cast,
+        // derived from recorded play — 550 quality from an uncomboed Advanced Touch on the
+        // following step pins (IQ + 10) at 12.
+        Add(new ActionSpec
+        {
+            Action = CraftAction.Reflect, Kind = ActionKind.Quality,
+            QualityEfficiency = 300, CpCost = 6, DurabilityCost = 10,
+            GrantsInnerQuiet = true, BonusInnerQuiet = 1,
+        });
+
         Add(new ActionSpec { Action = CraftAction.BasicTouch,    Kind = ActionKind.Quality, QualityEfficiency = 100, CpCost = 18, DurabilityCost = 10, GrantsInnerQuiet = true });
         Add(new ActionSpec { Action = CraftAction.StandardTouch, Kind = ActionKind.Quality, QualityEfficiency = 125, CpCost = 32, DurabilityCost = 10, GrantsInnerQuiet = true });
         Add(new ActionSpec { Action = CraftAction.AdvancedTouch, Kind = ActionKind.Quality, QualityEfficiency = 150, CpCost = 46, DurabilityCost = 10, GrantsInnerQuiet = true });

@@ -46,6 +46,9 @@ public static class Program
         Section("F. Phase 1 — bound and deterministic solver");
         Phase1Checks();
 
+        Section("G. Macro replay — the quality path against live play");
+        MacroReplayChecks();
+
         Console.WriteLine();
         Console.WriteLine(new string('=', 72));
         Console.WriteLine(failures == 0
@@ -862,6 +865,121 @@ public static class Program
 
         Check("solving twice gives the same answer",
             new DeterministicSolver(sim, bound, 0, 4_000_000).SolveBest().Quality == full.Quality);
+    }
+
+
+    // ── G. Macro replay against live manual crafts ────────────────────────────
+
+    /// <summary>
+    /// The quality half of the Phase 0 gate, which the driven corpus could never supply.
+    ///
+    /// <para>Auto runs label every action but never touch quality; manual play moves quality but
+    /// records action 0, so no gain is attributable to a cast. Two manual crafts recorded
+    /// alongside the macro that produced them close that gap: the recording carries the state at
+    /// every step, the macro carries the labels, and together they pin the entire quality path —
+    /// Inner Quiet scaling, Innovation, Great Strides, Byregot's, Waste Not durability, Veneration
+    /// and Manipulation restoration — against the real client.</para>
+    ///
+    /// <para>Both recipes are standard rather than expert (ConditionsFlag 15), which is what makes
+    /// them usable here: the conditions are the ordinary four, so nothing depends on the expert
+    /// mechanics this project measured separately.</para>
+    /// </summary>
+    private static void MacroReplayChecks()
+    {
+        // The macro both crafts were made with, in order.
+        var macro = new[]
+        {
+            CraftAction.Reflect, CraftAction.Manipulation, CraftAction.AdvancedTouch,
+            CraftAction.TrainedPerfection, CraftAction.Innovation, CraftAction.PreparatoryTouch,
+            CraftAction.PreparatoryTouch, CraftAction.GreatStrides, CraftAction.PreparatoryTouch,
+            CraftAction.Manipulation, CraftAction.GreatStrides, CraftAction.Innovation,
+            CraftAction.WasteNotII, CraftAction.PreparatoryTouch, CraftAction.GreatStrides,
+            CraftAction.ByregotsBlessing, CraftAction.Veneration, CraftAction.DelicateSynthesis,
+            CraftAction.Groundwork, CraftAction.Groundwork, CraftAction.Groundwork,
+        };
+
+        // Stats as played, food and medicine included.
+        var player = new PlayerSpec
+        {
+            Craftsmanship = 5909, Control = 5610, MaxCp = 771, Level = 100,
+            // Confirmed by the recording rather than assumed: the Good-condition Preparatory
+            // Touch at step 6 of the first craft gained 2088, which is 1.75x. At 1.5x it would
+            // have been 1790.
+            GoodMultiplier = 1.75,
+        };
+
+        // Dividers are not in the recorder's header, so they are solved from the observed base
+        // values and then checked to round-trip through the simulator's own formulas.
+        var recipe = new RecipeSpec
+        {
+            RecipeId = 37817, ConditionsFlag = 15, IsExpert = false, RecipeJobLevel = 100,
+            Difficulty = 5622, MaxQuality = 14204, Durability = 35, RequiredQuality = 14200,
+            ProgressDivider = 189, QualityDivider = 207, ProgressModifier = 100, QualityModifier = 100,
+        };
+
+        var sim = new CraftSim(recipe, player);
+        Check($"base progress solves to the observed value (got {sim.BaseProgress}, expected 314)",
+            sim.BaseProgress == 314);
+        Check($"base quality solves to the observed value (got {sim.BaseQuality}, expected 306)",
+            sim.BaseQuality == 306);
+
+        // Conditions as they actually rolled, per craft, indexed by step.
+        var craftOne = new[]
+        {
+            "Normal","Normal","Normal","Normal","Normal","Good","Normal","Normal","Normal","Normal",
+            "Normal","Good","Normal","Normal","Normal","Normal","Normal","Normal","Normal","Normal","Normal",
+        };
+        var craftTwo = new[]
+        {
+            "Normal","Normal","Normal","Normal","Normal","Normal","Normal","Normal","Normal","Good",
+            "Normal","Normal","Good","Normal","Normal","Normal","Normal","Good","Normal","Normal","Normal",
+        };
+
+        // Quality recorded at the START of each step, so entry i+1 is the result of macro[i].
+        var qualityOne = new[] { 0,918,918,1468,1468,1468,3556,4933,4933,7534,7534,7534,7534,7534,10441,10441,14204,14204,14204,14204,14204 };
+        var qualityTwo = new[] { 0,918,918,1468,1468,1468,2661,4038,4038,6639,6639,6639,6639,6639,9546,9546,14136,14136,14204,14204,14204 };
+        var durability = new[] { 35,25,25,20,25,30,35,20,25,10,10,15,20,25,20,25,25,30,30,20,10 };
+        var cp         = new[] { 771,765,669,623,623,605,565,525,493,453,357,325,307,209,169,137,113,95,63,45,27 };
+        var progress   = new[] { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,706,2401,4096 };
+
+        ReplayOne("craft 1 (Gemsap)", sim, macro, craftOne, qualityOne, durability, cp, progress);
+        ReplayOne("craft 2 (Majestic Polish)", sim, macro, craftTwo, qualityTwo, durability, cp, progress);
+    }
+
+    private static void ReplayOne(string label, CraftSim sim, CraftAction[] macro, string[] conditions,
+                                  int[] quality, int[] durability, int[] cp, int[] progress)
+    {
+        var state = sim.Initial();
+        var diffs = new List<string>();
+
+        for (var i = 0; i < macro.Length; i++)
+        {
+            // Compare before acting: the recording captures the state at the start of each step.
+            if (state.Quality    != quality[i])    diffs.Add($"step {i + 1} quality: sim {state.Quality} vs recorded {quality[i]}");
+            if (state.Durability != durability[i]) diffs.Add($"step {i + 1} durability: sim {state.Durability} vs recorded {durability[i]}");
+            if (state.Cp         != cp[i])         diffs.Add($"step {i + 1} cp: sim {state.Cp} vs recorded {cp[i]}");
+            if (state.Progress   != progress[i])   diffs.Add($"step {i + 1} progress: sim {state.Progress} vs recorded {progress[i]}");
+
+            if (diffs.Count > 6) break;
+
+            state = state with { Condition = ConditionEffects.FromDisplayName(conditions[i]) };
+
+            var nextCondition = i + 1 < conditions.Length
+                ? ConditionEffects.FromDisplayName(conditions[i + 1])
+                : CraftCondition.Normal;
+
+            var step = sim.Apply(state, macro[i], nextCondition);
+            if (!step.Ok)
+            {
+                diffs.Add($"step {i + 1} {macro[i]} refused: {step.Legality}");
+                break;
+            }
+            state = step.State;
+        }
+
+        Console.WriteLine($"   {label}: {(diffs.Count == 0 ? "exact" : diffs.Count + " divergence(s)")}");
+        foreach (var d in diffs) Console.WriteLine($"     ! {d}");
+        Check($"{label} replays exactly against the client", diffs.Count == 0);
     }
 
     // ── shared corpus loading ─────────────────────────────────────────────────

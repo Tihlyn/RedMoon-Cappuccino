@@ -197,6 +197,7 @@ public sealed class CraftSim
         switch (action)
         {
             case CraftAction.MuscleMemory when state.Step != 1:
+            case CraftAction.Reflect      when state.Step != 1:
                 return ActionLegality.FirstStepOnly;
 
             case CraftAction.ByregotsBlessing when state.InnerQuiet == 0:
@@ -430,8 +431,18 @@ public sealed class CraftSim
         next = next with { Condition = nextCondition, PreviousAction = action };
 
         // Manipulation restores at the end of a step, and only while the craft is still live.
+        //
+        // Two rules, both measured against recorded play rather than reasoned about:
+        //
+        // It never restores on the step it is cast, including a recast over a running one — two
+        // manual crafts cast Manipulation at steps 2 and 10 with durability unchanged across both.
+        //
+        // And the test is on the status as it stood <em>before</em> the tick, so the final step of
+        // a window still restores. Testing afterwards silently dropped the eighth restore: the
+        // timer has already reached zero by then, even though the status was live for that step.
         if (spec.AdvancesStep
-            && next.HasBuff(CraftBuff.Manipulation)
+            && action != CraftAction.Manipulation
+            && state.HasBuff(CraftBuff.Manipulation)
             && next.Durability > 0
             && next.Progress < recipe.Difficulty)
             next = next with { Durability = Math.Min(next.Durability + CraftActions.ManipulationRestore, recipe.Durability) };

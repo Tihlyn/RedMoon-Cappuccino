@@ -5,6 +5,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Interface.Windowing;
 using RedMoonCappuccino.Services;
+using RedMoonCappuccino.Services.Crafting;
 using RedMoonCappuccino.Windows;
 using RedMoonCappuccino.RotationRecorder;
 
@@ -47,6 +48,7 @@ public sealed class Plugin : IDalamudPlugin
     public readonly SubmarineRouteService SubmarineRoutes;
     public readonly SubmarineGameData     SubmarineGame;
     public readonly CraftDataRecorder     CraftRecorder;
+    public readonly LiveCraftAdvisor      CraftAdvisor;
 
     /// <summary>
     /// Fitted condition models, one per <c>ConditionsFlag</c>, and the gate that decides
@@ -61,6 +63,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly AcquisitionWindow acquisitionWindow;
     private readonly ChatWindow   chatWindow;
     private readonly RouteWindow  routeWindow;
+    private readonly CraftAdvisorWindow craftAdvisorWindow;
 
     private ActionRecorder  _actionRecorder  = null!;
     private GeminiAnalyzer  _geminiAnalyzer  = null!;
@@ -99,6 +102,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Condition-sample collection for the crafting solver. Idle until /rmccraft starts it.
         CraftRecorder = new CraftDataRecorder(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, GameInterop, Log);
+        CraftAdvisor = new LiveCraftAdvisor(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, GameInterop, Log);
 
         // Windows
         mainWindow   = new MainWindow(this, DataService, GearPlannerService);
@@ -106,11 +110,13 @@ public sealed class Plugin : IDalamudPlugin
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
         chatWindow   = new ChatWindow(ChatService, Configuration);
         routeWindow  = new RouteWindow(SubmarineRoutes, SubmarineGame);
+        craftAdvisorWindow = new CraftAdvisorWindow(CraftAdvisor);
         WindowSystem.AddWindow(mainWindow);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(acquisitionWindow);
         WindowSystem.AddWindow(chatWindow);
         WindowSystem.AddWindow(routeWindow);
+        WindowSystem.AddWindow(craftAdvisorWindow);
 
         // DM arrival cues (chime / pop-up) while the chat window is not being watched.
         ChatService.DmReceived += OnDmReceived;
@@ -143,7 +149,7 @@ public sealed class Plugin : IDalamudPlugin
         });
         CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
         {
-            HelpMessage = "Craft condition recorder: start | auto | study | quality | stop | actions | probe.",
+            HelpMessage = "Crafting: advise (expert-recipe advisor) | start | auto | study | quality | stop | actions | probe.",
         });
 
         // UI hooks
@@ -186,6 +192,7 @@ public sealed class Plugin : IDalamudPlugin
         routeWindow.Dispose();
 
         CraftRecorder.Dispose();
+        CraftAdvisor.Dispose();
         SubmarineGame.Dispose();
         EventNotifications.Dispose();
         ChatService.Dispose();
@@ -293,6 +300,13 @@ public sealed class Plugin : IDalamudPlugin
             case "stop":
                 CraftRecorder.Stop();
                 ChatGui_Print("Craft recorder stopped.");
+                break;
+
+            case "advise":
+                craftAdvisorWindow.IsOpen = !craftAdvisorWindow.IsOpen;
+                ChatGui_Print(craftAdvisorWindow.IsOpen
+                    ? "Craft advisor open. It advises on expert recipes only, and never acts."
+                    : "Craft advisor closed.");
                 break;
 
             case "actions":

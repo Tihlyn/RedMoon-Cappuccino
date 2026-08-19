@@ -355,6 +355,11 @@ public sealed class CraftSim
         if (action == CraftAction.DaringTouch)
             next = next.WithBuff(CraftBuff.Expedience, 0);
 
+        // Counted here because the simulator is what knows a cast happened; whether the count
+        // constrains anything is the solver's business, not the game's.
+        if (spec.SuccessRate < 100)
+            next = next with { GamblesUsed = (byte)Math.Min(next.GamblesUsed + 1, byte.MaxValue) };
+
         // ── Charges and stored permissions ──
         switch (action)
         {

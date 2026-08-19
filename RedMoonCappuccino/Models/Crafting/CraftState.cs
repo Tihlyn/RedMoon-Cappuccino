@@ -106,6 +106,21 @@ public readonly record struct CraftState
     /// <summary>Four bits per <see cref="CraftBuff"/>, indexed by the enum value.</summary>
     public ulong BuffTimers { get; init; }
 
+    /// <summary>
+    /// Fallible actions cast so far.
+    ///
+    /// <para>The game imposes no such limit — this is carried for the <em>solver</em>, which does.
+    /// Each gamble adds a chance node, so admitting them without a cap doubles the branching at
+    /// every step where one is legal. A budget of N caps the added outcomes at 2^N per line, and
+    /// distorts the answer only downward: the policy found is the best among those gambling at
+    /// most N times, which is a lower bound on the unrestricted optimum rather than an
+    /// over-estimate of it.</para>
+    ///
+    /// <para>It lives in the state rather than beside the search because two positions reached
+    /// with different budgets remaining are genuinely different decision problems.</para>
+    /// </summary>
+    public byte GamblesUsed { get; init; }
+
     public byte CarefulObservationLeft { get; init; }
     public byte HeartAndSoulLeft { get; init; }
     public byte QuickInnovationLeft { get; init; }
@@ -181,6 +196,7 @@ public readonly record struct CraftState
 
         InnerQuiet = 0,
         BuffTimers = 0,
+        GamblesUsed = 0,
 
         CarefulObservationLeft = CraftActions.CarefulObservationCharges,
         HeartAndSoulLeft       = CraftActions.HeartAndSoulCharges,

@@ -1087,6 +1087,17 @@ public static class Program
                         + $"solver reaches {beam.Quality} without them");
 
         // Widening tells us whether the beam is limited by width or by its ranking heuristic.
+        // What refusing gambles actually costs, measured rather than argued. The frontier is
+        // deterministic here, so a fallible cast is scored as though it lands — an optimistic
+        // reading that Phase 2 will replace with a real expectation over the miss.
+        foreach (var budget in new[] { 0, 1, 3 })
+        {
+            var g = new FrontierSolver(sim, bound, gambleBudget: budget).Solve();
+            var used = g.Actions.Count(a => CraftActions.Spec(a).SuccessRate < 100);
+            Console.WriteLine($"   gamble budget {budget}: quality {g.Quality}, {g.Actions.Count} actions, "
+                            + $"{used} fallible cast(s)");
+        }
+
         var narrow = new FrontierSolver(sim, bound, width: 6000).Solve();
         Console.WriteLine($"   at width 6000: quality {narrow.Quality} ({narrow.Quality - beam.Quality})");
         Check($"the default width reaches the recipe's maximum quality ({beam.Quality} of {recipe.MaxQuality})",

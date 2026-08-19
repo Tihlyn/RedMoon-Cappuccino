@@ -34,6 +34,7 @@ public sealed class FrontierSolver
     private readonly QualityBound bound;
     private readonly int width;
     private readonly int maxSteps;
+    private readonly int gambleBudget;
     private readonly CraftAction[] candidates;
 
     /// <param name="width">
@@ -43,19 +44,33 @@ public sealed class FrontierSolver
     /// so the default is set where the answer stops improving rather than where it first looks
     /// reasonable. Lower it only with a measurement in hand.
     /// </param>
-    public FrontierSolver(CraftSim sim, QualityBound bound, int width = 24000, int maxSteps = 60)
+    /// <param name="gambleBudget">
+    /// Fallible casts a line may make. Zero keeps the search strictly certain, which is the right
+    /// setting for a baseline. Above zero it admits Rapid Synthesis and the fallible touches,
+    /// which real expert play leans on heavily — at this recipe's numbers Rapid Synthesis returns
+    /// 84 progress per durability at coin-flip odds and 126 under Centered, against Groundwork's
+    /// 60 for 18 CP, so refusing them outright is expensive.
+    ///
+    /// <para>Capped rather than free because each gamble is a chance node: without a limit the
+    /// branching doubles wherever a fallible action is legal. Bounding it also bounds the error,
+    /// and bounds it downward — the result is the best line using at most this many gambles,
+    /// never an over-estimate of the unrestricted optimum.</para>
+    /// </param>
+    public FrontierSolver(CraftSim sim, QualityBound bound, int width = 24000, int maxSteps = 60,
+                          int gambleBudget = 0)
     {
-        this.sim      = sim;
-        this.bound    = bound;
-        this.width    = width;
-        this.maxSteps = maxSteps;
+        this.sim          = sim;
+        this.bound        = bound;
+        this.width        = width;
+        this.maxSteps     = maxSteps;
+        this.gambleBudget = gambleBudget;
 
         var usable = new List<CraftAction>();
         foreach (var action in CraftActions.All)
         {
             if (action == CraftAction.None) continue;
             var spec = CraftActions.Spec(action);
-            if (spec.SuccessRate < 100) continue;      // no gambles in a baseline
+            if (spec.SuccessRate < 100 && gambleBudget <= 0) continue;
             if (spec.CostsDelineation) continue;       // no real currency spent
             if (spec.RequiresGoodCondition) continue;  // never legal under all-Normal
             usable.Add(action);
@@ -81,6 +96,9 @@ public sealed class FrontierSolver
             {
                 foreach (var action in candidates)
                 {
+                    if (CraftActions.Spec(action).SuccessRate < 100
+                        && node.State.GamblesUsed >= gambleBudget) continue;
+
                     var step = sim.Apply(node.State, action, CraftCondition.Normal);
                     if (!step.Ok) continue;
                     if (step.State.Equals(node.State)) continue;

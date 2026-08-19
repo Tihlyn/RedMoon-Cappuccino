@@ -99,7 +99,6 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
     public int AutoActions { get; private set; }
 
     private long lastAutoActionMs;
-    private long lastAdviceMs;
 
     public LiveCraftAdvisor(IDalamudPluginInterface pluginInterface, IFramework framework, IGameGui gameGui,
                             IObjectTable objectTable, IPlayerState playerState, IDataManager dataManager,

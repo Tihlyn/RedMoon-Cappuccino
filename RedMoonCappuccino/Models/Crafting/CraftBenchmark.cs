@@ -21,8 +21,12 @@ public static class CraftBenchmark
     /// </summary>
     public static PlayerSpec Character => new()
     {
-        Craftsmanship = 5909,
-        Control = 5610,
+        // Chosen to reproduce the base values the client actually reports on this recipe:
+        // 320 progress and 347 quality, read live in game. Stats alone do not determine those —
+        // the recipe's dividers do half the work — so the pair is only meaningful alongside the
+        // ExpertRecipe dividers below, and the two must be changed together.
+        Craftsmanship = 5724,
+        Control = 5616,
         MaxCp = 771,
         Level = 100,
         GoodMultiplier = 1.75,
@@ -47,8 +51,15 @@ public static class CraftBenchmark
         MaxQuality = 31520,
         Durability = 60,
         RequiredQuality = 31500,
-        ProgressDivider = 100,
-        QualityDivider = 100,
+        // Read from the client, not assumed. These were written as flat 100s and that inflated the
+        // whole benchmark: base progress is craftsmanship x 10 / ProgressDivider + 2, so a divider
+        // of 100 against a real 180 made the benchmark character 1.85x stronger than any real one.
+        // Every clear rate this project reported before 2026-08-19 was measured against that
+        // character. The macro replay in the same test suite had solved the true dividers for
+        // another recipe and asserted them — 189 and 207 — and the disagreement sat in one file,
+        // unnoticed, because nothing compared the two.
+        ProgressDivider = 180,
+        QualityDivider = 180,
         ProgressModifier = 100,
         QualityModifier = 100,
     };

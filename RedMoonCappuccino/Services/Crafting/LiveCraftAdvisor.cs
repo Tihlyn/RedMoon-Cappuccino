@@ -341,6 +341,29 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         Player = player;
         AutoActions = 0;
 
+        // Expert recipes turn in as collectables, and a collectable is graded in tiers rather than
+        // passed or failed at one number. Recipe.RequiredQuality reads 31,500 against a maximum of
+        // 31,520 on this recipe, which is the whole bar — if that is the target the solver has been
+        // aiming at a threshold nothing reaches. The shop's own tier values settle it, so they are
+        // logged until the answer is known and can be built in.
+        try
+        {
+            var meta = recipe.CollectableMetadata;
+            log.Information($"[CraftAdvisor] Collectable metadata: rowId {meta.RowId}, "
+                          + $"type {meta.GetType().Name}. Recipe.RequiredQuality = {recipe.RequiredQuality}.");
+
+            var refine = dataManager.GetExcelSheet<CollectablesShopRefine>()?.GetRowOrDefault(meta.RowId);
+            if (refine != null)
+                log.Information($"[CraftAdvisor] Collectability tiers: low {refine.Value.LowCollectability}, "
+                              + $"mid {refine.Value.MidCollectability}, high {refine.Value.HighCollectability}.");
+            else
+                log.Information("[CraftAdvisor] No CollectablesShopRefine row for that id.");
+        }
+        catch (Exception ex)
+        {
+            log.Warning($"[CraftAdvisor] Could not read collectable metadata: {ex.Message}");
+        }
+
         log.Information($"[CraftAdvisor] Tracking recipe {recipeId}, flag {flag}, "
                       + $"{spec.RequiredQuality}/{spec.MaxQuality} quality required, "
                       + $"difficulty {spec.Difficulty}, dividers {spec.ProgressDivider}/{spec.QualityDivider}, "

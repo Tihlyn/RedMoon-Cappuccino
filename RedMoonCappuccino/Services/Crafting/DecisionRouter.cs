@@ -244,8 +244,20 @@ public sealed class DecisionRouter : ICraftPolicy
 
             // CP is not the binding resource here, but spending it all strands the craft, so it
             // shows as a mild tax rather than a second denominator.
-            var score = worth / (durability + DurabilityFloor)
-                      * (1.0 - Math.Min(0.9, cp / (double)Math.Max(1, state.Cp)) * CpTax);
+            var score = worth / (durability + DurabilityFloor);
+
+            // Charge the action against the pool. An action that leaves the craft unable to reach
+            // the end is not a cheap action, whatever its rate looks like — this is what stops a
+            // policy spending big on a combo it cannot afford to follow through, and what makes
+            // small steps and zero-CP gambles attractive when the budget is tight.
+            var after = state with
+            {
+                Durability = state.Durability - durability,
+                Cp = state.Cp - cp,
+            };
+
+            var slack = Runway(after) - StepsNeeded(after, perTouch) - SolvencyMargin;
+            if (slack < 0) score *= 1.0 / (1.0 + InsolvencyPenalty * -slack);
 
             if (score > bestScore)
             {
@@ -257,6 +269,52 @@ public sealed class DecisionRouter : ICraftPolicy
 
         return new(best, best == CraftAction.None ? DecisionOwner.None : DecisionOwner.Evaluator, bestWhy);
     }
+
+    /// <summary>
+    /// Steps the craft can still afford, taking durability and CP as one pool rather than two.
+    ///
+    /// <para>They are separate meters but a single constraint: whichever runs dry first ends the
+    /// craft, so the runway is the smaller of the two and spending either is spending the same
+    /// budget. Scoring them independently is what let a policy buy six repairs — each looked
+    /// affordable against CP alone while the durability they bought was never going to be used.</para>
+    ///
+    /// <para>Manipulation is counted because it is durability already paid for and still arriving.</para>
+    /// </summary>
+    private double Runway(CraftState state)
+    {
+        var durability = (double)state.Durability;
+        if (state.HasBuff(CraftBuff.Manipulation))
+            durability += state.Buff(CraftBuff.Manipulation) * CraftActions.ManipulationRestore;
+
+        return Math.Min(durability / AverageDurabilityPerStep,
+                        state.Cp / AverageCpPerStep);
+    }
+
+    /// <summary>
+    /// Steps still required to finish: what progress owes plus what quality is short, each at the
+    /// best rate this state can deliver.
+    /// </summary>
+    private double StepsNeeded(CraftState state, int perTouch)
+    {
+        var owed = Math.Max(0, sim.Recipe.Difficulty - state.Progress);
+        var short_ = Math.Max(0, sim.Recipe.RequiredQuality - state.Quality);
+
+        SafestProgress(state, out var perProgress);
+
+        var progressSteps = owed > 0 && perProgress > 0 ? owed / (double)perProgress : 0;
+        var qualitySteps = short_ > 0 && perTouch > 0 ? short_ / (double)perTouch : 0;
+
+        return progressSteps + qualitySteps;
+    }
+
+    /// <summary>Typical durability a step costs once halvings and Manipulation are averaged in.</summary>
+    private const double AverageDurabilityPerStep = 7.0;
+
+    /// <summary>Typical CP a step costs across touches, buffs and the free progress actions.</summary>
+    private const double AverageCpPerStep = 20.0;
+
+    /// <summary>Steps of slack the craft aims to still hold when it finishes.</summary>
+    private const double SolvencyMargin = 2.0;
 
     /// <summary>Quality the strongest touch available would produce right now, the unit everything is priced in.</summary>
     private int BestTouchQuality(CraftState state)
@@ -356,8 +414,8 @@ public sealed class DecisionRouter : ICraftPolicy
     /// <summary>Keeps zero-durability actions finite without flattering them.</summary>
     private const double DurabilityFloor = 5.0;
 
-    /// <summary>How hard CP spend is discounted; a tax, not a second denominator.</summary>
-    private const double CpTax = 0.5;
+    /// <summary>How sharply an action is discounted for leaving the craft short of the finish.</summary>
+    private const double InsolvencyPenalty = 0.6;
 
     /// <summary>Durability kept in hand so one bad condition cannot make the progress debt unpayable.</summary>
     private const int UrgencyMargin = 15;

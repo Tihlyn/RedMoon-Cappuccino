@@ -1398,21 +1398,31 @@ public static class Program
         // per action. Two thousand trials of that is an hour of arithmetic; this is sized to what
         // the evaluator actually costs, and is the first thing to raise if it gets cheaper.
         const int Trials = 100;
+
+        // A whole craft is long and the condition swings are wide, so a handful of gambles is not
+        // a meaningful allowance. Raised well past what any single craft will use, which makes it
+        // a ceiling against runaway branching rather than a policy in its own right.
+        const int GambleBudget = 30;
+
+        // Best of ten. A 40-60% process has enough spread that a single batch of 100 says more
+        // about its seed than about the policy, and the human baseline this has to beat is quoted
+        // the same way.
+        const int Batches = 10;
         const int Seed = 20260819;
 
         var staticResult = evaluator.Run(() => new StaticPolicy(sim, planned.Actions), Trials, Seed);
         var router       = evaluator.Run(() => new DecisionRouter(sim, bound, model,
                                               opening: OpeningBook.Expert), Trials, Seed);
-        var routerGamble = evaluator.Run(() => new DecisionRouter(sim, bound, model, gambleBudget: 3,
+        var routerGamble = evaluator.Run(() => new DecisionRouter(sim, bound, model, gambleBudget: GambleBudget,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var heuristic    = evaluator.Run(() => new HeuristicPolicy(sim, bound,
                                               opening: OpeningBook.Expert), Trials, Seed);
-        var heurGamble   = evaluator.Run(() => new HeuristicPolicy(sim, bound, gambleBudget: 3,
+        var heurGamble   = evaluator.Run(() => new HeuristicPolicy(sim, bound, gambleBudget: GambleBudget,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var adaptive     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model), Trials, Seed);
         var opened       = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model,
                                               opening: OpeningBook.Expert), Trials, Seed);
-        var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: 3,
+        var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: GambleBudget,
                                               opening: OpeningBook.Expert), Trials, Seed);
 
         foreach (var r in new[] { staticResult, heuristic, heurGamble, adaptive, opened, gambling, router, routerGamble })
@@ -1420,11 +1430,46 @@ public static class Program
                             + $"completed {(double)r.Completed / r.Trials * 100,5:0.0}%   "
                             + $"mean quality {r.MeanQuality,8:0}");
 
+        // ── best of ten ──
+        Console.WriteLine();
+        Console.WriteLine($"   best of {Batches} batches of {Trials}, each batch a fresh seed:");
+
+        var contenders = new (string Label, Func<ICraftPolicy> Make)[]
+        {
+            ("static line", () => new StaticPolicy(sim, planned.Actions)),
+            ("opened + expectimax", () => new ExpectimaxPolicy(sim, bound, model,
+                                              gambleBudget: GambleBudget, opening: OpeningBook.Expert)),
+            ("router", () => new DecisionRouter(sim, bound, model,
+                                  gambleBudget: GambleBudget, opening: OpeningBook.Expert)),
+        };
+
+        foreach (var (label, make) in contenders)
+        {
+            var clears = new List<double>();
+            var completes = new List<double>();
+            var qualities = new List<double>();
+
+            for (var batch = 0; batch < Batches; batch++)
+            {
+                var r = evaluator.Run(make, Trials, Seed + batch * 10_000);
+                clears.Add(r.ClearRate);
+                completes.Add((double)r.Completed / r.Trials);
+                qualities.Add(r.MeanQuality);
+            }
+
+            clears.Sort(); completes.Sort(); qualities.Sort();
+            Console.WriteLine($"   {label,-22} clear best {clears[^1] * 100,5:0.0}% "
+                            + $"median {clears[Batches / 2] * 100,5:0.0}% worst {clears[0] * 100,5:0.0}%   "
+                            + $"completed median {completes[Batches / 2] * 100,5:0.0}%   "
+                            + $"quality median {qualities[Batches / 2],8:0}");
+        }
+        Console.WriteLine();
+
         // One craft, decision by decision, with the owner of each. This is the diagnostic that
         // four failed evaluators were debugged without.
         Console.WriteLine();
         Console.WriteLine("   trace of a single craft:");
-        Console.Write(new DecisionRouter(sim, bound, model, gambleBudget: 3,
+        Console.Write(new DecisionRouter(sim, bound, model, gambleBudget: GambleBudget,
                                          opening: OpeningBook.Expert).Trace(sampler, Seed));
         Console.WriteLine();
 

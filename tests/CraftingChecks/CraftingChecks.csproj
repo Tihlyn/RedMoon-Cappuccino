@@ -29,6 +29,7 @@
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftCondition.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftAction.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftState.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftBenchmark.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftSim.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModel.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModelFitter.cs" />

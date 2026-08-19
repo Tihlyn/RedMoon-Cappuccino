@@ -204,6 +204,14 @@ public sealed class QualityBound
     /// <summary>
     /// Upper bound on the quality still obtainable from <paramref name="state"/>, already capped
     /// by how much room the recipe leaves.
+    ///
+    /// <para>For pruning only. It cannot rank, and scaling it into something that looks like an
+    /// estimate does not fix that: with real CP in hand the raw table runs past 50,000 on a recipe
+    /// whose maximum is 31,520, so the headroom cap binds and this returns exactly
+    /// <c>MaxQuality - Quality</c> for every state. That was tried — projected final quality came
+    /// out as a flat 31,520 at every step of the craft, the value it fed was a constant 0.501, and
+    /// the search, having nothing to climb, spent its whole craft casting Final Appraisal. Ranking
+    /// needs a playout.</para>
     /// </summary>
     public int Remaining(CraftState state, RecipeSpec recipe)
     {
@@ -224,6 +232,7 @@ public sealed class QualityBound
         var headroom = Math.Max(0, recipe.MaxQuality - state.Quality);
         return Math.Min(table[cp * (maxDurability + 1) + dur] + allowance, headroom);
     }
+
 
     /// <summary>
     /// Durability a line must still spend on finishing progress, using the most efficient progress

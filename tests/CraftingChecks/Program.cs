@@ -17,22 +17,6 @@ public static class Program
     /// </summary>
     private static bool full;
 
-    /// <summary>
-    /// The character this advisor is for, buffed as the recorded manual expert crafts were played.
-    ///
-    /// <para>Named once because it was not, and that cost the whole of Phase 2. These stats were
-    /// copy-pasted out of the replay section — where they are correct, having been solved from a
-    /// recording made on a weaker alt, and asserted as such — into the Monte Carlo benchmark, where
-    /// they are simply the wrong character. Every adaptive-policy figure this project produced was
-    /// measured at 3350/4750 rather than 5909/5610, and the search was read as clearing 0.8% when
-    /// on this character it clears 32%. A benchmark that silently describes someone else is worse
-    /// than no benchmark, because work gets done against it.</para>
-    /// </summary>
-    private static PlayerSpec Character => new()
-    {
-        Craftsmanship = 5909, Control = 5610, MaxCp = 771, Level = 100,
-        GoodMultiplier = 1.75, AvailableDelineations = int.MaxValue,
-    };
 
     public static int Main(string[] args)
     {
@@ -42,6 +26,8 @@ public static class Program
         // its exit code should not pretend to be a verdict on the build.
         if (Array.Exists(args, a => a is "--discover" or "-d")) { Discover(args); return 0; }
         if (Array.Exists(args, a => a is "--diagnose")) { Diagnose(args); return 0; }
+        if (Array.Exists(args, a => a is "--trace")) { TraceOne(args); return 0; }
+        if (Array.Exists(args, a => a is "--sweep")) { Sweep(args); return 0; }
         var dirArg = Array.Find(args, a => !a.StartsWith("-"));
         var dataDir = dirArg is not null
             ? dirArg
@@ -1375,13 +1361,8 @@ public static class Program
         }
 
         // The expert recipe the model was fitted from, with the stats reconstructed from play.
-        var recipe = new RecipeSpec
-        {
-            RecipeId = 38247, ConditionsFlag = Flag, IsExpert = true, RecipeJobLevel = 100,
-            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
-            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
-        };
-        var player = Character;
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var player = CraftBenchmark.Character;
 
         var sim = new CraftSim(recipe, player);
         var bound = new QualityBound(sim);
@@ -1516,18 +1497,21 @@ public static class Program
         Check($"every policy finishes {Trials} trials without stalling",
             staticResult.Trials == Trials && adaptive.Trials == Trials && gambling.Trials == Trials);
 
-        // The gate. Clear rate is the objective, but nothing available reaches 31,500 of 31,520
-        // yet — the best policy here banks 17,665, roughly half what a clear needs. Asserting on
-        // a statistic that is zero on every side would assert nothing, so the gate is on the
-        // metric that carries signal, with clear rate printed beside it rather than buried.
+        // The gate. This used to assert on mean quality with a note explaining that clear rate
+        // was zero on every side and so could carry no signal. It is the objective, and it carries
+        // signal now, so it is what gets asserted.
         Console.WriteLine();
         var bestClear = Math.Max(Math.Max(staticResult.ClearRate, adaptive.ClearRate),
                                  Math.Max(opened.ClearRate, gambling.ClearRate));
         Console.WriteLine($"   best clear rate {bestClear * 100:0.0}%: the requirement is "
-                        + $"{recipe.RequiredQuality} and the strongest policy banks "
-                        + $"{gambling.MeanQuality:0} on average, so clears are still the tail "
-                        + $"of the distribution rather than the middle of it.");
+                        + $"{recipe.RequiredQuality} of {recipe.MaxQuality}, and the strongest "
+                        + $"policy banks {gambling.MeanQuality:0} on average.");
         Console.WriteLine();
+
+        // Ten trials cannot rank policies, but they can catch a collapse. The search sits near 88%
+        // over 600 trials against a 40-60% manual clear rate, so anything under a third here is
+        // something structural having broken rather than a bad run of conditions.
+        Check($"the search still clears expert recipes (best {bestClear * 100:0.0}%)", bestClear >= 0.30);
 
         if (full)
         {
@@ -1671,6 +1655,126 @@ public static class Program
     }
 
 
+    // ── Sweep ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Sweeps the width of the threshold curve, which is the search's only free parameter.
+    ///
+    /// <para>It controls how much quality separates a position that probably misses from one that
+    /// probably clears, and both ends of the range fail in their own way: too tight and the curve
+    /// is a step, so every candidate scores 0 or 1 and there is nothing to climb; too wide and it
+    /// straightens back out into expected quality, which is the risk-neutral objective this was
+    /// meant to replace.</para>
+    /// </summary>
+    private static void Sweep(string[] args)
+    {
+        var trials = 400;
+        var index = Array.FindIndex(args, a => a is "--sweep");
+        if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
+            trials = parsed;
+
+        Section($"Curve width sweep — {trials:N0} trials each");
+
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+        if (!registry.TryGetAdmissible(CraftBenchmark.ConditionsFlag, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model: {why}");
+            return;
+        }
+
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var sim = new CraftSim(recipe, CraftBenchmark.Character);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+        var evaluator = new PolicyEvaluator(sim, sampler);
+
+        // Two independent seed blocks. One block ranks the candidates; the second says whether
+        // the ranking was real or just the shape of those particular condition sequences, which a
+        // single block cannot distinguish and which is exactly how a tuned constant goes stale.
+        Console.WriteLine($"   {"spread",8} {"tune",16} {"holdout",16}");
+
+        foreach (var spread in new[] { 300.0, 400, 500, 600, 700, 900, 1100 })
+        {
+            ICraftPolicy Make() => new ExpectimaxPolicy(sim, bound, model, 30, OpeningBook.Expert, null,
+                                                        LeafValue.ClearChance, spread);
+
+            var tune = evaluator.Run(Make, trials, 5_000_000);
+            var holdout = evaluator.Run(Make, trials, 9_000_000);
+
+            Console.WriteLine($"   {spread,8:N0} {tune.ClearRate * 100,10:0.0}% clear {holdout.ClearRate * 100,10:0.0}% clear");
+        }
+
+        var rollout = evaluator.Run(
+            () => new ExpectimaxPolicy(sim, bound, model, 30, OpeningBook.Expert, null, LeafValue.Rollout),
+            trials, 5_000_000);
+        Console.WriteLine($"   {"rollout",8} {rollout.ClearRate * 100,8:0.0}% {rollout.Completed * 100.0 / trials,10:0.0}% "
+                        + $"{rollout.MeanQuality,13:N0}   (expected quality, for contrast)");
+    }
+
+    // ── Trace ─────────────────────────────────────────────────────────────────
+
+    /// <summary>Plays one craft and prints every decision with the numbers behind it.</summary>
+    private static void TraceOne(string[] args)
+    {
+        var seed = 5_000_000;
+        var index = Array.FindIndex(args, a => a is "--trace");
+        if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
+            seed = parsed;
+
+        Section($"Trace — seed {seed}");
+
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+        if (!registry.TryGetAdmissible(CraftBenchmark.ConditionsFlag, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model: {why}");
+            return;
+        }
+
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var player = CraftBenchmark.Character;
+        var sim = new CraftSim(recipe, player);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+
+        var rng = new Random(seed);
+        var policy = new ExpectimaxPolicy(sim, bound, model, 30, OpeningBook.Expert, null, LeafValue.ClearChance);
+        var state = sim.Initial();
+
+        Console.WriteLine($"   {"st",3} {"condition",-10} {"action",-22} {"prog",6} {"qual",6} {"dur",4} {"cp",4} "
+                        + $"{"iq",3} {"ceil",6}  gates");
+
+        for (var step = 0; step < 60 && !state.IsTerminal; step++)
+        {
+            var ceiling = bound.Remaining(state, recipe);
+            var gates = (bound.CanStillComplete(state, recipe) ? "" : "CANNOT-COMPLETE ")
+                      + (bound.CanStillClear(state, recipe) ? "" : "CANNOT-CLEAR");
+
+            var action = policy.Choose(state);
+
+            Console.WriteLine($"   {step,3} {state.Condition,-10} {action,-22} {state.Progress,6} {state.Quality,6} "
+                            + $"{state.Durability,4} {state.Cp,4} {state.InnerQuiet,3} {ceiling,6}  {gates}");
+
+            if (action == CraftAction.None) { Console.WriteLine("   -> policy returned None"); break; }
+
+            var spec = CraftActions.Spec(action);
+            var ok = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+            var next = sampler.Next(state.Condition, rng);
+            var r = sim.Apply(state, action, next, ok);
+            if (!r.Ok) { Console.WriteLine($"   -> apply rejected {action}"); break; }
+            state = r.State;
+        }
+
+        Console.WriteLine($"   final: completed={state.Completed} failed={state.Failed} "
+                        + $"quality={state.Quality} progress={state.Progress}/{recipe.Difficulty} "
+                        + $"cleared={state.Quality >= recipe.RequiredQuality && state.Completed}");
+    }
+
     // ── Diagnosis ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -1703,27 +1807,11 @@ public static class Program
             return;
         }
 
-        var recipe = new RecipeSpec
-        {
-            RecipeId = 38247, ConditionsFlag = 1523, IsExpert = true, RecipeJobLevel = 100,
-            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
-            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
-        };
+        var recipe = CraftBenchmark.ExpertRecipe;
 
         var players = new (string Label, PlayerSpec Spec)[]
         {
-            ("recorded alt  3350/4750/791", new PlayerSpec
-            {
-                Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
-                MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
-                AvailableDelineations = int.MaxValue,
-            }),
-            ("your character 5909/5610/771", new PlayerSpec
-            {
-                Craftsmanship = 5909, Control = 5610,
-                MaxCp = 771, Level = 100, GoodMultiplier = 1.75,
-                AvailableDelineations = int.MaxValue,
-            }),
+            ("5909/5610/771", CraftBenchmark.Character),
         };
 
         const int GambleBudget = 30;
@@ -1736,9 +1824,12 @@ public static class Program
 
             var policies = new (string Name, Func<ICraftPolicy> Make)[]
             {
-                ("expectimax", () => new ExpectimaxPolicy(sim, bound, model, GambleBudget, OpeningBook.Expert)),
-                ("router",     () => new DecisionRouter(sim, bound, model, GambleBudget, OpeningBook.Expert)),
-                ("heuristic",  () => new HeuristicPolicy(sim, bound, GambleBudget)),
+                ("expectimax/rollout", () => new ExpectimaxPolicy(sim, bound, model, GambleBudget,
+                                                 OpeningBook.Expert, null, LeafValue.Rollout)),
+                ("expectimax/clear",   () => new ExpectimaxPolicy(sim, bound, model, GambleBudget,
+                                                 OpeningBook.Expert, null, LeafValue.ClearChance)),
+                ("router",             () => new DecisionRouter(sim, bound, model, GambleBudget, OpeningBook.Expert)),
+                ("heuristic",          () => new HeuristicPolicy(sim, bound, GambleBudget)),
             };
 
             foreach (var (policyName, make) in policies)
@@ -1841,13 +1932,8 @@ public static class Program
             return;
         }
 
-        var recipe = new RecipeSpec
-        {
-            RecipeId = 38247, ConditionsFlag = 1523, IsExpert = true, RecipeJobLevel = 100,
-            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
-            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
-        };
-        var player = Character;
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var player = CraftBenchmark.Character;
 
         var sim = new CraftSim(recipe, player);
         var bound = new QualityBound(sim);

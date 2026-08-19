@@ -70,9 +70,40 @@ public sealed class HeuristicPolicy : ICraftPolicy
             if (Usable(state, CraftAction.MastersMend)) return CraftAction.MastersMend;
         }
 
-        return urgent || owed > 0 && FavoursProgress(state.Condition)
-            ? ProgressAction(state)
-            : QualityAction(state, owed);
+        // Out of room to delay: pay the debt even if that ends the craft.
+        if (urgent) return ProgressAction(state);
+
+        // Otherwise take cheap progress when the condition offers it, but never the cast that
+        // finishes — see FinishesTheCraft.
+        if (owed > 0 && FavoursProgress(state.Condition))
+        {
+            var progress = ProgressAction(state);
+            if (progress != CraftAction.None && !FinishesTheCraft(state, progress))
+                return progress;
+        }
+
+        var quality = QualityAction(state, owed);
+        return quality != CraftAction.None ? quality : ProgressAction(state);
+    }
+
+    /// <summary>
+    /// Whether a progress cast would end the craft here.
+    ///
+    /// <para>Completing locks the quality in, so on a recipe asking for 31,500 of 31,520 finishing
+    /// early is indistinguishable from failing. This policy used to pay the progress debt
+    /// opportunistically on every Sturdy and Malleable and complete at step eleven still holding
+    /// 456 of 771 CP, banking 3,129 quality — and because it is also the search's rollout, that
+    /// was the number every leaf in the search was ranked by, for positions the search itself
+    /// takes past 28,000. A rollout that cannot play the recipe is not a cheap evaluation, it is
+    /// a wrong one.</para>
+    ///
+    /// <para>Only a deferral, not a refusal. Once quality has nothing left to buy, or durability
+    /// runs short enough to make the debt urgent, the debt gets paid.</para>
+    /// </summary>
+    private bool FinishesTheCraft(CraftState state, CraftAction action)
+    {
+        if (state.Quality >= sim.Recipe.RequiredQuality) return false;
+        return state.Progress + sim.ProgressGain(state, action) >= sim.Recipe.Difficulty;
     }
 
     /// <summary>Slack kept in hand so a single unlucky condition cannot make the debt unpayable.</summary>

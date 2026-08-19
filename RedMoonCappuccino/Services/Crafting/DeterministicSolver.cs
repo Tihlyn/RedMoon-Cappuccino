@@ -117,12 +117,14 @@ public sealed class DeterministicSolver
     }
 
     /// <summary>
-    /// Collapses distinctions the transition function cannot see. Only Basic Touch and Standard
-    /// Touch matter as predecessors — they are the two combo sources — so every other value of
-    /// <see cref="CraftState.PreviousAction"/> splits the memo into duplicates of one another.
+    /// Collapses distinctions the transition function cannot see. Only Basic Touch, Standard
+    /// Touch and Observe matter as predecessors — they are the combo sources — so every other
+    /// value of <see cref="CraftState.PreviousAction"/> splits the memo into duplicates of one
+    /// another. Observe belongs here because it discounts Advanced Touch exactly as Standard
+    /// Touch does; collapsing it would hide that line from the search entirely.
     /// </summary>
     private static CraftState Normalize(CraftState state) =>
-        state.PreviousAction is CraftAction.BasicTouch or CraftAction.StandardTouch
+        state.PreviousAction is CraftAction.BasicTouch or CraftAction.StandardTouch or CraftAction.Observe
             ? state
             : state with { PreviousAction = CraftAction.None };
 

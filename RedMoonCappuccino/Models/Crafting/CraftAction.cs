@@ -187,6 +187,20 @@ public static class CraftActions
 
         void Add(ActionSpec spec) => table[(int)spec.Action] = spec;
 
+        // Deliberately absent, after a field-by-field cross-check against Raphael's action table:
+        //
+        //   Trained Eye      — fills quality outright, but only on recipes far below the
+        //                      crafter's level. An expert recipe is never one of those.
+        //   Rapid Synthesis  — fallible progress, and gated behind Stellar Steady Hand in the
+        //                      same way Hasty Touch is.
+        //   Stellar Steady Hand — makes the fallible actions certain. Both it and the actions it
+        //                      enables are excluded together; the solver refuses gambles anyway,
+        //                      so admitting them would widen the branching factor for lines it
+        //                      would never choose.
+        //
+        // Each is a real action rather than an oversight, and each is out of scope for expert
+        // recipes specifically. Revisit before pointing this simulator at anything else.
+
         Add(new ActionSpec { Action = CraftAction.None, Kind = ActionKind.Utility, AdvancesStep = false });
 
         // ── Progress ──────────────────────────────────────────────────────────
@@ -287,6 +301,13 @@ public static class CraftActions
     {
         (CraftAction.StandardTouch, CraftAction.BasicTouch)    => 18,
         (CraftAction.AdvancedTouch, CraftAction.StandardTouch) => 18,
+
+        // Observe sets the same combo state Standard Touch does, so it also discounts Advanced
+        // Touch from 46 to 18. Cross-checked against Raphael, which models Observe as setting
+        // Combo::StandardTouch outright. Worth 21 CP net for a step, so omitting it was not
+        // cosmetic — the solver simply could not see the line.
+        (CraftAction.AdvancedTouch, CraftAction.Observe)       => 18,
+
         _ => null,
     };
 

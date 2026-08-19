@@ -391,6 +391,21 @@ public static class Program
         Check("unprimed Innovation lasts 4",
             afterInnoPlain.State.Buff(CraftBuff.Innovation) == 4);
 
+        // ── Combos, cross-checked against Raphael ──
+        Check("Basic Touch discounts Standard Touch to 18",
+            sim.CpCost(s0 with { PreviousAction = CraftAction.BasicTouch }, CraftAction.StandardTouch) == 18);
+        Check("Standard Touch discounts Advanced Touch to 18",
+            sim.CpCost(s0 with { PreviousAction = CraftAction.StandardTouch }, CraftAction.AdvancedTouch) == 18);
+        Check("Observe discounts Advanced Touch to 18 as well",
+            sim.CpCost(s0 with { PreviousAction = CraftAction.Observe }, CraftAction.AdvancedTouch) == 18);
+        Check("an uncomboed Advanced Touch still costs 46",
+            sim.CpCost(s0, CraftAction.AdvancedTouch) == 46);
+        Check("Observe does not discount Standard Touch",
+            sim.CpCost(s0 with { PreviousAction = CraftAction.Observe }, CraftAction.StandardTouch) == 32);
+        Check("Refined Touch combos off Basic Touch only",
+            CraftActions.IsRefinedTouchCombo(CraftAction.BasicTouch)
+            && !CraftActions.IsRefinedTouchCombo(CraftAction.Observe));
+
         // ── Exact arithmetic ──
         // Regression guard for the float-vs-integer divergence. The same formula written with
         // doubles and one final floor disagrees with exact integer arithmetic on 0.73% of

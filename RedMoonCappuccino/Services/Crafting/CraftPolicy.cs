@@ -267,102 +267,36 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
     }
 
     /// <summary>
-    /// Durability this state genuinely needs for the progress it has left, priced at what its
-    /// current buffs and condition actually deliver rather than at the best case.
-    /// </summary>
-    private int RealisticProgressReserve(CraftState state)
-    {
-        var remaining = sim.Recipe.Difficulty - state.Progress;
-        if (remaining <= 0) return 0;
-
-        var bestPerDurability = 0.0;
-        foreach (var action in candidates)
-        {
-            var spec = CraftActions.Spec(action);
-            if (spec.ProgressEfficiency == 0 || spec.SuccessRate < 100) continue;
-
-            var cost = sim.DurabilityCost(state, action);
-            if (cost <= 0) continue;
-
-            var rate = (double)sim.ProgressGain(state, action) / cost;
-            if (rate > bestPerDurability) bestPerDurability = rate;
-        }
-
-        if (bestPerDurability <= 0) return int.MaxValue;
-        return (int)Math.Ceiling(remaining / bestPerDurability);
-    }
-
-    /// <summary>
-    /// Plays a state out under a fixed, cheap policy: bank quality while there is durability to
-    /// spare, then spend what is reserved on finishing progress.
+    /// Plays a state to a finish with the community ruleset and reports what it reached.
     ///
-    /// <para>Deliberately simple, and on a hard recipe that simplicity is fatal. <strong>This
-    /// rollout cannot finish an expert recipe</strong>, and the arithmetic says why: unbuffed
-    /// Groundwork returns 60.6 progress per point of durability, so a full 60-point bar buys 3,639
-    /// against the 11,250 needed. Even under Veneration it is 5,457. Completion requires cycling
-    /// durability through Manipulation and mends inside Veneration windows, which this rollout
-    /// does not attempt — so it returns zero for every candidate and the policy has nothing to
-    /// choose between.</para>
+    /// <para>The hand-written rollout this replaces could not finish an expert recipe — unbuffed
+    /// Groundwork returns 60.6 progress per point of durability, so a full bar bought 3,639
+    /// against 11,250 owed. It therefore returned zero for every candidate and the search had
+    /// nothing to rank. <see cref="HeuristicPolicy"/> cycles durability and lays down Veneration
+    /// the way play actually does, and completes most crafts, so the same call now carries a real
+    /// terminal signal.</para>
     ///
-    /// <para>Conditions are assumed Normal throughout, which understates every position equally
-    /// and would preserve the ordering that matters, if there were an ordering to preserve.</para>
+    /// <para>Graded rather than binary: on a recipe requiring 31,500 of 31,520 a clear is too rare
+    /// to steer by, so a completed craft is scored by the quality it reached, with clearing worth
+    /// a decisive bonus on top.</para>
+    ///
+    /// <para>Conditions are assumed Normal throughout. That understates every candidate equally,
+    /// which is what preserves the ordering while keeping one playout cheap.</para>
     /// </summary>
     private double Rollout(CraftState state)
     {
+        var playout = new HeuristicPolicy(sim, bound, gambleBudget);
+
         for (var guard = 0; guard < 80 && !state.IsTerminal; guard++)
         {
-            var needsProgress = state.Progress < sim.Recipe.Difficulty;
+            var action = playout.Choose(state);
+            if (action == CraftAction.None) break;
 
-            // The switch has to be judged on what this rollout can actually do, not on the
-            // admissible bound's reserve. That reserve assumes best-case buffs and conditions,
-            // because a bound must never under-estimate — but the rollout plays unbuffed, so
-            // treating it as a threshold delays the switch until completion is impossible. Every
-            // candidate then scores zero and the policy has nothing to choose between.
-            var wantProgress = needsProgress && state.Durability <= RealisticProgressReserve(state);
-
-            var chosen = CraftAction.None;
-            var bestGain = -1;
-
-            foreach (var action in candidates)
-            {
-                var spec = CraftActions.Spec(action);
-                if (spec.SuccessRate < 100) continue;             // rollouts do not gamble
-                if (sim.Legality(state, action) != ActionLegality.Usable) continue;
-
-                var gain = wantProgress
-                    ? (spec.ProgressEfficiency > 0 ? sim.ProgressGain(state, action) : -1)
-                    : (spec.QualityEfficiency  > 0 ? sim.QualityGain(state, action)  : -1);
-
-                if (gain > bestGain) { bestGain = gain; chosen = action; }
-            }
-
-            // Nothing useful left in the preferred category — try the other before giving up.
-            if (chosen == CraftAction.None || bestGain <= 0)
-            {
-                foreach (var action in candidates)
-                {
-                    var spec = CraftActions.Spec(action);
-                    if (spec.SuccessRate < 100) continue;
-                    if (spec.ProgressEfficiency == 0) continue;
-                    if (sim.Legality(state, action) != ActionLegality.Usable) continue;
-
-                    var gain = sim.ProgressGain(state, action);
-                    if (gain > bestGain) { bestGain = gain; chosen = action; }
-                }
-            }
-
-            if (chosen == CraftAction.None) break;
-
-            var step = sim.Apply(state, chosen, CraftCondition.Normal);
+            var step = sim.Apply(state, action, CraftCondition.Normal);
             if (!step.Ok) break;
             state = step.State;
         }
 
-        // Graded, not binary. Returning cleared/not gives no gradient on a recipe requiring
-        // 31,500 of 31,520 — a crude rollout never clears, every candidate scores zero, and the
-        // policy has nothing to choose between. Reporting the quality a completed craft reaches
-        // preserves the ordering that matters while still valuing completion above everything,
-        // since an unfinished craft scores nothing at all.
         if (!state.Completed) return 0;
 
         var bonus = state.Quality >= sim.Recipe.RequiredQuality ? 1e9 : 0;

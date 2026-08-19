@@ -226,6 +226,19 @@ public sealed class QualityBound
     }
 
     /// <summary>
+    /// Durability a line must still spend on finishing progress, using the most efficient progress
+    /// action available. A floor rather than an estimate, which is what makes it safe to treat the
+    /// remainder as available for quality.
+    /// </summary>
+    public int DurabilityReservedForProgress(CraftState state, RecipeSpec recipe)
+    {
+        var remaining = recipe.Difficulty - state.Progress;
+        if (remaining <= 0 || progressPerDurability <= 0) return 0;
+
+        return (int)Math.Ceiling(remaining / progressPerDurability);
+    }
+
+    /// <summary>
     /// Whether the state can still finish progress at all. A craft that cannot complete scores
     /// nothing regardless of how much quality it banked, so this is the first thing worth asking.
     /// </summary>

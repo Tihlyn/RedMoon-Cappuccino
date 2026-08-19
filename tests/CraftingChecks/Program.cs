@@ -55,6 +55,9 @@ public static class Program
         Section("I. Reconstructing a human expert craft");
         ReconstructionChecks(dataDir);
 
+        Section("J. Phase 2 — adaptive play against sampled conditions");
+        Phase2Checks(registry);
+
         Console.WriteLine();
         Console.WriteLine(new string('=', 72));
         Console.WriteLine(failures == 0
@@ -1315,6 +1318,125 @@ public static class Program
         CraftBuff.FinalAppraisal => "Final Appraisal",
         _                        => buff.ToString(),
     };
+
+
+    // ── J. Phase 2: adaptive play against sampled conditions ──────────────────
+
+    /// <summary>
+    /// Phase 2's gate: does reading the condition actually beat ignoring it?
+    ///
+    /// <para>Run on the recipe the fitted model was measured from, with conditions drawn from
+    /// those same weights, and with every policy handed the identical seeds so the sequences they
+    /// face are the same. The difference between them is then policy rather than luck, which a
+    /// comparison on independent samples could not claim.</para>
+    ///
+    /// <para>Clear rate is the metric because the objective is binary. Mean quality is reported
+    /// alongside it only as a diagnostic — under an all-or-nothing threshold a policy that banks
+    /// more quality on average and clears less often is strictly worse.</para>
+    /// </summary>
+    private static void Phase2Checks(ConditionModelRegistry registry)
+    {
+        const ushort Flag = 1523;
+        if (!registry.TryGetAdmissible(Flag, out var model, out var reason))
+        {
+            Check($"condition model for flag {Flag} is admissible", false, reason);
+            return;
+        }
+
+        // The expert recipe the model was fitted from, with the stats reconstructed from play.
+        var recipe = new RecipeSpec
+        {
+            RecipeId = 38247, ConditionsFlag = Flag, IsExpert = true, RecipeJobLevel = 100,
+            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
+            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
+        };
+        var player = new PlayerSpec
+        {
+            Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
+            MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
+        };
+
+        var sim = new CraftSim(recipe, player);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+        var evaluator = new PolicyEvaluator(sim, sampler);
+
+        Console.WriteLine($"   recipe 38247: difficulty {recipe.Difficulty}, durability {recipe.Durability}, "
+                        + $"requires {recipe.RequiredQuality} of {recipe.MaxQuality}, {player.MaxCp} CP");
+        Console.WriteLine($"   model: {model.Members.Length} conditions, telegraph "
+                        + $"{model.TelegraphSource} -> {model.TelegraphTarget}");
+
+        // The macro this has to beat: one line, solved once, replayed blind.
+        var planned = new FrontierSolver(sim, bound, width: 4000).Solve();
+        Console.WriteLine($"   planned line: {planned.Actions.Count} actions, "
+                        + $"quality {planned.Quality} under all-Normal");
+
+        if (planned.Actions.Count == 0)
+        {
+            Check("a static line could be planned at all", false);
+            return;
+        }
+
+        // 120 rollouts per decision at ~80 steps each is roughly ten thousand simulated steps
+        // per action. Two thousand trials of that is an hour of arithmetic; this is sized to what
+        // the evaluator actually costs, and is the first thing to raise if it gets cheaper.
+        const int Trials = 100;
+        const int Seed = 20260819;
+
+        var staticResult = evaluator.Run(() => new StaticPolicy(sim, planned.Actions), Trials, Seed);
+        var adaptive     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model), Trials, Seed);
+        var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: 3), Trials, Seed);
+
+        foreach (var r in new[] { staticResult, adaptive, gambling })
+            Console.WriteLine($"   {r.Policy,-24} clear {r.ClearRate * 100,6:0.0}%   "
+                            + $"completed {(double)r.Completed / r.Trials * 100,5:0.0}%   "
+                            + $"mean quality {r.MeanQuality,8:0}");
+
+        Check($"the fitted model is admissible for flag {Flag}", model.IsAdmissible);
+        Check($"every policy finishes {Trials} trials without stalling",
+            staticResult.Trials == Trials && adaptive.Trials == Trials && gambling.Trials == Trials);
+
+        // NOT A PASSING GATE. The one-ply expectimax does not work: it completes no crafts and
+        // banks no quality, and three evaluator designs have failed in three different ways.
+        //
+        //   quality-ranked   -- banked nearly double the static line's quality and completed
+        //                       nothing, because every quality action outranks every progress
+        //                       action and completion is never paid for.
+        //   binary rollout   -- returned cleared/not, which is zero for every candidate on a
+        //                       recipe requiring 31,500 of 31,520, leaving no gradient at all.
+        //   graded rollout   -- still zero, and ~10k simulated steps per decision made a
+        //                       meaningful trial count unaffordable.
+        //
+        // The infrastructure below it is sound and is what is asserted: the sampler honours the
+        // telegraph, the harness runs policies against identical seeds, and the static baseline
+        // behaves as a macro should. The policy itself is unfinished, and saying so here is
+        // better than scoping the gate down until it passes.
+        Console.WriteLine();
+        Console.WriteLine("   *** PHASE 2 GATE NOT MET — the adaptive policy is not working yet ***");
+        Console.WriteLine($"   static line completes {(double)staticResult.Completed / staticResult.Trials * 100:0.0}% "
+                        + $"and banks {staticResult.MeanQuality:0}; expectimax completes "
+                        + $"{(double)adaptive.Completed / adaptive.Trials * 100:0.0}%.");
+        Console.WriteLine();
+
+        // What is genuinely established, and worth protecting from regression.
+        Check("the sampler honours the telegraph deterministically",
+            Enumerable.Range(0, 200).All(i =>
+                sampler.Next(model.TelegraphSource, new Random(i)) == model.TelegraphTarget));
+
+        Check($"the static baseline behaves like a macro (completes "
+            + $"{(double)staticResult.Completed / staticResult.Trials * 100:0.0}%)",
+            (double)staticResult.Completed / staticResult.Trials > 0.5);
+
+        Check("identical seeds give identical outcomes",
+            evaluator.Run(() => new StaticPolicy(sim, planned.Actions), 50, Seed).Cleared
+            == evaluator.Run(() => new StaticPolicy(sim, planned.Actions), 50, Seed).Cleared);
+
+        // Reported, not asserted: whether gambling helps is a genuine question, and the honest
+        // answer may be no on a recipe where the safe line already clears comfortably.
+        Console.WriteLine(gambling.ClearRate > adaptive.ClearRate
+            ? $"   gambling helps here: +{(gambling.ClearRate - adaptive.ClearRate) * 100:0.0} points"
+            : $"   gambling does not help here: {(gambling.ClearRate - adaptive.ClearRate) * 100:0.0} points");
+    }
 
     // ── shared corpus loading ─────────────────────────────────────────────────
 

@@ -195,16 +195,26 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
     {
         CraftOpen = false;
         tracking = false;
+        advised = false;
         AutoPlay = false;
         pending = SolverAction.None;
         lastStep = -1;
         Advice = CraftAdvice.Refusing(why);
     }
 
+    /// <summary>
+    /// Stops advising, and says why once.
+    ///
+    /// <para>The first reason is the real one and it is kept. Without this the substantive message —
+    /// a desync naming the action that caused it, an unrecognised condition — survived a single
+    /// frame before the next tick overwrote it with the generic "advice can only start from the
+    /// first step", which is a consequence of having stopped rather than a cause of it. The useful
+    /// half of the diagnosis was being thrown away in about sixteen milliseconds.</para>
+    /// </summary>
     private void Refuse(string why)
     {
         tracking = false;
-        Advice = CraftAdvice.Refusing(why);
+        if (!Advice.IsRefusing || string.IsNullOrEmpty(Advice.Refusal)) Advice = CraftAdvice.Refusing(why);
     }
 
     private void Track(AddonSynthesis* synth)
@@ -223,6 +233,9 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         // A craft that has gone backwards to step 1 is a new craft.
         if (step < lastStep || !tracking)
         {
+            // Step 1 is a fresh craft, so whatever went wrong in the last one is no longer relevant.
+            if (step == 1) Advice = CraftAdvice.Refusing(string.Empty);
+
             if (step != 1) { Refuse("Advice can only start from the first step of a craft."); lastStep = step; return; }
             if (!Begin(conditionText)) { lastStep = step; return; }
         }
@@ -290,17 +303,26 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
 
         if (ReadPlayer() is not { } player) { Refuse("Could not read craftsmanship and control."); return false; }
 
+        // Every one of these comes from the recipe. They were once written as flat 100s, which is
+        // true of the benchmark recipe and of almost nothing else: base progress is
+        // craftsmanship x 10 / ProgressDivider, so a divider assumed at 100 against a real one near
+        // 180 doubles every gain the simulator predicts. The craft then disagreed with the client on
+        // the very first action, which is exactly what the desync check is for — it caught it, and
+        // this is the cause it was catching.
         var spec = new RecipeSpec
         {
             RecipeId = recipeId,
             ConditionsFlag = flag,
             IsExpert = true,
-            RecipeJobLevel = (int)playerState.Level,
+            RecipeJobLevel = lvl.ClassJobLevel,
             Difficulty = (int)(lvl.Difficulty * recipe.DifficultyFactor / 100),
             Durability = (int)(lvl.Durability * recipe.DurabilityFactor / 100),
             MaxQuality = (int)(lvl.Quality * recipe.QualityFactor / 100u),
             RequiredQuality = (int)recipe.RequiredQuality,
-            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
+            ProgressDivider = lvl.ProgressDivider,
+            QualityDivider = lvl.QualityDivider,
+            ProgressModifier = lvl.ProgressModifier,
+            QualityModifier = lvl.QualityModifier,
         };
 
         sim = new CraftSim(spec, player);
@@ -308,13 +330,17 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         advisor = new CraftAdvisor(sim, bound, model, 30, OpeningBook.Expert);
         state = sim.Initial();
         tracking = true;
+        advised = false;
+        thinking = null;
         pending = SolverAction.None;
         Recipe = spec;
         Player = player;
         AutoActions = 0;
 
         log.Information($"[CraftAdvisor] Tracking recipe {recipeId}, flag {flag}, "
-                      + $"{spec.RequiredQuality}/{spec.MaxQuality} quality required.");
+                      + $"{spec.RequiredQuality}/{spec.MaxQuality} quality required, "
+                      + $"difficulty {spec.Difficulty}, dividers {spec.ProgressDivider}/{spec.QualityDivider}, "
+                      + $"base {sim.BaseProgress}/{sim.BaseQuality}.");
         return true;
     }
 
@@ -353,7 +379,7 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
                 || next.Durability != durability || next.Cp != cp) continue;
 
             state = next;
-            advisor?.Observe(taken);
+            if (advisor is { } judge) lock (judge) judge.Observe(taken);
             return true;
         }
 
@@ -400,11 +426,50 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
 
     private const ulong NoTarget = 0xE000_0000;
 
+    /// <summary>
+    /// Produces the advice for the current position, once.
+    ///
+    /// <para>Guarded on the state having actually changed. This runs on the framework tick, and a
+    /// single call plays the position out two hundred times to measure its clear chance — at sixty
+    /// ticks a second that is twelve thousand simulated crafts per second, which takes the frame
+    /// rate down with it and makes the percentage on screen jitter as each re-measurement draws a
+    /// different sample. The position only changes when a step passes, so that is when this runs.</para>
+    /// </summary>
     private void Advise()
     {
         if (!tracking || advisor == null) return;
-        Advice = advisor.Advise(state, adviceSeed++);
+        if (advised && state.Equals(advisedFrom)) return;
+        if (thinking != null && !thinking.IsCompleted) return;
+
+        advisedFrom = state;
+        advised = true;
+
+        var position = state;
+        var seed = adviceSeed++;
+        var judge = advisor;
+
+        // Off the framework thread. Measuring a position means playing it out two hundred times,
+        // which is tens of milliseconds even spread across cores — cheap once per step, and a
+        // visible stutter if it happens between the player pressing an action and the frame drawing.
+        thinking = System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                CraftAdvice result;
+                lock (judge) result = judge.Advise(position, seed);
+                Advice = result;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, "[CraftAdvisor] Advising failed.");
+                Advice = CraftAdvice.Refusing("Something went wrong working out the advice.");
+            }
+        });
     }
+
+    private CraftState advisedFrom;
+    private bool advised;
+    private System.Threading.Tasks.Task? thinking;
 
     private PlayerSpec? ReadPlayer()
     {

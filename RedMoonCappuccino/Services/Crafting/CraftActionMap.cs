@@ -30,6 +30,9 @@ public sealed class CraftActionMap
 
     public uint JobId { get; }
 
+    /// <summary>The level the map was built at, for the report.</summary>
+    public int Level { get; }
+
     /// <summary>Actions the solver can recommend but this job's sheet did not yield.</summary>
     public IReadOnlyList<SolverAction> Unresolved => unresolved;
 
@@ -38,9 +41,19 @@ public sealed class CraftActionMap
     /// <summary>How many of the solver's actions this job's sheets did yield.</summary>
     public int ResolvedCount => toGameId.Count;
 
+    /// <summary>
+    /// Builds the map for a job.
+    ///
+    /// <para>The player's level is recorded but deliberately not used to filter. An action above the
+    /// player's level is simply one the simulator will never rule legal, so excluding it here buys
+    /// nothing and can only lose entries — Daring Touch went missing on a level 100 Carpenter that
+    /// had plainly learned it, which is a filter finding a reason to drop a row rather than a row
+    /// that was not there.</para>
+    /// </summary>
     public CraftActionMap(IDataManager data, uint jobId, int level)
     {
         JobId = jobId;
+        Level = level;
 
         var sheet = data.GetExcelSheet<SheetCraftAction>();
         if (sheet == null) return;
@@ -57,7 +70,6 @@ public sealed class CraftActionMap
         {
             if (row.RowId == 0) continue;
             if (row.ClassJob.RowId != jobId) continue;
-            if (row.ClassJobLevel > level) continue;
 
             var raw = row.Name.ExtractText();
             offered.Add((row.RowId, raw, row.ClassJobLevel, row.Specialist));
@@ -91,7 +103,6 @@ public sealed class CraftActionMap
                 {
                     if (row.RowId == 0 || !row.IsPlayerAction) continue;
                     if (row.ClassJob.RowId != jobId) continue;
-                    if (row.ClassJobLevel > level) continue;
 
                     var name = Normalise(row.Name.ExtractText());
                     if (name.Length == 0 || !stillMissing.TryGetValue(name, out var action)) continue;

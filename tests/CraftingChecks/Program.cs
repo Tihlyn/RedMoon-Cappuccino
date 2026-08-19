@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using RedMoonCappuccino.Models;
 using RedMoonCappuccino.Models.Crafting;
@@ -1897,27 +1898,21 @@ public static class Program
     // ── Discovery ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// A long tuning run: many batches, a persistent cache, and a watch for anomalies.
+    /// A long run over identical condition sequences, reporting outcomes and where the two
+    /// policies part company.
     ///
-    /// <para>Three jobs at once. It builds the decision cache, which is what makes every later run
-    /// cheap. It produces a sample large enough to rank policies that a hundred trials cannot
-    /// separate — a process clearing somewhere in the tens of percent needs far more than that
-    /// before a difference means anything. And at this volume it reaches positions no hand-written
-    /// check would think to construct, which is where the remaining edge cases are.</para>
-    ///
-    /// <para>Checkpointed, because a run measured in hours that saves nothing until it finishes is
-    /// a run that loses everything to a stray keystroke.</para>
+    /// <para>Aggregates say which policy is ahead; they never say why. Both are handed the same
+    /// seed, so the sequence each faces is identical and any difference between them is policy
+    /// rather than luck. Recording the first step where they choose differently — described by the
+    /// position rather than the step number — turns "the router is worse" into a ranked list of
+    /// specific decisions it makes differently.</para>
     /// </summary>
     private static void Discover(string[] args)
     {
-        var batches = 100_000;
+        var batches = 10_000;
         var index = Array.FindIndex(args, a => a is "--discover" or "-d");
         if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
             batches = parsed;
-
-        var cachePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "RedMoonCappuccino", "crafting", "decisions.cache");
 
         Section($"Discovery — {batches:N0} batches");
 
@@ -1925,116 +1920,122 @@ public static class Program
         registry.LoadFrom(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
-
-        if (!registry.TryGetAdmissible(1523, out var model, out var why))
+        if (!registry.TryGetAdmissible(CraftBenchmark.ConditionsFlag, out var model, out var why))
         {
             Console.WriteLine($"   no admissible model: {why}");
             return;
         }
 
         var recipe = CraftBenchmark.ExpertRecipe;
-        var player = CraftBenchmark.Character;
-
-        var sim = new CraftSim(recipe, player);
+        var sim = new CraftSim(recipe, CraftBenchmark.Character);
         var bound = new QualityBound(sim);
         var sampler = new ConditionSampler(model);
-        var evaluator = new PolicyEvaluator(sim, sampler);
 
         const int GambleBudget = 30;
         const int Trials = 100;
 
-        var expectCache = new DecisionCache("expectimax");
-        var routerCache = new DecisionCache("router");
+        ICraftPolicy MakeSearch() => new ExpectimaxPolicy(sim, bound, model, GambleBudget, OpeningBook.Expert);
+        ICraftPolicy MakeRouter() => new DecisionRouter(sim, bound, model, GambleBudget, OpeningBook.Expert);
 
-        foreach (var c in new[] { expectCache, routerCache })
-        {
-            var file = cachePath.Replace(".cache", $".{c.Owner}.cache");
-            var n = c.Load(file);
-            Console.WriteLine($"   cache {c.Owner,-12} {(n > 0 ? $"{n:N0} states loaded" : "starting empty")}  {file}");
-        }
-        Console.WriteLine();
+        long searchClear = 0, searchDone = 0, routerClear = 0, routerDone = 0;
+        long searchQuality = 0, routerQuality = 0;
+        long searchWins = 0, routerWins = 0, ties = 0;
 
-        var contenders = new (string Label, Func<ICraftPolicy> Make, DecisionCache Cache)[]
-        {
-            ("expectimax", () => new ExpectimaxPolicy(sim, bound, model, GambleBudget,
-                                     OpeningBook.Expert, expectCache), expectCache),
-            ("router",     () => new DecisionRouter(sim, bound, model, GambleBudget,
-                                     OpeningBook.Expert, routerCache), routerCache),
-        };
-
-        var clears = new long[contenders.Length];
-        var completes = new long[contenders.Length];
-        var quality = new double[contenders.Length];
-        var bestClear = new double[contenders.Length];
-
-        // Anomalies worth knowing about, which only a sample this size reaches.
-        var anomalies = new Dictionary<string, long>(StringComparer.Ordinal);
-        void Note(string what) => anomalies[what] = anomalies.TryGetValue(what, out var n) ? n + 1 : 1;
+        var divergences = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+        var anomalies = new ConcurrentDictionary<string, long>(StringComparer.Ordinal);
 
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var lastReport = 0L;
-        var lastSave = 0L;
 
         for (var batch = 0; batch < batches; batch++)
         {
-            var seed = 1_000_000 + batch * Trials;
+            var baseSeed = 1_000_000 + batch * Trials;
+            var gate = new object();
+            int sc = 0, sd = 0, rc = 0, rd = 0, sw = 0, rw = 0, tie = 0;
+            long sq = 0, rq = 0;
 
-            for (var i = 0; i < contenders.Length; i++)
-            {
-                var outcome = evaluator.Run(contenders[i].Make, Trials, seed);
+            System.Threading.Tasks.Parallel.For(0, Trials,
+                () => (SC: 0, SD: 0, RC: 0, RD: 0, SW: 0, RW: 0, T: 0, SQ: 0L, RQ: 0L),
+                (trial, _, local) =>
+                {
+                    var seed = baseSeed + trial;
+                    var a = Play(MakeSearch, sim, sampler, seed, out var lineA);
+                    var b = Play(MakeRouter, sim, sampler, seed, out var lineB);
 
-                clears[i] += outcome.Cleared;
-                completes[i] += outcome.Completed;
-                quality[i] += outcome.MeanQuality;
-                if (outcome.ClearRate > bestClear[i]) bestClear[i] = outcome.ClearRate;
+                    var aClear = a.Completed && a.Quality >= recipe.RequiredQuality;
+                    var bClear = b.Completed && b.Quality >= recipe.RequiredQuality;
 
-                if (outcome.Completed == 0) Note($"{contenders[i].Label}: batch completed nothing");
-                if (outcome.MeanQuality <= 0) Note($"{contenders[i].Label}: batch banked no quality");
-                if (outcome.Cleared > outcome.Completed)
-                    Note($"{contenders[i].Label}: cleared exceeds completed — impossible");
-            }
+                    if (aClear) local.SC++;
+                    if (bClear) local.RC++;
+                    if (a.Completed) { local.SD++; local.SQ += a.Quality; }
+                    if (b.Completed) { local.RD++; local.RQ += b.Quality; }
 
-            var done = batch + 1;
+                    if (aClear && !bClear) local.SW++;
+                    else if (bClear && !aClear) local.RW++;
+                    else local.T++;
+
+                    if (a.Quality > recipe.MaxQuality || b.Quality > recipe.MaxQuality)
+                        anomalies.AddOrUpdate("quality above the recipe maximum", 1, (_, n) => n + 1);
+                    if ((aClear && !a.Completed) || (bClear && !b.Completed))
+                        anomalies.AddOrUpdate("cleared without completing", 1, (_, n) => n + 1);
+
+                    // First disagreement only: everything after it is a consequence of it rather
+                    // than an independent decision, and counting the tail would drown the cause.
+                    for (var i = 0; i < Math.Min(lineA.Count, lineB.Count); i++)
+                    {
+                        if (lineA[i].Action == lineB[i].Action) continue;
+                        var key = $"{lineA[i].Condition,-10} search {lineA[i].Action,-20} vs router {lineB[i].Action}";
+                        divergences.AddOrUpdate(key, 1, (_, n) => n + 1);
+                        break;
+                    }
+
+                    return local;
+                },
+                local =>
+                {
+                    lock (gate)
+                    {
+                        sc += local.SC; sd += local.SD; rc += local.RC; rd += local.RD;
+                        sw += local.SW; rw += local.RW; tie += local.T;
+                        sq += local.SQ; rq += local.RQ;
+                    }
+                });
+
+            searchClear += sc; searchDone += sd; routerClear += rc; routerDone += rd;
+            searchWins += sw; routerWins += rw; ties += tie;
+            searchQuality += sq; routerQuality += rq;
+
+            var done = (batch + 1L) * Trials;
 
             if (clock.ElapsedMilliseconds - lastReport > 30_000)
             {
                 lastReport = clock.ElapsedMilliseconds;
-                var crafts = (long)done * Trials * contenders.Length;
+                var crafts = done * 2;
                 var rate = crafts / Math.Max(1, clock.Elapsed.TotalSeconds);
-
-                Console.WriteLine($"   [{clock.Elapsed:hh\\:mm\\:ss}] batch {done:N0}/{batches:N0}  "
-                                + $"{crafts:N0} crafts  {rate:N0}/s  cache {contenders[0].Cache.Count + contenders[1].Cache.Count:N0} states");
-                for (var i = 0; i < contenders.Length; i++)
-                    Console.WriteLine($"      {contenders[i].Label,-12} clear {clears[i] * 100.0 / (done * Trials),6:0.00}%  "
-                                    + $"best batch {bestClear[i] * 100,5:0.0}%  "
-                                    + $"completed {completes[i] * 100.0 / (done * Trials),5:0.0}%  "
-                                    + $"quality {quality[i] / done,8:0}");
-                Console.Out.Flush();
-            }
-
-            if (clock.ElapsedMilliseconds - lastSave > 300_000)
-            {
-                lastSave = clock.ElapsedMilliseconds;
-                foreach (var c in contenders)
-                    c.Cache.Save(cachePath.Replace(".cache", $".{c.Cache.Owner}.cache"));
-                Console.WriteLine($"   checkpoint: {contenders[0].Cache.Summarise()}; {contenders[1].Cache.Summarise()}");
+                Console.WriteLine($"   [{clock.Elapsed:hh\\:mm\\:ss}] batch {batch + 1:N0}/{batches:N0}  {crafts:N0} crafts  {rate:N0}/s");
+                Console.WriteLine($"      search  clear {searchClear * 100.0 / done,5:0.0}%  completed {searchDone * 100.0 / done,5:0.0}%  mean quality {searchQuality / (double)done,8:N0}");
+                Console.WriteLine($"      router  clear {routerClear * 100.0 / done,5:0.0}%  completed {routerDone * 100.0 / done,5:0.0}%  mean quality {routerQuality / (double)done,8:N0}");
                 Console.Out.Flush();
             }
         }
 
-        foreach (var c in contenders)
-            c.Cache.Save(cachePath.Replace(".cache", $".{c.Cache.Owner}.cache"));
+        var total = (long)batches * Trials;
+        Console.WriteLine();
+        Console.WriteLine($"   finished in {clock.Elapsed:hh\\:mm\\:ss} over {total * 2:N0} crafts");
+        Console.WriteLine($"   search  clear {searchClear * 100.0 / total,5:0.0}%  completed {searchDone * 100.0 / total,5:0.0}%  mean quality {searchQuality / (double)total,8:N0}");
+        Console.WriteLine($"   router  clear {routerClear * 100.0 / total,5:0.0}%  completed {routerDone * 100.0 / total,5:0.0}%  mean quality {routerQuality / (double)total,8:N0}");
+        Console.WriteLine($"   head to head: search {searchWins:N0}   router {routerWins:N0}   neither {ties:N0}");
 
         Console.WriteLine();
-        Console.WriteLine($"   finished in {clock.Elapsed:hh\\:mm\\:ss}; cache {contenders[0].Cache.Count + contenders[1].Cache.Count:N0} states");
-        for (var i = 0; i < contenders.Length; i++)
-            Console.WriteLine($"   {contenders[i].Label,-12} clear {clears[i] * 100.0 / ((long)batches * Trials),6:0.00}%  "
-                            + $"best batch {bestClear[i] * 100,5:0.0}%  "
-                            + $"completed {completes[i] * 100.0 / ((long)batches * Trials),5:0.0}%  "
-                            + $"quality {quality[i] / batches,8:0}");
+        Console.WriteLine("   where they first disagree, most common first:");
+        var ranked = new List<KeyValuePair<string, int>>(divergences);
+        ranked.Sort((x, y) => y.Value.CompareTo(x.Value));
+        foreach (var entry in ranked.GetRange(0, Math.Min(15, ranked.Count)))
+            Console.WriteLine($"     {entry.Value * 100.0 / total,5:0.0}%  {entry.Key}");
+        Console.WriteLine($"   ({ranked.Count:N0} distinct first-disagreement positions)");
 
         Console.WriteLine();
-        Console.WriteLine(anomalies.Count == 0 ? "   no anomalies" : "   anomalies:");
+        Console.WriteLine(anomalies.IsEmpty ? "   no anomalies" : "   anomalies:");
         foreach (var (what, count) in anomalies)
             Console.WriteLine($"     {count,10:N0}x  {what}");
     }

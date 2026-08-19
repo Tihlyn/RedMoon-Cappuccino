@@ -17,6 +17,23 @@ public static class Program
     /// </summary>
     private static bool full;
 
+    /// <summary>
+    /// The character this advisor is for, buffed as the recorded manual expert crafts were played.
+    ///
+    /// <para>Named once because it was not, and that cost the whole of Phase 2. These stats were
+    /// copy-pasted out of the replay section — where they are correct, having been solved from a
+    /// recording made on a weaker alt, and asserted as such — into the Monte Carlo benchmark, where
+    /// they are simply the wrong character. Every adaptive-policy figure this project produced was
+    /// measured at 3350/4750 rather than 5909/5610, and the search was read as clearing 0.8% when
+    /// on this character it clears 32%. A benchmark that silently describes someone else is worse
+    /// than no benchmark, because work gets done against it.</para>
+    /// </summary>
+    private static PlayerSpec Character => new()
+    {
+        Craftsmanship = 5909, Control = 5610, MaxCp = 771, Level = 100,
+        GoodMultiplier = 1.75, AvailableDelineations = int.MaxValue,
+    };
+
     public static int Main(string[] args)
     {
         full = Array.Exists(args, a => a is "--full" or "-f");
@@ -24,6 +41,7 @@ public static class Program
         // Discovery is its own mode, not a longer check run: it reports rather than asserts, and
         // its exit code should not pretend to be a verdict on the build.
         if (Array.Exists(args, a => a is "--discover" or "-d")) { Discover(args); return 0; }
+        if (Array.Exists(args, a => a is "--diagnose")) { Diagnose(args); return 0; }
         var dirArg = Array.Find(args, a => !a.StartsWith("-"));
         var dataDir = dirArg is not null
             ? dirArg
@@ -1363,18 +1381,7 @@ public static class Program
             Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
             ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
         };
-        var player = new PlayerSpec
-        {
-            Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
-            MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
-
-            // A current expert recipe requires 99.94% of maximum quality, and the specialist
-            // actions are part of how that is reached. Treating the currency as scarce here would
-            // mean solving a different problem than the one being played, so supply is assumed
-            // unlimited. The per-synthesis charge limits still bind: three Careful Observations,
-            // one Heart and Soul, one Quick Innovation.
-            AvailableDelineations = int.MaxValue,
-        };
+        var player = Character;
 
         var sim = new CraftSim(recipe, player);
         var bound = new QualityBound(sim);
@@ -1664,6 +1671,138 @@ public static class Program
     }
 
 
+    // ── Diagnosis ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reports the shape of a policy's outcomes rather than their mean, for each candidate
+    /// policy and each set of player stats.
+    ///
+    /// <para>Two things a mean cannot tell you. Percentiles say whether a short craft was short
+    /// because the policy plays badly or because it stopped early, and what is left unspent at the
+    /// final step decides that outright — a craft ending with CP and durability in hand chose to
+    /// finish rather than ran out of room. And running the same policy against two stat lines says
+    /// whether a disappointing number is the policy's fault at all.</para>
+    /// </summary>
+    private static void Diagnose(string[] args)
+    {
+        var trials = 400;
+        var index = Array.FindIndex(args, a => a is "--diagnose");
+        if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
+            trials = parsed;
+
+        Section($"Diagnosis — {trials:N0} trials");
+
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+
+        if (!registry.TryGetAdmissible(1523, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model: {why}");
+            return;
+        }
+
+        var recipe = new RecipeSpec
+        {
+            RecipeId = 38247, ConditionsFlag = 1523, IsExpert = true, RecipeJobLevel = 100,
+            Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
+            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
+        };
+
+        var players = new (string Label, PlayerSpec Spec)[]
+        {
+            ("recorded alt  3350/4750/791", new PlayerSpec
+            {
+                Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
+                MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
+                AvailableDelineations = int.MaxValue,
+            }),
+            ("your character 5909/5610/771", new PlayerSpec
+            {
+                Craftsmanship = 5909, Control = 5610,
+                MaxCp = 771, Level = 100, GoodMultiplier = 1.75,
+                AvailableDelineations = int.MaxValue,
+            }),
+        };
+
+        const int GambleBudget = 30;
+
+        foreach (var (playerLabel, player) in players)
+        {
+            var sim = new CraftSim(recipe, player);
+            var bound = new QualityBound(sim);
+            var sampler = new ConditionSampler(model);
+
+            var policies = new (string Name, Func<ICraftPolicy> Make)[]
+            {
+                ("expectimax", () => new ExpectimaxPolicy(sim, bound, model, GambleBudget, OpeningBook.Expert)),
+                ("router",     () => new DecisionRouter(sim, bound, model, GambleBudget, OpeningBook.Expert)),
+                ("heuristic",  () => new HeuristicPolicy(sim, bound, GambleBudget)),
+            };
+
+            foreach (var (policyName, make) in policies)
+            {
+                var finals = new CraftState[trials];
+                System.Threading.Tasks.Parallel.For(0, trials, t =>
+                {
+                    var rng = new Random(5_000_000 + t);
+                    var policy = make();
+                    var state = sim.Initial();
+
+                    for (var step = 0; step < 80 && !state.IsTerminal; step++)
+                    {
+                        var action = policy.Choose(state);
+                        if (action == CraftAction.None) break;
+
+                        var spec = CraftActions.Spec(action);
+                        var ok = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+                        var next = sampler.Next(state.Condition, rng);
+
+                        var r = sim.Apply(state, action, next, ok);
+                        if (!r.Ok) break;
+                        state = r.State;
+                    }
+
+                    finals[t] = state;
+                });
+
+                var all = new List<CraftState>(finals);
+                var completed = all.FindAll(s => s.Completed);
+                var cleared = completed.FindAll(s => s.Quality >= recipe.RequiredQuality);
+                var shortOf = completed.FindAll(s => s.Quality < recipe.RequiredQuality);
+                var unfinished = all.FindAll(s => !s.Completed);
+
+                var q = completed.ConvertAll(s => s.Quality);
+                q.Sort();
+                string At(int p) => q.Count == 0 ? "-" : $"{q[Math.Min(q.Count - 1, q.Count * p / 100)]:N0}";
+
+                Console.WriteLine();
+                Console.WriteLine($"── {playerLabel}   ·   {policyName} ──");
+                Console.WriteLine($"   cleared {cleared.Count * 100.0 / trials,5:0.0}%    "
+                                + $"completed {completed.Count * 100.0 / trials,5:0.0}%    "
+                                + $"quality p25 {At(25),7}  p50 {At(50),7}  p75 {At(75),7}  p90 {At(90),7}");
+
+                static double Mean(List<CraftState> xs, Func<CraftState, double> f)
+                {
+                    if (xs.Count == 0) return 0;
+                    var total = 0.0;
+                    foreach (var x in xs) total += f(x);
+                    return total / xs.Count;
+                }
+
+                void Row(string label, List<CraftState> xs) =>
+                    Console.WriteLine($"     {label,-20} {xs.Count,4}   CP left {Mean(xs, s => s.Cp),4:0}   "
+                                    + $"dur left {Mean(xs, s => s.Durability),3:0}   step {Mean(xs, s => s.Step),3:0}   "
+                                    + $"progress {Mean(xs, s => s.Progress),6:0} / {recipe.Difficulty:N0}");
+
+                Row("cleared", cleared);
+                Row("completed but short", shortOf);
+                Row("never completed", unfinished);
+            }
+        }
+    }
+
     // ── Discovery ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -1708,12 +1847,7 @@ public static class Program
             Difficulty = 11250, MaxQuality = 31520, Durability = 60, RequiredQuality = 31500,
             ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
         };
-        var player = new PlayerSpec
-        {
-            Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
-            MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
-            AvailableDelineations = int.MaxValue,
-        };
+        var player = Character;
 
         var sim = new CraftSim(recipe, player);
         var bound = new QualityBound(sim);

@@ -87,6 +87,42 @@ public sealed class CraftSim
         BaseQuality  = ComputeBaseQuality(recipe, player);
     }
 
+    /// <summary>
+    /// A simulator whose base values are given rather than computed.
+    ///
+    /// <para>These two numbers are the only thing the formulas above exist to produce, and computing
+    /// them needs the recipe's dividers and the player's stats to both be right. In a live craft
+    /// neither can be relied on — the client reported a QualityDivider that would require 8,550
+    /// control to explain a gain the game had just displayed — whereas the gain itself is sitting on
+    /// screen and needs no interpretation. Where an observation is available it beats a derivation.</para>
+    /// </summary>
+    public CraftSim(RecipeSpec recipe, PlayerSpec player, int baseProgress, int baseQuality)
+    {
+        this.recipe = recipe;
+        this.player = player;
+
+        BaseProgress = baseProgress;
+        BaseQuality  = baseQuality;
+    }
+
+    /// <summary>
+    /// The base value implied by what an action actually paid, against what it was predicted to pay.
+    ///
+    /// <para>Every gain is linear in the base — efficiency, Inner Quiet, the statuses and the
+    /// condition are all multipliers applied to it — so one observed action determines the base
+    /// outright, whatever the action and whatever was running at the time. That is the whole reason
+    /// a live craft can correct a stat line or a divider it has no way to verify.</para>
+    ///
+    /// <para>Returns the assumption unchanged when there is nothing to learn from: a gain of zero
+    /// says only that the action was not of that kind.</para>
+    /// </summary>
+    public static int PinBase(int assumed, int observedGain, int predictedGain)
+    {
+        if (assumed <= 0 || observedGain <= 0 || predictedGain <= 0) return assumed;
+
+        return Math.Max(1, (int)Math.Round(assumed * (double)observedGain / predictedGain));
+    }
+
     public RecipeSpec Recipe => recipe;
     public PlayerSpec Player => player;
 

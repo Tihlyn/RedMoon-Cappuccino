@@ -329,6 +329,7 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
             QualityModifier = lvl.QualityModifier,
         };
 
+        this.model = model;
         sim = new CraftSim(spec, player);
         bound = new QualityBound(sim);
         advisor = new CraftAdvisor(sim, bound, model, 30, OpeningBook.Expert);
@@ -336,6 +337,8 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         tracking = true;
         advised = false;
         thinking = null;
+        history.Clear();
+        calibrated = progressPinned = qualityPinned = false;
         pending = SolverAction.None;
         Recipe = spec;
         Player = player;
@@ -372,7 +375,23 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
     }
 
     /// <summary>
-    /// Folds one taken action into the simulated state and checks the result against the client's.
+    /// Folds one taken action into the tracked state, calibrating the simulator against what the
+    /// game actually paid out.
+    ///
+    /// <para>Two principles, both learned the expensive way. The client's own numbers win wherever
+    /// it shows them — progress, quality, durability, CP — because they are observations and
+    /// anything this computes for them is a derivation. Only the parts no addon exposes, the Inner
+    /// Quiet stacks, the buff timers and the specialist charges, come from simulation, and those do
+    /// not depend on the player's stats at all.</para>
+    ///
+    /// <para>And the base values are measured rather than computed. Base progress and base quality
+    /// are the only things the formulas exist to produce, and producing them needs both the recipe's
+    /// dividers and the character's stats to be right. In a live craft neither could be relied on:
+    /// the client reported a QualityDivider that would need 8,550 control to explain a gain it had
+    /// just displayed, and the stat read came in 150 craftsmanship under the character sheet. The
+    /// gain itself is on screen and needs no interpretation. Gains scale linearly in the base, so
+    /// one observed action pins it — the same way the standalone benchmark was pinned, from a
+    /// recording, which is exactly the step the plugin was missing.</para>
     /// </summary>
     private bool Advance(string conditionText, int progress, int quality, int durability, int cp)
     {
@@ -394,36 +413,126 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
             return false;
         }
 
-        // Success is not reported anywhere, so it is inferred: whichever outcome reproduces the
-        // client's numbers is the one that happened, and neither reproducing them is a desync.
+        var gainedProgress = progress - state.Progress;
+        var gainedQuality = quality - state.Quality;
+
+        // Success is not reported anywhere, so it is inferred: whichever outcome lands closer to
+        // what the client shows is the one that happened.
+        StepResult chosen = default;
+        var found = false;
+        var closest = long.MaxValue;
+
         foreach (var succeeded in stackalloc[] { true, false })
         {
             var result = sim.Apply(state, taken, condition, succeeded);
             if (!result.Ok) continue;
 
-            var next = result.State;
-            if (next.Progress != progress || next.Quality != quality
-                || next.Durability != durability || next.Cp != cp) continue;
+            var error = Math.Abs((long)(result.State.Progress - state.Progress) - gainedProgress)
+                      + Math.Abs((long)(result.State.Quality - state.Quality) - gainedQuality);
 
-            state = next;
-            if (advisor is { } judge) lock (judge) judge.Observe(taken);
-            return true;
+            if (error >= closest) continue;
+            closest = error;
+            chosen = result;
+            found = true;
         }
 
-        Refuse($"The simulated craft no longer matches the client after {CraftActions.DisplayName(taken)}. "
-             + "Advice has stopped rather than continue from a state that may be wrong.");
-        log.Warning($"[CraftAdvisor] Desync after {taken}: client had "
-                  + $"P{progress} Q{quality} D{durability} CP{cp}.");
-        return false;
+        if (!found)
+        {
+            Refuse($"{CraftActions.DisplayName(taken)} could not be applied to the tracked craft.");
+            return false;
+        }
+
+        if (!calibrated) Calibrate(taken, condition, gainedProgress, gainedQuality);
+
+        // Simulation for what cannot be read, observation for everything that can.
+        state = chosen.State with
+        {
+            Progress = progress,
+            Quality = quality,
+            Durability = durability,
+            Cp = cp,
+            Condition = condition,
+        };
+
+        history.Add(taken);
+        if (advisor is { } judge) lock (judge) judge.Observe(taken);
+        return true;
     }
+
+    /// <summary>
+    /// Pins base progress and base quality to what the game actually paid for one action.
+    ///
+    /// <para>A gain is linear in the base, so an observed gain against a predicted one gives the
+    /// correction directly. Each half is pinned by the first action that moves it and then left
+    /// alone; Reflect settles quality on step one, the first synthesis settles progress.</para>
+    /// </summary>
+    private void Calibrate(SolverAction taken, CraftCondition condition, int observedProgress, int observedQuality)
+    {
+        if (sim == null) return;
+
+        var predicted = sim.Apply(state, taken, condition, true);
+        if (!predicted.Ok) return;
+
+        var predictedProgress = predicted.State.Progress - state.Progress;
+        var predictedQuality = predicted.State.Quality - state.Quality;
+
+        var baseProgress = sim.BaseProgress;
+        var baseQuality = sim.BaseQuality;
+
+        if (!progressPinned && observedProgress > 0 && predictedProgress > 0)
+        {
+            baseProgress = CraftSim.PinBase(sim.BaseProgress, observedProgress, predictedProgress);
+            progressPinned = true;
+        }
+
+        if (!qualityPinned && observedQuality > 0 && predictedQuality > 0)
+        {
+            baseQuality = CraftSim.PinBase(sim.BaseQuality, observedQuality, predictedQuality);
+            qualityPinned = true;
+        }
+
+        if (baseProgress == sim.BaseProgress && baseQuality == sim.BaseQuality)
+        {
+            calibrated = progressPinned && qualityPinned;
+            return;
+        }
+
+        log.Information($"[CraftAdvisor] Calibrated from play: base progress {sim.BaseProgress} -> "
+                      + $"{baseProgress}, base quality {sim.BaseQuality} -> {baseQuality}.");
+
+        Rebuild(baseProgress, baseQuality);
+        calibrated = progressPinned && qualityPinned;
+    }
+
+    /// <summary>
+    /// Rebuilds the simulator and everything derived from it around new base values.
+    ///
+    /// <para>The bound is a table keyed on those values and the advisor holds both, so neither
+    /// survives the change. The scripted opening is replayed through the new advisor so it does not
+    /// restart mid-craft and recommend an opener the player is already past.</para>
+    /// </summary>
+    private void Rebuild(int baseProgress, int baseQuality)
+    {
+        if (sim == null || model == null) return;
+
+        sim = new CraftSim(sim.Recipe, sim.Player, baseProgress, baseQuality);
+        bound = new QualityBound(sim);
+        advisor = new CraftAdvisor(sim, bound, model, 30, OpeningBook.Expert);
+
+        foreach (var action in history) advisor.Observe(action);
+        advised = false;
+    }
+
+    private readonly System.Collections.Generic.List<SolverAction> history = new();
+    private bool calibrated, progressPinned, qualityPinned;
+    private ConditionModel? model;
 
     /// <summary>
     /// Presses the recommended action, no faster than the client will accept one.
     ///
     /// <para>Guarded on the same things the advice is: it does nothing while the advisor is refusing,
     /// nothing once the craft is called lost, and nothing until the client reports the action as
-    /// usable. It also stops itself the moment the simulated craft stops matching the real one,
-    /// because that is the case where continuing would be acting on a state known to be wrong.</para>
+    /// usable.</para>
     /// </summary>
     private void StepAuto()
     {
@@ -454,15 +563,6 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
 
     private const ulong NoTarget = 0xE000_0000;
 
-    /// <summary>
-    /// Produces the advice for the current position, once.
-    ///
-    /// <para>Guarded on the state having actually changed. This runs on the framework tick, and a
-    /// single call plays the position out two hundred times to measure its clear chance — at sixty
-    /// ticks a second that is twelve thousand simulated crafts per second, which takes the frame
-    /// rate down with it and makes the percentage on screen jitter as each re-measurement draws a
-    /// different sample. The position only changes when a step passes, so that is when this runs.</para>
-    /// </summary>
     private void Advise()
     {
         if (!tracking || advisor == null) return;

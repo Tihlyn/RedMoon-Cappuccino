@@ -1697,6 +1697,36 @@ public static class Program
         // soundness of a stop, never refusing mid-craft — do not depend on the sample count.
         CraftAdvisor Fresh() => new(sim, bound, model, 30, OpeningBook.Expert, samples: 16);
 
+        // ── calibrating a wrong base from one observed action ──
+        // This is the plugin's failure reproduced in miniature: a simulator built from the client's
+        // reported dividers lands on base quality 348 where the game actually pays 510, and every
+        // prediction after that is 32% light. One action is enough to correct it.
+        {
+            var truth = new CraftSim(recipe, CraftBenchmark.Character);
+            var wrong = new CraftSim(recipe, CraftBenchmark.Character, baseProgress: 328, baseQuality: 348);
+
+            var fresh = truth.Initial();
+            var real = truth.Apply(fresh, CraftAction.Reflect, CraftCondition.Normal);
+            var guess = wrong.Apply(wrong.Initial(), CraftAction.Reflect, CraftCondition.Normal);
+
+            Check("the wrong base predicts a different gain to the real one",
+                real.Ok && guess.Ok && real.State.Quality != guess.State.Quality);
+
+            var pinned = CraftSim.PinBase(wrong.BaseQuality, real.State.Quality, guess.State.Quality);
+            Check($"one observed action recovers the true base quality (got {pinned}, want {truth.BaseQuality})",
+                pinned == truth.BaseQuality);
+
+            var progressTruth = truth.Apply(fresh, CraftAction.BasicSynthesis, CraftCondition.Normal);
+            var progressGuess = wrong.Apply(wrong.Initial(), CraftAction.BasicSynthesis, CraftCondition.Normal);
+            var pinnedProgress = CraftSim.PinBase(wrong.BaseProgress,
+                progressTruth.State.Progress, progressGuess.State.Progress);
+            Check($"and the true base progress (got {pinnedProgress}, want {truth.BaseProgress})",
+                pinnedProgress == truth.BaseProgress);
+
+            Check("a gain of zero teaches nothing and leaves the assumption alone",
+                CraftSim.PinBase(348, 0, 0) == 348);
+        }
+
         // ── a position at the start ──
         var opening = Fresh().Advise(sim.Initial());
         Check("the opening position gets advice rather than a refusal", !opening.IsRefusing);

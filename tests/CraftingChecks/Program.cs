@@ -52,6 +52,9 @@ public static class Program
         Section("H. Real-recipe scale probe");
         ScaleProbe();
 
+        Section("I. Reconstructing a human expert craft");
+        ReconstructionChecks(dataDir);
+
         Console.WriteLine();
         Console.WriteLine(new string('=', 72));
         Console.WriteLine(failures == 0
@@ -1102,6 +1105,205 @@ public static class Program
         Check($"the frontier line replays to its reported score ({st.Quality} vs {beam.Quality}, completed={st.Completed})",
             st.Quality == beam.Quality && st.Completed);
     }
+
+
+    // ── I. Reconstructing a human expert craft ────────────────────────────────
+
+    /// <summary>
+    /// Recovers the action sequence of a manually played expert craft from its recorded state,
+    /// establishing a human baseline the solver can be measured against.
+    ///
+    /// <para>Observe-mode recordings carry every per-step value but write action 0, so the line
+    /// itself was lost. It is recoverable because the simulator is exact and the action table is
+    /// complete: at each step exactly one action generally reproduces the observed progress,
+    /// quality, durability and CP together. Four simultaneous constraints leave very little room
+    /// for coincidence.</para>
+    ///
+    /// <para>Reconstruction runs forward rather than per-step in isolation, because Inner Quiet
+    /// and buff timers are not recorded — only status names. Carrying the simulated state forward
+    /// supplies them, at the cost of a single wrong identification derailing everything after it.
+    /// Ambiguities are therefore reported rather than silently resolved.</para>
+    /// </summary>
+    private static void ReconstructionChecks(string dataDir)
+    {
+        var sessions = new Dictionary<string, CraftSessionHeader>(StringComparer.Ordinal);
+        var samples = new Dictionary<string, List<CraftStepSample>>(StringComparer.Ordinal);
+        LoadCorpus(dataDir, sessions, samples);
+
+        const string Target = "6ee62c7243f4";
+        if (!samples.TryGetValue(Target, out var raw) || !sessions.TryGetValue(Target, out var header))
+        {
+            Console.WriteLine($"   session {Target} not present; skipping");
+            return;
+        }
+
+        var list = raw.OrderBy(s => s.Step).ThenBy(s => s.TickMs).ToList();
+
+        // Base values solved from the recording itself: Reflect's opening 1530 is base quality
+        // times three, and a 0 CP progress cast of 1685 is base progress times five.
+        var recipe = new RecipeSpec
+        {
+            RecipeId = header.RecipeId, ConditionsFlag = header.ConditionsFlag, IsExpert = header.IsExpert,
+            RecipeJobLevel = 100,
+            Difficulty = header.Difficulty, MaxQuality = (int)header.MaxQuality,
+            Durability = header.Durability, RequiredQuality = (int)header.RequiredQuality,
+            ProgressDivider = 100, QualityDivider = 100, ProgressModifier = 100, QualityModifier = 100,
+        };
+        var player = new PlayerSpec
+        {
+            Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
+            MaxCp = (int)header.MaxCp, Level = 100, GoodMultiplier = 1.75,
+        };
+
+        var sim = new CraftSim(recipe, player);
+        Check($"base progress solves to 337 (got {sim.BaseProgress})", sim.BaseProgress == 337);
+        Check($"base quality solves to 510 (got {sim.BaseQuality})", sim.BaseQuality == 510);
+
+        var state = sim.Initial();
+        var line = new List<CraftAction>();
+        var ambiguous = 0;
+        var misses = 0;
+        var failedAt = -1;
+
+        for (var i = 0; i + 1 < list.Count; i++)
+        {
+            var here = list[i];
+            var next = list[i + 1];
+
+            state = state with { Condition = ConditionEffects.FromDisplayName(here.Condition) };
+            var nextCondition = ConditionEffects.FromDisplayName(next.Condition);
+
+            var matches = new List<(CraftAction Action, bool Succeeded, CraftState Result)>();
+
+            foreach (var action in CraftActions.All)
+            {
+                if (action == CraftAction.None) continue;
+
+                // Fallible actions have to be tried both ways. The human line gambles on Rapid
+                // Synthesis and one of those casts misses — costing durability and yielding no
+                // progress — which no success-only search can account for.
+                var outcomes = CraftActions.Spec(action).SuccessRate < 100
+                    ? new[] { true, false }
+                    : new[] { true };
+
+                foreach (var succeeded in outcomes)
+                {
+                var step = sim.Apply(state, action, nextCondition, succeeded);
+                if (!step.Ok) continue;
+
+                if (step.State.Progress   != next.Progress) continue;
+                if (step.State.Quality    != next.Quality) continue;
+                if (step.State.Durability != next.Durability) continue;
+                if (step.State.Cp         != (int)next.Cp) continue;
+                if (step.State.Step       != next.Step) continue;
+
+                matches.Add((action, succeeded, step.State));
+                }
+            }
+
+            if (matches.Count == 0) { failedAt = here.Step; break; }
+
+            // The four numbers alone are not enough: Innovation and Veneration cost the same and
+            // change nothing measurable on the step they are cast, and a purely numeric match
+            // took Veneration, then two steps later chose Advanced Touch because the wrong buff
+            // made its arithmetic fit. Two errors cancelling is exactly the wrong answer that
+            // looks right.
+            //
+            // Status names break that tie, but only as a preference. The recorder reads them from
+            // addon slots that visibly shift — the same craft shows "Manipulation,Manipulation"
+            // and later "Inner Quiet,Inner Quiet,Manipulation" — so treating them as a hard
+            // filter stalls the reconstruction on a rendering artifact rather than on a real
+            // disagreement.
+            if (matches.Count > 1)
+            {
+                var best = matches
+                    .OrderByDescending(m => EffectAgreement(m.Result, next))
+                    .ToList();
+
+                if (EffectAgreement(best[0].Result, next) == EffectAgreement(best[1].Result, next))
+                    ambiguous++;
+
+                matches = best;
+            }
+
+            line.Add(matches[0].Action);
+            if (!matches[0].Succeeded) misses++;
+            state = matches[0].Result;
+        }
+
+        Console.WriteLine($"   reconstructed {line.Count} of {list.Count - 1} transitions"
+                        + (failedAt >= 0 ? $", stalled at step {failedAt}" : "")
+                        + $", {ambiguous} ambiguous, {misses} failed cast(s)");
+        Console.WriteLine($"   line: {string.Join(" > ", line)}");
+        Console.WriteLine($"   final: quality {state.Quality}, progress {state.Progress}, "
+                        + $"cp {state.Cp}, durability {state.Durability}");
+
+        // Asserted only as far as the technique is actually established. The opening reconstructs
+        // cleanly and identifies both the gamble and its misses; the run then stalls, and the
+        // reason looks like a genuine disagreement rather than a bug in the matcher:
+        //
+        // The recording shows Manipulation still listed at step 12, though it was cast at step 3
+        // and its duration is 8 — which the standard-recipe macro replay confirmed exactly, to
+        // the final restore. Either the expert craft recast it somewhere the CP trace does not
+        // show, or the recorder's status reads drift. The same craft rendering
+        // "Manipulation,Manipulation" and later "Inner Quiet,Inner Quiet,Manipulation" argues for
+        // the latter, but it is not settled, and a durability model that is wrong by five is
+        // enough to stall everything downstream.
+        Check($"the opening reconstructs without stalling (got {line.Count} steps)", line.Count >= 15);
+        Check($"the line starts on a plausible opener (got {(line.Count > 0 ? line[0].ToString() : "none")})",
+            line.Count > 0 && line[0] == CraftAction.Reflect);
+        Check($"the human line is shown to gamble on Rapid Synthesis ({misses} of its casts missed)",
+            line.Contains(CraftAction.RapidSynthesis));
+
+        Console.WriteLine(failedAt < 0
+            ? "   full craft reconstructed"
+            : $"   stalled at step {failedAt} of {list.Count} — see the note in this method");
+    }
+
+
+    /// <summary>
+    /// Whether the simulated statuses agree with the ones the recorder saw.
+    ///
+    /// <para>Compared as a set: the addon renders some statuses through more than one node, so
+    /// the recording contains duplicates like "Manipulation,Manipulation" that carry no meaning.
+    /// Inner Quiet and Trained Perfection appear in that list too, though the simulator holds
+    /// them as a count and a flag rather than as timers.</para>
+    /// </summary>
+    private static int EffectAgreement(CraftState state, CraftStepSample sample)
+    {
+        var simulated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (CraftBuff buff in Enum.GetValues<CraftBuff>())
+        {
+            if (buff == CraftBuff.None) continue;
+            if (state.HasBuff(buff)) simulated.Add(EffectNames(buff));
+        }
+        if (state.InnerQuiet > 0) simulated.Add("Inner Quiet");
+        if (state.TrainedPerfectionActive) simulated.Add("Trained Perfection");
+
+        var recorded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in sample.Effects)
+        {
+            // Entries may carry a remaining-step suffix.
+            var name = raw.Contains(':') ? raw[..raw.IndexOf(':')] : raw;
+            if (!string.IsNullOrWhiteSpace(name)) recorded.Add(name.Trim());
+        }
+
+        // Symmetric difference, negated: higher is closer agreement.
+        var missing = 0;
+        foreach (var name in recorded) if (!simulated.Contains(name)) missing++;
+        foreach (var name in simulated) if (!recorded.Contains(name)) missing++;
+        return -missing;
+    }
+
+    private static string EffectNames(CraftBuff buff) => buff switch
+    {
+        CraftBuff.WasteNot       => "Waste Not",
+        CraftBuff.WasteNotII     => "Waste Not II",
+        CraftBuff.GreatStrides   => "Great Strides",
+        CraftBuff.MuscleMemory   => "Muscle Memory",
+        CraftBuff.FinalAppraisal => "Final Appraisal",
+        _                        => buff.ToString(),
+    };
 
     // ── shared corpus loading ─────────────────────────────────────────────────
 

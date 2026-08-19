@@ -16,6 +16,7 @@ public enum CraftAction : byte
 
     // ── Progress ──
     BasicSynthesis,
+    RapidSynthesis,
     CarefulSynthesis,
     PrudentSynthesis,
     Groundwork,
@@ -191,8 +192,9 @@ public static class CraftActions
         //
         //   Trained Eye      — fills quality outright, but only on recipes far below the
         //                      crafter's level. An expert recipe is never one of those.
-        //   Rapid Synthesis  — fallible progress, and gated behind Stellar Steady Hand in the
-        //                      same way Hasty Touch is.
+        //   (Rapid Synthesis was in this list until a recorded human expert craft turned out to
+        //    use it. It is now in the table but still out of the solver's candidate set, which
+        //    refuses gambles — the distinction between "cannot represent" and "will not choose".)
         //   Stellar Steady Hand — makes the fallible actions certain. Both it and the actions it
         //                      enables are excluded together; the solver refuses gambles anyway,
         //                      so admitting them would widen the branching factor for lines it
@@ -205,6 +207,12 @@ public static class CraftActions
 
         // ── Progress ──────────────────────────────────────────────────────────
         Add(new ActionSpec { Action = CraftAction.BasicSynthesis,   Kind = ActionKind.Progress, ProgressEfficiency = 120, CpCost = 0,  DurabilityCost = 10 });
+        // Rapid Synthesis. Excluded from the solver's candidate set as a gamble, but present in
+        // the table because a recorded human expert craft uses it — three casts at 0 CP, each
+        // gaining exactly 1685, which only 500% efficiency produces. A baseline that cannot be
+        // expressed cannot be compared against.
+        Add(new ActionSpec { Action = CraftAction.RapidSynthesis, Kind = ActionKind.Progress, ProgressEfficiency = 500, CpCost = 0, DurabilityCost = 10, SuccessRate = 50 });
+
         Add(new ActionSpec { Action = CraftAction.CarefulSynthesis, Kind = ActionKind.Progress, ProgressEfficiency = 180, CpCost = 7,  DurabilityCost = 10 });
         Add(new ActionSpec { Action = CraftAction.PrudentSynthesis, Kind = ActionKind.Progress, ProgressEfficiency = 180, CpCost = 18, DurabilityCost = 5, ForbiddenUnderWasteNot = true });
 

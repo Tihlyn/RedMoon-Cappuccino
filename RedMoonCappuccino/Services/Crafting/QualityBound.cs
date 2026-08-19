@@ -41,6 +41,13 @@ public sealed class QualityBound
     /// <summary>Flat allowance for the durability-free cast Trained Perfection grants.</summary>
     private readonly int freeAction;
 
+    /// <summary>
+    /// Most progress a single point of durability can ever buy, over all progress actions at
+    /// their best-case buffs and condition. Used to reserve the durability a line must spend on
+    /// finishing progress before the rest is offered to quality.
+    /// </summary>
+    private readonly double progressPerDurability;
+
     /// <summary>Quality per cast at the most favourable assumptions the relaxation allows.</summary>
     public IReadOnlyDictionary<CraftAction, int> BestCaseGain { get; }
 
@@ -92,6 +99,31 @@ public sealed class QualityBound
             (CraftActions.Spec(CraftAction.Manipulation).CpCost, CraftActions.ManipulationRestore * 8),
         };
 
+        // The craft has to finish progress as well as clear quality, and the bound previously
+        // ignored that entirely — offering the whole durability budget to quality as though
+        // progress were free. Reserving the minimum any line must spend on progress tightens it
+        // without threatening admissibility, because using the *most* efficient progress action
+        // makes the reservation a floor: real lines spend at least this much, so real quality
+        // gets at most what is left.
+        var progressCondition = ConditionEffects.ProgressConditionHalves(CraftCondition.Malleable);
+        const int ProgressEffectMod = 10 + 10 + 5;   // Muscle Memory and Veneration, both free
+
+        var bestRatio = 0.0;
+        foreach (var action in CraftActions.All)
+        {
+            var spec = CraftActions.Spec(action);
+            if (spec.ProgressEfficiency == 0) continue;
+            if (spec.Kind == ActionKind.Specialist) continue;
+
+            var dur = MinimumDurability(spec.DurabilityCost, sim.Recipe.ConditionsFlag);
+            if (dur <= 0) continue;
+
+            var gain = (long)sim.BaseProgress * spec.ProgressEfficiency * ProgressEffectMod * progressCondition / 2000;
+            var ratio = (double)gain / dur;
+            if (ratio > bestRatio) bestRatio = ratio;
+        }
+        progressPerDurability = bestRatio;
+
         // Trained Perfection zeroes one action's durability outright. Pricing any action at zero
         // would make the table unbounded, so it is carried as a flat allowance of the single
         // best cast instead — bounded, and never less than the charge can actually be worth.
@@ -134,6 +166,13 @@ public sealed class QualityBound
 
         var cp  = Math.Clamp(state.Cp, 0, maxCp);
         var dur = Math.Clamp(state.Durability, 0, maxDurability);
+
+        var remainingProgress = recipe.Difficulty - state.Progress;
+        if (remainingProgress > 0 && progressPerDurability > 0)
+        {
+            var reserved = (int)Math.Ceiling(remainingProgress / progressPerDurability);
+            dur = Math.Max(0, dur - reserved);
+        }
 
         var allowance = state.TrainedPerfectionLeft > 0 || state.TrainedPerfectionActive ? freeAction : 0;
 

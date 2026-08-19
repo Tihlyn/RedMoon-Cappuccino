@@ -823,9 +823,20 @@ public static class Program
             violations == 0, worst);
 
         // ── solver behaviour ──
-        var full = new DeterministicSolver(sim, bound, targetQuality: 0, nodeLimit: 2_000_000).Solve();
-        Console.WriteLine($"   deterministic optimum: quality {full.Quality} in {full.Actions.Count} actions, "
+        var flat = new DeterministicSolver(sim, bound, targetQuality: 0, nodeLimit: 4_000_000).Solve();
+        var full = new DeterministicSolver(sim, bound, targetQuality: 0, nodeLimit: 4_000_000).SolveBest();
+        Console.WriteLine($"   unpruned enumeration: quality {flat.Quality}, {flat.NodesExpanded} nodes, exhaustive={flat.Exhaustive}");
+        Console.WriteLine($"   binary-searched:      quality {full.Quality} in {full.Actions.Count} actions, "
                         + $"{full.NodesExpanded} nodes, exhaustive={full.Exhaustive}");
+
+        Check($"binary search agrees with unpruned enumeration ({full.Quality} vs {flat.Quality})",
+            !flat.Exhaustive || full.Quality == flat.Quality);
+        // The two cost the same here, and that is the interval table working rather than a
+        // coincidence: SolveBest's first probe runs at target 1, which prunes nothing and so
+        // settles every state exactly, leaving the remaining probes as free lookups. Asserting
+        // one is faster would therefore be asserting noise.
+        Check($"the shared interval table makes repeated probes free ({full.NodesExpanded} vs {flat.NodesExpanded})",
+            full.NodesExpanded <= flat.NodesExpanded);
 
         Check($"the solver finds a completing line (quality {full.Quality})", full.Quality >= 0);
         Check("the reported line is non-empty", full.Actions.Count > 0);
@@ -850,7 +861,7 @@ public static class Program
             hopeless.Quality < 0 && hopeless.NodesExpanded <= 2);
 
         Check("solving twice gives the same answer",
-            new DeterministicSolver(sim, bound, 0, 2_000_000).Solve().Quality == full.Quality);
+            new DeterministicSolver(sim, bound, 0, 4_000_000).SolveBest().Quality == full.Quality);
     }
 
     // ── shared corpus loading ─────────────────────────────────────────────────

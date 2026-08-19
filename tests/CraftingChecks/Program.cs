@@ -1385,9 +1385,12 @@ public static class Program
 
         var staticResult = evaluator.Run(() => new StaticPolicy(sim, planned.Actions), Trials, Seed);
         var adaptive     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model), Trials, Seed);
-        var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: 3), Trials, Seed);
+        var opened       = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model,
+                                              opening: OpeningBook.Expert), Trials, Seed);
+        var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: 3,
+                                              opening: OpeningBook.Expert), Trials, Seed);
 
-        foreach (var r in new[] { staticResult, adaptive, gambling })
+        foreach (var r in new[] { staticResult, adaptive, opened, gambling })
             Console.WriteLine($"   {r.Policy,-24} clear {r.ClearRate * 100,6:0.0}%   "
                             + $"completed {(double)r.Completed / r.Trials * 100,5:0.0}%   "
                             + $"mean quality {r.MeanQuality,8:0}");

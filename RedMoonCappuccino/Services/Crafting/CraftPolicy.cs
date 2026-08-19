@@ -86,6 +86,42 @@ public sealed class StaticPolicy : ICraftPolicy
 }
 
 /// <summary>
+/// Openings taken from play rather than search.
+///
+/// <para>Searching from step one is decision paralysis: the opening of an expert craft is a
+/// twenty-step commitment whose payoff arrives at the end, and no one-ply lookahead can discover
+/// it. Both recorded crafts — a human macro on a standard recipe and a reconstructed expert run —
+/// open the same way, so that shared prefix is treated as known and the search starts where the
+/// decisions actually become live.</para>
+///
+/// <para>This is the horizon reduction the plan called for, in its cheapest possible form: a fixed
+/// prefix rather than a learned option library, but the same idea — collapse the part of the craft
+/// that is not really a decision, and spend the search where it is.</para>
+/// </summary>
+public static class OpeningBook
+{
+    /// <summary>
+    /// The reconstructed expert opener: bank Inner Quiet, arm the durability engine, then take
+    /// free progress while Trained Perfection is paying for it.
+    /// </summary>
+    public static readonly CraftAction[] Expert =
+    {
+        CraftAction.Reflect,
+        CraftAction.TrainedPerfection,
+        CraftAction.Manipulation,
+        CraftAction.Groundwork,
+    };
+
+    /// <summary>The standard-recipe macro's opener, which banks quality before progress.</summary>
+    public static readonly CraftAction[] Standard =
+    {
+        CraftAction.Reflect,
+        CraftAction.Manipulation,
+        CraftAction.Innovation,
+    };
+}
+
+/// <summary>
 /// One-ply expectimax over the fitted condition model.
 ///
 /// <para>Each candidate action is scored by the expectation of what follows it, taken over the
@@ -107,9 +143,13 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
     private readonly ConditionModel model;
     private readonly int gambleBudget;
     private readonly CraftAction[] candidates;
+    private readonly CraftAction[] opening;
+    private int openingCursor;
 
-    public ExpectimaxPolicy(CraftSim sim, QualityBound bound, ConditionModel model, int gambleBudget = 0)
+    public ExpectimaxPolicy(CraftSim sim, QualityBound bound, ConditionModel model,
+                            int gambleBudget = 0, CraftAction[]? opening = null)
     {
+        this.opening = opening ?? Array.Empty<CraftAction>();
         this.sim          = sim;
         this.bound        = bound;
         this.model        = model;
@@ -127,10 +167,20 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
         candidates = usable.ToArray();
     }
 
-    public string Name => gambleBudget > 0 ? $"expectimax, {gambleBudget} gambles" : "expectimax";
+    public string Name =>
+        (opening.Length > 0 ? "opened + " : "")
+        + (gambleBudget > 0 ? $"expectimax, {gambleBudget} gambles" : "expectimax");
 
     public CraftAction Choose(CraftState state)
     {
+        // Play the book out first. An entry that has become illegal is skipped rather than
+        // abandoning the rest, so a condition that blocks one step does not discard the opening.
+        while (openingCursor < opening.Length)
+        {
+            var scripted = opening[openingCursor++];
+            if (sim.Legality(state, scripted) == ActionLegality.Usable) return scripted;
+        }
+
         var best = CraftAction.None;
         var bestValue = double.NegativeInfinity;
 
@@ -246,10 +296,16 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
     /// Plays a state out under a fixed, cheap policy: bank quality while there is durability to
     /// spare, then spend what is reserved on finishing progress.
     ///
-    /// <para>Deliberately simple. Its job is to say whether a position is winnable, not to play
-    /// well — a rollout good enough to be worth optimising would cost more than the search it is
-    /// serving. Conditions are assumed Normal throughout, which understates every position
-    /// equally and so preserves the ordering that matters.</para>
+    /// <para>Deliberately simple, and on a hard recipe that simplicity is fatal. <strong>This
+    /// rollout cannot finish an expert recipe</strong>, and the arithmetic says why: unbuffed
+    /// Groundwork returns 60.6 progress per point of durability, so a full 60-point bar buys 3,639
+    /// against the 11,250 needed. Even under Veneration it is 5,457. Completion requires cycling
+    /// durability through Manipulation and mends inside Veneration windows, which this rollout
+    /// does not attempt — so it returns zero for every candidate and the policy has nothing to
+    /// choose between.</para>
+    ///
+    /// <para>Conditions are assumed Normal throughout, which understates every position equally
+    /// and would preserve the ordering that matters, if there were an ordering to preserve.</para>
     /// </summary>
     private double Rollout(CraftState state)
     {

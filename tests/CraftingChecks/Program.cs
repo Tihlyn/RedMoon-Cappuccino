@@ -1354,6 +1354,13 @@ public static class Program
         {
             Craftsmanship = (337 - 2) * 10, Control = (510 - 35) * 10,
             MaxCp = 791, Level = 100, GoodMultiplier = 1.75,
+
+            // A current expert recipe requires 99.94% of maximum quality, and the specialist
+            // actions are part of how that is reached. Treating the currency as scarce here would
+            // mean solving a different problem than the one being played, so supply is assumed
+            // unlimited. The per-synthesis charge limits still bind: three Careful Observations,
+            // one Heart and Soul, one Quick Innovation.
+            AvailableDelineations = int.MaxValue,
         };
 
         var sim = new CraftSim(recipe, player);
@@ -1367,7 +1374,17 @@ public static class Program
                         + $"{model.TelegraphSource} -> {model.TelegraphTarget}");
 
         // The macro this has to beat: one line, solved once, replayed blind.
-        var planned = new FrontierSolver(sim, bound, width: 4000).Solve();
+        //
+        // Planned without specialist actions, and deliberately. They are reactive tools — Careful
+        // Observation redraws a condition you can see, Heart and Soul rescues one you did not get
+        // — so a line that cannot react has no business spending them. Handing them to the
+        // frontier also breaks it outright: they are step-neutral, so each one consumes a level of
+        // the beam without advancing the craft, and the planned line collapsed from 42 actions to
+        // 11 when they were admitted. That is worth fixing in the frontier, but it is not what a
+        // macro baseline should be measuring.
+        var macroPlayer = player with { AvailableDelineations = 0 };
+        var macroSim = new CraftSim(recipe, macroPlayer);
+        var planned = new FrontierSolver(macroSim, new QualityBound(macroSim), width: 4000).Solve();
         Console.WriteLine($"   planned line: {planned.Actions.Count} actions, "
                         + $"quality {planned.Quality} under all-Normal");
 
@@ -1408,8 +1425,12 @@ public static class Program
         // a statistic that is zero on every side would assert nothing, so the gate is on the
         // metric that carries signal, with clear rate printed beside it rather than buried.
         Console.WriteLine();
-        Console.WriteLine($"   clear rate is 0% for every policy: the requirement is "
-                        + $"{recipe.RequiredQuality} and the best here banks {gambling.MeanQuality:0}.");
+        var bestClear = Math.Max(Math.Max(staticResult.ClearRate, adaptive.ClearRate),
+                                 Math.Max(opened.ClearRate, gambling.ClearRate));
+        Console.WriteLine($"   best clear rate {bestClear * 100:0.0}%: the requirement is "
+                        + $"{recipe.RequiredQuality} and the strongest policy banks "
+                        + $"{gambling.MeanQuality:0} on average, so clears are still the tail "
+                        + $"of the distribution rather than the middle of it.");
         Console.WriteLine();
 
         Check($"reading conditions beats replaying a line "

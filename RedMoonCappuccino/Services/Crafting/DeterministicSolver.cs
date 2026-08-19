@@ -105,7 +105,7 @@ public sealed class DeterministicSolver
 
             // Specialist actions cost a Crafter's Delineation. A baseline that spends real
             // currency is not a baseline.
-            if (spec.CostsDelineation) continue;
+            if (spec.CostsDelineation && sim.Player.AvailableDelineations <= 0) continue;
 
             // Conditions never vary here, so anything gated on Good is dead weight in the
             // branching factor. Legality would reject them at every node anyway.

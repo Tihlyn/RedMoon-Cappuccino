@@ -160,7 +160,7 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
         {
             if (action == CraftAction.None) continue;
             var spec = CraftActions.Spec(action);
-            if (spec.CostsDelineation) continue;
+            if (spec.CostsDelineation && sim.Player.AvailableDelineations <= 0) continue;
             if (spec.SuccessRate < 100 && gambleBudget <= 0) continue;
             usable.Add(action);
         }

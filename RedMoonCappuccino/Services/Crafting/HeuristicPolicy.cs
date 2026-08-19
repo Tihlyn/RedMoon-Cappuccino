@@ -142,6 +142,40 @@ public sealed class HeuristicPolicy : ICraftPolicy
                 return CraftAction.Veneration;
         }
 
+        // ── Specialist actions ──
+        // They carry no efficiency of their own, so a best-by-gain search would never reach for
+        // them. Each is spent where its effect is worth most rather than as soon as it is legal:
+        // there are only three Careful Observations and one of each other per synthesis, and the
+        // limit that matters is the charge, not the currency.
+
+        // Great Strides is about to be cashed and the condition is the worst one available.
+        // Careful Observation redraws it without spending a step or any buff duration, which is
+        // the cheapest way to turn the biggest touch of the craft into a Good one.
+        if (state.Condition == CraftCondition.Normal
+            && state.HasBuff(CraftBuff.GreatStrides)
+            && state.InnerQuiet >= CraftActions.MaxInnerQuiet
+            && Usable(state, CraftAction.CarefulObservation))
+            return CraftAction.CarefulObservation;
+
+        // Heart and Soul buys a Precise Touch off-condition: 150% and two Inner Quiet instead of
+        // one. Worth its charge only while there are stacks left to gain.
+        if (state.InnerQuiet < CraftActions.MaxInnerQuiet
+            && state.HasBuff(CraftBuff.Innovation)
+            && state.Condition is not (CraftCondition.Good or CraftCondition.Excellent)
+            && !state.HeartAndSoulActive
+            && Usable(state, CraftAction.HeartAndSoul))
+            return CraftAction.HeartAndSoul;
+
+        if (state.HeartAndSoulActive && Usable(state, CraftAction.PreciseTouch))
+            return CraftAction.PreciseTouch;
+
+        // Quick Innovation is Innovation without the 18 CP, and cannot be cast over a running one.
+        // Saved for when CP is the binding constraint rather than spent early for convenience.
+        if (!state.HasBuff(CraftBuff.Innovation)
+            && state.Cp < 120
+            && Usable(state, CraftAction.QuickInnovation))
+            return CraftAction.QuickInnovation;
+
         // Cash Inner Quiet in before it can be wasted, under the biggest multiplier available.
         if (state.InnerQuiet >= CraftActions.MaxInnerQuiet
             && state.HasBuff(CraftBuff.GreatStrides)
@@ -169,7 +203,7 @@ public sealed class HeuristicPolicy : ICraftPolicy
         foreach (var action in CraftActions.All)
         {
             if (action == CraftAction.None) continue;
-            if (CraftActions.Spec(action).CostsDelineation) continue;
+            if (CraftActions.Spec(action).CostsDelineation && sim.Player.AvailableDelineations <= 0) continue;
             if (!Usable(state, action)) continue;
 
             var value = score(action);
@@ -179,6 +213,19 @@ public sealed class HeuristicPolicy : ICraftPolicy
         return best;
     }
 
-    private bool Usable(CraftState state, CraftAction action) =>
-        sim.Legality(state, action) == ActionLegality.Usable;
+    /// <summary>
+    /// Legality, plus the player's willingness to spend a Delineation.
+    ///
+    /// <para>The budget check belongs here rather than in the candidate filter. The specialist
+    /// rules above return their action directly, so a filter applied only when ranking by gain
+    /// would have let them through regardless of the budget — which is exactly what happened, and
+    /// the improvement it produced was not real. One choke point, honoured by every path.</para>
+    /// </summary>
+    private bool Usable(CraftState state, CraftAction action)
+    {
+        if (CraftActions.Spec(action).CostsDelineation && sim.Player.AvailableDelineations <= 0)
+            return false;
+
+        return sim.Legality(state, action) == ActionLegality.Usable;
+    }
 }

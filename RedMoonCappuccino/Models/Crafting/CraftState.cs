@@ -62,9 +62,16 @@ public sealed record PlayerSpec
     public required double GoodMultiplier { get; init; }
 
     /// <summary>
-    /// Crafter's Delineations the player is willing to spend on this craft. The three
-    /// specialist actions each consume one, so they are not free per-craft charges and
-    /// their cost belongs in the advice rather than only in the search.
+    /// Crafter's Delineations the player is willing to spend on this craft.
+    ///
+    /// <para>Zero keeps specialist actions out of every solver, which is right when the currency
+    /// matters more than the craft. On a current expert recipe it does not: the requirement sits
+    /// at 99.94% of maximum and the specialist actions are part of how that is reached, so a
+    /// solver refusing them is solving a different problem than the player is playing.</para>
+    ///
+    /// <para>This is willingness to spend, not the charge cap. Careful Observation is still three
+    /// per synthesis and the other two one each — those limits live in the state and are enforced
+    /// by the simulator regardless of what is set here.</para>
     /// </summary>
     public int AvailableDelineations { get; init; }
 }

@@ -71,7 +71,7 @@ public sealed class FrontierSolver
             if (action == CraftAction.None) continue;
             var spec = CraftActions.Spec(action);
             if (spec.SuccessRate < 100 && gambleBudget <= 0) continue;
-            if (spec.CostsDelineation) continue;       // no real currency spent
+            if (spec.CostsDelineation && sim.Player.AvailableDelineations <= 0) continue;
             if (spec.RequiresGoodCondition) continue;  // never legal under all-Normal
             usable.Add(action);
         }
@@ -88,7 +88,15 @@ public sealed class FrontierSolver
         Node? best = null;
         var expanded = 0;
 
-        for (var depth = 0; depth < maxSteps && frontier.Count > 0; depth++)
+        // Levels are counted in actions, not steps. Specialist actions are step-neutral, so a
+        // craft that uses all five charges needs five levels more than it has steps — budgeting by
+        // steps alone truncates those lines mid-craft.
+        var levels = maxSteps + CraftActions.CarefulObservationCharges
+                              + CraftActions.HeartAndSoulCharges
+                              + CraftActions.QuickInnovationCharges
+                              + CraftActions.TrainedPerfectionCharges;
+
+        for (var depth = 0; depth < levels && frontier.Count > 0; depth++)
         {
             var next = new List<Node>();
 

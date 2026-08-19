@@ -32,8 +32,14 @@ public sealed record CraftStepSample
     ///
     /// A reroll sample shares its <see cref="Step"/> with the sample immediately before it, so
     /// the pair gives the source condition, the action that rerolled it, and the result.
+    ///
+    /// Deliberately not <c>required</c>: this field was added after the bulk of the corpus was
+    /// recorded, and a record written before it exists is a step by definition — the earlier
+    /// recorder only ever emitted on a step change. Making it required would make every legacy
+    /// line fail to deserialize, which silently discarded 98% of the collected transitions
+    /// rather than reporting a problem.
     /// </summary>
-    public required string Trigger { get; init; }
+    public string Trigger { get; init; } = "step";
 
     public required int Progress    { get; init; }
     public required int Quality     { get; init; }

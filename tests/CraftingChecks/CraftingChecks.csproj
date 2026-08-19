@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Phase 0's gate, as a runnable program.
+
+    Deliberately a plain console app rather than a plugin project: the simulator, the
+    condition fit and the admissibility gate have no Dalamud dependency, so they can be
+    checked on a build machine with no game and no client. It compiles the plugin's own
+    sources directly — there is no second copy of the logic to drift out of step.
+
+    Not in RedMoonCappuccino.sln on purpose, so it cannot affect the plugin build.
+
+    Run it with "dotnet run" from this directory. It defaults to the recorder's own output
+    under the plugin config folder; pass a directory as the first argument to point it at
+    another corpus. Exit code is 0 only when every check passes.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>CraftingChecks</AssemblyName>
+    <RootNamespace>Harness</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\RedMoonCappuccino\Models\CraftStepSample.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftCondition.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftAction.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftState.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftBenchmark.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftAdvice.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftSim.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModel.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModelFitter.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModelRegistry.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\QualityBound.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DeterministicSolver.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\FrontierSolver.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftPolicy.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\HeuristicPolicy.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DecisionRouter.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DecisionCache.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftAdvisor.cs" />
+  </ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Hooking;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -55,6 +56,14 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         /// and must never be pooled into a weight fit.
         /// </summary>
         Study,
+        /// <summary>
+        /// Drive a touch rotation so quality gains arrive <em>labelled with the action that
+        /// produced them</em>. The condition corpus cannot validate the quality formula at all:
+        /// the auto runs label every action but never touch quality, and the manual session
+        /// carries quality and buff observations but records action 0, so no gain can be
+        /// attributed. This mode is the missing half of the Phase 0 replay.
+        /// </summary>
+        Quality,
     }
 
     // ── Services ──────────────────────────────────────────────────────────────
@@ -91,6 +100,14 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private const long UnreadableLogIntervalMs = 5000;
 
     /// <summary>
+    /// How long to wait after a step-neutral action before concluding that nothing changed.
+    /// Must exceed the client's action resolution time — at the 2s action interval the previous
+    /// build recaptured while the action was still resolving, producing one spurious sample per
+    /// step. Only ever consulted for actions known not to advance the step counter.
+    /// </summary>
+    private const long StepNeutralGraceMs = 4500;
+
+    /// <summary>
     /// How long after pressing Trial Synthesis a confirmation dialog will be accepted.
     /// This scoping is a safety property, not a timeout: SelectYesno is the same window
     /// the game uses to confirm trades, discards and desynthesis, so confirming one
@@ -104,6 +121,12 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
     /// <summary>Observe's CP cost, used to identify it in the sheet and to decide when it is no longer affordable.</summary>
     private const byte ObserveCpCost = 7;
+
+    /// <summary>Basic Touch's CP cost — the discriminator that resolves it out of the sheet.</summary>
+    private const byte TouchCpCost = 18;
+
+    /// <summary>Master's Mend's CP cost.</summary>
+    private const byte MendCpCost = 88;
 
     /// <summary>No craft action targets anything; this is the client's "no target" sentinel.</summary>
     private const ulong NoTarget = 0xE000_0000;
@@ -141,6 +164,13 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     // known so the pair lands on one line. Written with action 0 if the craft ends first.
     private CraftStepSample? pending;
 
+    /// <summary>
+    /// Detour on the client's own UseAction, so every craft action is attributed to the sample
+    /// it was taken from — whoever pressed it. In Auto mode the driver already knows what it
+    /// sent, but in Observe mode this is the only source of that information.
+    /// </summary>
+    private readonly Hook<ActionManager.Delegates.UseAction> useActionHook;
+
     // Resolved once per job: the two actions the driving policy uses.
     private uint fillerActionId;   // 0 CP, costs durability — runs the craft down once CP is gone
     private uint observeActionId;  // 7 CP, costs no durability — the cheapest way to advance a step
@@ -157,6 +187,17 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     private string heartSoulName  = "?";
     private string appraisalName  = "?";
 
+    private uint touchActionId;    // 18 CP, 10 durability — the quality workhorse
+    private uint mendActionId;     // 88 CP — keeps a quality run going long enough to be useful
+    private string touchName = "?";
+    private string mendName  = "?";
+
+    /// <summary>Actions that do not advance the step counter — every specialist action.</summary>
+    private readonly HashSet<uint> stepNeutralActions = new();
+
+    /// <summary>Whether the action just sent was step-neutral, and so may legitimately change nothing.</summary>
+    private bool expectStepNeutral;
+
     /// <summary>Condition to spend rerolls on, when set. Matched against the displayed name.</summary>
     private string? studyTarget;
 
@@ -169,7 +210,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
     public CraftDataRecorder(IDalamudPluginInterface pluginInterface, IFramework framework, IGameGui gameGui,
                              IObjectTable objectTable, IPlayerState playerState, IDataManager dataManager,
-                             IPluginLog log)
+                             IGameInteropProvider gameInterop, IPluginLog log)
     {
         this.pluginInterface = pluginInterface;
         this.framework       = framework;
@@ -179,12 +220,21 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         this.dataManager     = dataManager;
         this.log             = log;
 
+        // Hooking UseAction is what lets Observe mode record *which* action was taken, not
+        // merely the state it produced. Without it a hand-driven craft logs action 0 on every
+        // step, which is unusable as a replay oracle: you cannot diff a simulator against a
+        // craft when the input sequence was never written down.
+        useActionHook = gameInterop.HookFromAddress<ActionManager.Delegates.UseAction>(
+            (nint)ActionManager.MemberFunctionPointers.UseAction, OnUseAction);
+        useActionHook.Enable();
+
         framework.Update += OnFrameworkUpdate;
     }
 
     public void Dispose()
     {
         framework.Update -= OnFrameworkUpdate;
+        useActionHook.Dispose();
         CloseWriter();
     }
 
@@ -218,6 +268,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         pending  = null;
         confirmWindowUntil  = 0;
         loggedUnknownDialog = false;
+        expectStepNeutral   = false;
 
         Mode = mode;
         log.Information($"[CraftRecorder] Started in {mode}. Writing to {OutputPath}");
@@ -425,7 +476,7 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                 FlushPending(0);
         }
 
-        if (Mode is not (RecorderMode.Auto or RecorderMode.Study)) return;
+        if (Mode is not (RecorderMode.Auto or RecorderMode.Study or RecorderMode.Quality)) return;
 
         if (now - lastStepTick > StallTimeoutMs)
         {
@@ -437,24 +488,31 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
         if (now - lastActionTick < ActionIntervalMs) return;
 
-        // An action that advances neither the step counter nor the condition moves nothing the
-        // detection above watches, so `pending` would stay null and the driver would idle until
-        // the stall guard fired. Recapture once the action interval has elapsed — by then a
-        // normal action has already advanced the step and refilled it, so this only fires for
-        // the genuinely step-neutral case.
+        // A step-neutral action can legitimately change nothing the detection above watches, so
+        // `pending` would stay null and the driver would idle until the stall guard fired.
+        // Recapture only in that case, and only after the action has had time to resolve —
+        // recapturing at the plain action interval fired mid-resolution and produced a spurious
+        // sample on every single step.
         //
-        // The "continue" trigger is itself a measurement: one appearing directly after a reroll
-        // means the reroll returned the condition it started from.
-        pending ??= CaptureStep(synth, step, "continue");
+        // The "continue" trigger is itself a measurement: one appearing after a step-neutral
+        // action means the condition it started from came back unchanged.
+        if (pending == null)
+        {
+            if (!expectStepNeutral || now - lastActionTick < StepNeutralGraceMs) return;
+            pending = CaptureStep(synth, step, "continue");
+        }
 
         var actionId = Mode == RecorderMode.Study
             ? ChooseStudyAction(pending)
+            : Mode == RecorderMode.Quality
+            ? ChooseQualityAction(pending)
             : ChooseAction(pending.Cp);
         if (actionId == 0) return;
 
         if (SendAction(actionId))
         {
-            lastActionTick = now;
+            lastActionTick    = now;
+            expectStepNeutral = stepNeutralActions.Contains(actionId);
             FlushPending(actionId);
         }
     }
@@ -568,6 +626,37 @@ public sealed unsafe class CraftDataRecorder : IDisposable
     }
 
     /// <summary>
+    /// <summary>
+    /// Quality policy: spam the basic touch, mending when durability runs short.
+    ///
+    /// <para>Its only job is to make quality gains <em>attributable</em>. The condition corpus
+    /// pairs every gain with the action that caused it or with nothing at all, and neither is
+    /// enough to check a formula: auto runs label their actions but never touch quality, and
+    /// the manual session recorded quality movement under action 0. A driven touch rotation
+    /// produces gains that can be predicted and diffed.</para>
+    ///
+    /// <para>One rotation covers most of the formula. Inner Quiet climbs from zero to ten over
+    /// the run, so the 10%-per-stack scaling is exercised across its whole range; conditions
+    /// vary on their own, which exercises every quality multiplier including the 1.75x Good
+    /// that relic tools grant. Nothing here costs a Delineation.</para>
+    /// </summary>
+    private uint ChooseQualityAction(CraftStepSample state)
+    {
+        ResolveActions();
+
+        if (touchActionId == 0) return ChooseAction(state.Cp);
+
+        // Mend while a touch would otherwise end the craft, so a run lasts long enough to walk
+        // Inner Quiet up to its cap.
+        if (state.Durability <= 10 && mendActionId != 0 && IsUsable(mendActionId))
+            return mendActionId;
+
+        if (IsUsable(touchActionId)) return touchActionId;
+
+        // Out of CP for touches: fall back so the craft still terminates and restarts.
+        return ChooseAction(state.Cp);
+    }
+
     /// Study policy.
     ///
     /// <para>Every specialist action costs a Crafter's Delineation — Careful Observation three
@@ -610,6 +699,54 @@ public sealed unsafe class CraftDataRecorder : IDisposable
                am->GetActionStatus(ActionType.CraftAction, actionId, NoTarget, false, false, null) == 0;
     }
 
+    /// <summary>
+    /// Attributes every craft action to the sample it was taken from.
+    ///
+    /// <para>This is what turns a hand-driven craft into a replayable one. The recorder used to
+    /// learn the action only when it sent the action itself, so Observe-mode sessions recorded
+    /// the state after each step and never what caused it — leaving 4,000 steps of real
+    /// crafting that no simulator can be diffed against, because the input sequence was never
+    /// written down. The Phase 0 replay gate depends on this.</para>
+    ///
+    /// <para>It fires for the driver's own presses too, which is harmless: the detour flushes
+    /// the pending sample with the same id the driver would have used, and the driver's own
+    /// flush afterwards finds nothing left to write.</para>
+    /// </summary>
+    private bool OnUseAction(
+        ActionManager*              self,
+        ActionType                  actionType,
+        uint                        actionId,
+        ulong                       targetId,
+        uint                        a4,
+        ActionManager.UseActionMode a5,
+        uint                        a6,
+        bool*                       a7)
+    {
+        var result = useActionHook.Original(self, actionType, actionId, targetId, a4, a5, a6, a7);
+
+        try
+        {
+            // Only successful craft actions, only while a craft is being recorded. a5 == 1 is
+            // the client re-firing a queued action rather than a fresh decision.
+            if (result
+                && actionType == ActionType.CraftAction
+                && Mode != RecorderMode.Off
+                && inCraft
+                && (uint)a5 != 1)
+            {
+                lastActionTick    = Environment.TickCount64;
+                expectStepNeutral = stepNeutralActions.Contains(actionId);
+                FlushPending(actionId);
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error(ex, "[CraftRecorder] UseAction detour failed.");
+        }
+
+        return result;
+    }
+
     private bool SendAction(uint actionId)
     {
         var am = ActionManager.Instance();
@@ -638,9 +775,10 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         var sheet = dataManager.GetExcelSheet<CraftAction>();
         if (sheet == null) return;
 
-        uint filler = 0, observe = 0, appraisal = 0;
+        uint filler = 0, observe = 0, appraisal = 0, touch = 0, mend = 0;
         int fillerLevel = int.MaxValue, observeLevel = int.MaxValue, appraisalLevel = int.MaxValue;
-        string fillerN = "?", observeN = "?", appraisalN = "?";
+        int touchLevel = int.MaxValue, mendLevel = int.MaxValue;
+        string fillerN = "?", observeN = "?", appraisalN = "?", touchN = "?", mendN = "?";
 
         // Three specialist actions exist, all 0 CP and all costing a Crafter's Delineation:
         // Careful Observation, Heart and Soul, Quick Innovation. Level orders them, so the
@@ -673,6 +811,15 @@ public sealed unsafe class CraftDataRecorder : IDisposable
             {
                 appraisal = row.RowId; appraisalLevel = row.ClassJobLevel; appraisalN = row.Name.ExtractText();
             }
+            // Basic Touch and Innovation both cost 18; the lower level is the touch.
+            else if (row.Cost == TouchCpCost && row.ClassJobLevel < touchLevel)
+            {
+                touch = row.RowId; touchLevel = row.ClassJobLevel; touchN = row.Name.ExtractText();
+            }
+            else if (row.Cost == MendCpCost && row.ClassJobLevel < mendLevel)
+            {
+                mend = row.RowId; mendLevel = row.ClassJobLevel; mendN = row.Name.ExtractText();
+            }
         }
 
         specialists.Sort((a, b) => a.Level.CompareTo(b.Level));
@@ -685,6 +832,15 @@ public sealed unsafe class CraftDataRecorder : IDisposable
         appraisalActionId = appraisal;
         appraisalName     = appraisalN;
 
+        touchActionId = touch;
+        touchName     = touchN;
+        mendActionId  = mend;
+        mendName      = mendN;
+
+        // Every specialist action is step-neutral, so the whole roster goes in.
+        stepNeutralActions.Clear();
+        foreach (var s in specialists) stepNeutralActions.Add(s.Id);
+
         carefulObsActionId = specialists.Count > 0 ? specialists[0].Id : 0;
         carefulObsName     = specialists.Count > 0 ? specialists[0].Name : "?";
         heartSoulActionId  = specialists.Count > 1 ? specialists[1].Id : 0;
@@ -694,7 +850,8 @@ public sealed unsafe class CraftDataRecorder : IDisposable
 
         var roster = string.Join(", ", specialists.Select(s => $"{s.Name} ({s.Id}, lv{s.Level})"));
         log.Information($"[CraftRecorder] Actions for job {job}: filler={fillerN} ({filler}), " +
-                        $"observe={observeN} ({observe}), buff={appraisalN} ({appraisal})");
+                        $"observe={observeN} ({observe}), buff={appraisalN} ({appraisal}), " +
+                        $"touch={touchN} ({touch}), mend={mendN} ({mend})");
         log.Information($"[CraftRecorder] Specialist actions (each costs a Crafter's Delineation): " +
                         $"{(roster.Length > 0 ? roster : "<none — not a specialist>")}");
     }

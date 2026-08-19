@@ -21,23 +21,25 @@ public static class CraftBenchmark
     /// </summary>
     public static PlayerSpec Character => new()
     {
-        // From the character sheet, food and potion included. Only meaningful alongside the
-        // ExpertRecipe dividers below — stats alone do not determine what an action is worth, the
-        // recipe's dividers do half the work, and separating the two is what inflated this
-        // benchmark for the whole of its life. Change them together or not at all.
+        // Not a stat line copied off a character sheet — a parameterisation that reproduces the
+        // base values a real craft on this recipe was *observed* to have: 337 progress and 510
+        // quality. Reflect opens for 1,530 at zero stacks under Normal, and Reflect is 300
+        // efficiency, so base quality is 1,530/3 = 510 with no inference in between. Base progress
+        // falls out of the first Groundwork the same way.
         //
-        // The plugin's own live read comes in about 150 craftsmanship and 30 control under these,
-        // which is unexplained and tracked separately; it is roughly 2% and does not change any
-        // conclusion drawn here.
-        Craftsmanship = 5876,
-        Control = 5647,
-        MaxCp = 793,
+        // Those two numbers are the only thing the simulator actually consumes; craftsmanship and
+        // the recipe's dividers exist only to produce them. Twice now this benchmark has been
+        // "corrected" by substituting real character stats while leaving the dividers that were
+        // fitted alongside the old ones — once making the character 1.85x too strong, once making
+        // it 1.5x too weak on quality. Anchoring on the observed output instead of the inputs is
+        // what stops that recurring.
+        //
+        // The character these came from cleared this recipe by hand in 22 of 53 recorded attempts.
+        Craftsmanship = 3350,
+        Control = 4750,
+        MaxCp = 791,
         Level = 100,
         GoodMultiplier = 1.75,
-
-        // Expert recipes are the case delineations exist for, and the advisor is not asked to
-        // ration them; treating them as scarce would only bias the search away from the actions
-        // the recipe is designed around.
         AvailableDelineations = int.MaxValue,
     };
 
@@ -62,8 +64,8 @@ public static class CraftBenchmark
         // character. The macro replay in the same test suite had solved the true dividers for
         // another recipe and asserted them — 189 and 207 — and the disagreement sat in one file,
         // unnoticed, because nothing compared the two.
-        ProgressDivider = 180,
-        QualityDivider = 180,
+        ProgressDivider = 100,
+        QualityDivider = 100,
         ProgressModifier = 100,
         QualityModifier = 100,
     };

@@ -202,6 +202,89 @@ public sealed class ExpectimaxPolicy : ICraftPolicy
         return Decide(state);
     }
 
+    /// <summary>The two best actions in a position and what the search thinks each is worth.</summary>
+    /// <param name="Best">What to play.</param>
+    /// <param name="BestValue">Its value, as a chance of clearing.</param>
+    /// <param name="Runner">The next best, or <see cref="CraftAction.None"/> if nothing else is legal.</param>
+    /// <param name="RunnerValue">The runner-up's value.</param>
+    /// <param name="FromOpening">Whether the choice came from the scripted opening rather than the search.</param>
+    public readonly record struct Ranking(CraftAction Best, double BestValue,
+                                          CraftAction Runner, double RunnerValue,
+                                          bool FromOpening);
+
+    /// <summary>
+    /// Ranks a position without playing it.
+    ///
+    /// <para>Separate from <see cref="Choose"/> because an advisor has to show its work: the margin
+    /// between the top two decides whether a recommendation is worth stating firmly or is a coin
+    /// toss dressed up as a verdict, and <see cref="Choose"/> discards exactly that. Peeks the
+    /// scripted opening rather than consuming it — this is a question, not a move.</para>
+    /// </summary>
+    public Ranking RankFrom(CraftState state)
+    {
+        for (var i = openingCursor; i < opening.Length; i++)
+        {
+            if (sim.Legality(state, opening[i]) != ActionLegality.Usable) continue;
+            return new Ranking(opening[i], Confidence(state), CraftAction.None, 0, true);
+        }
+
+        CraftAction best = CraftAction.None, runner = CraftAction.None;
+        double bestValue = double.NegativeInfinity, runnerValue = double.NegativeInfinity;
+
+        foreach (var action in candidates)
+        {
+            if (!Allowed(state, action)) continue;
+
+            var value = ScoreAction(state, action, 0);
+            if (value > bestValue)
+            {
+                runner = best; runnerValue = bestValue;
+                best = action; bestValue = value;
+            }
+            else if (value > runnerValue)
+            {
+                runner = action; runnerValue = value;
+            }
+        }
+
+        if (double.IsNegativeInfinity(bestValue)) bestValue = 0;
+        if (double.IsNegativeInfinity(runnerValue)) runnerValue = 0;
+
+        return new Ranking(best, bestValue, runner, runnerValue, false);
+    }
+
+    /// <summary>
+    /// Chance this position still clears, on the same curve the search steers by.
+    ///
+    /// <para>Reported independently of which leaf the search is configured with, because it answers
+    /// a different question: the search asks what to play, this asks how the craft is going. It is
+    /// what separates a craft that is behind from one that is already lost, which is the single
+    /// thing a player cannot read off the quality bar.</para>
+    /// </summary>
+    public double Confidence(CraftState state)
+    {
+        if (state.Completed) return state.Quality >= sim.Recipe.RequiredQuality ? 1.0 : 0.0;
+        if (state.Failed) return 0.0;
+        if (!bound.CanStillComplete(state, sim.Recipe)) return 0.0;
+        if (!bound.CanStillClear(state, sim.Recipe)) return 0.0;
+
+        return ClearChance(state);
+    }
+
+    /// <summary>
+    /// Keeps the scripted opening in step with what the player actually did.
+    ///
+    /// <para>An advisor does not get to assume its advice was taken. If the player departs from the
+    /// opening the book is abandoned outright rather than resumed later — a known-good prefix is
+    /// only known-good from its start, and replaying the rest of it into a position it was never
+    /// written for is worse than searching.</para>
+    /// </summary>
+    public void Observe(CraftAction taken)
+    {
+        if (openingCursor >= opening.Length) return;
+        openingCursor = opening[openingCursor] == taken ? openingCursor + 1 : opening.Length;
+    }
+
     private CraftAction Decide(CraftState state)
     {
         while (openingCursor < opening.Length)

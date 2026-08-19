@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using RedMoonCappuccino.Models;
@@ -29,6 +30,7 @@ public static class Program
         if (Array.Exists(args, a => a is "--diagnose")) { Diagnose(args); return 0; }
         if (Array.Exists(args, a => a is "--trace")) { TraceOne(args); return 0; }
         if (Array.Exists(args, a => a is "--sweep")) { Sweep(args); return 0; }
+        if (Array.Exists(args, a => a is "--calibrate")) { Calibrate(args); return 0; }
         var dirArg = Array.Find(args, a => !a.StartsWith("-"));
         var dataDir = dirArg is not null
             ? dirArg
@@ -75,6 +77,9 @@ public static class Program
 
         Section("J. Phase 2 — adaptive play against sampled conditions");
         Phase2Checks(registry);
+
+        Section("K. Advisor — the judgement a player sees");
+        AdvisorChecks();
 
         Console.WriteLine();
         Console.WriteLine(new string('=', 72));
@@ -1655,6 +1660,288 @@ public static class Program
         return state;
     }
 
+
+    // ── K. Advisor ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Checks the judgement the player actually sees, against constructed positions and against
+    /// whole crafts.
+    ///
+    /// <para>The load-bearing property is that the dead-craft call is <em>sound</em>. Calling a
+    /// craft early is the headline feature and it is also the most expensive thing here to get
+    /// wrong: a false stop throws away a craft that would have cleared, and the player has no way
+    /// to tell it was wrong — they binned it. Soundness is checked by playing on past every call
+    /// and confirming none of those crafts ever clears.</para>
+    /// </summary>
+    private static void AdvisorChecks()
+    {
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+
+        if (!registry.TryGetAdmissible(CraftBenchmark.ConditionsFlag, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model ({why}); advisor checks skipped");
+            return;
+        }
+
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var sim = new CraftSim(recipe, CraftBenchmark.Character);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+
+        // Few samples on purpose. The advisor ships with 200 because it speaks once per player
+        // action; this asks it thousands of times, and the properties under test — legality, the
+        // soundness of a stop, never refusing mid-craft — do not depend on the sample count.
+        CraftAdvisor Fresh() => new(sim, bound, model, 30, OpeningBook.Expert, samples: 16);
+
+        // ── a position at the start ──
+        var opening = Fresh().Advise(sim.Initial());
+        Check("the opening position gets advice rather than a refusal", !opening.IsRefusing);
+        Check($"the opening recommendation is legal ({opening.Recommended})",
+            sim.Legality(sim.Initial(), opening.Recommended) == ActionLegality.Usable);
+        Check("the opening is not called dead", opening.Posture != CraftPosture.Dead);
+
+        // ── a position that cannot possibly clear ──
+        var spent = sim.Initial() with { Cp = 0, Durability = 5, Quality = 100, Progress = 0 };
+        var doomed = Fresh().Advise(spent);
+        Check("a spent position is called dead", doomed.Posture == CraftPosture.Dead);
+        Check("the dead call recommends nothing", doomed.Recommended == CraftAction.None);
+        Check("the dead call says to stop", doomed.Verdict.Contains("Stop", StringComparison.Ordinal));
+
+        // ── terminal readings ──
+        var cleared = sim.Initial() with { Completed = true, Quality = recipe.RequiredQuality };
+        var short_ = sim.Initial() with { Completed = true, Quality = 12_000 };
+        Check("a cleared craft reads as cleared", Fresh().Advise(cleared).Verdict.StartsWith("Cleared"));
+        Check("a short craft reads as short", Fresh().Advise(short_).Verdict.StartsWith("Finished short"));
+        Check("a short craft reports its shortfall",
+            Fresh().Advise(short_).Shortfall == recipe.RequiredQuality - 12_000);
+
+        // ── whole crafts, played on the advice ──
+        const int Trials = 60;
+        var advised = 0; var cleared_ = 0; var refused = 0; var illegal = 0;
+        var calledDead = 0; var calledDeadThenCleared = 0; var deadCallStepTotal = 0L;
+        var neverCalledButFailed = 0;
+
+        for (var trial = 0; trial < Trials; trial++)
+        {
+            var rng = new Random(7_000_000 + trial);
+            var advisor = Fresh();
+            var state = sim.Initial();
+            var deadCalledAt = -1;
+
+            for (var step = 0; step < 80 && !state.IsTerminal; step++)
+            {
+                var advice = advisor.Advise(state);
+
+                if (advice.Posture == CraftPosture.Dead && deadCalledAt < 0)
+                {
+                    deadCalledAt = step;
+                    calledDead++;
+                    deadCallStepTotal += step;
+                }
+
+                // Playing on past the call is what makes the soundness check meaningful: the
+                // question is not whether the advisor is confident, it is whether it is right.
+                var action = advice.Recommended;
+                if (action == CraftAction.None)
+                {
+                    if (advice.IsRefusing) { refused++; break; }
+                    if (deadCalledAt >= 0)
+                    {
+                        // Keep the craft alive with the search so the call can be falsified.
+                        action = new ExpectimaxPolicy(sim, bound, model, 30).Choose(state);
+                        if (action == CraftAction.None) break;
+                    }
+                    else break;
+                }
+                else if (sim.Legality(state, action) != ActionLegality.Usable)
+                {
+                    illegal++;
+                    break;
+                }
+
+                advisor.Observe(action);
+
+                var spec = CraftActions.Spec(action);
+                var ok = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+                var next = sampler.Next(state.Condition, rng);
+                var result = sim.Apply(state, action, next, ok);
+                if (!result.Ok) break;
+                state = result.State;
+            }
+
+            advised++;
+            var madeIt = state.Completed && state.Quality >= recipe.RequiredQuality;
+            if (madeIt) cleared_++;
+            if (madeIt && deadCalledAt >= 0) calledDeadThenCleared++;
+            if (!madeIt && deadCalledAt < 0) neverCalledButFailed++;
+        }
+
+        Check($"the advisor never recommends an illegal action ({illegal} of {Trials})", illegal == 0);
+        Check($"the advisor never refuses mid-craft ({refused} of {Trials})", refused == 0);
+
+        // The property that matters. An unsound call is a craft binned for nothing.
+        Check($"no craft called dead ever clears ({calledDeadThenCleared} of {calledDead} calls)",
+            calledDeadThenCleared == 0);
+
+        Check($"playing on the advice still clears ({cleared_ * 100.0 / Trials:0.0}%)",
+            cleared_ * 100.0 / Trials >= 30.0);
+
+        Console.WriteLine();
+        Console.WriteLine($"   played {Trials} crafts on the advice: cleared {cleared_ * 100.0 / Trials:0.0}%");
+        if (calledDead > 0)
+            Console.WriteLine($"   called dead on {calledDead} of them, at step {deadCallStepTotal / (double)calledDead:0} "
+                            + $"on average — every one of which went on to fail.");
+        Console.WriteLine($"   {neverCalledButFailed} crafts failed without ever being called, which is the "
+                        + $"cost of an admissible bound: it will not call a craft it cannot prove is lost.");
+        Console.WriteLine();
+    }
+
+    // ── Calibration ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Measures what an early dead-craft call would actually cost.
+    ///
+    /// <para>The sound call — the admissible bound proving the requirement unreachable — fires
+    /// almost never, and when it does the craft is nearly over. That is the price of admissibility:
+    /// the bound prices every remaining action at ten stacks of Inner Quiet under the best condition
+    /// the recipe can roll, so it cannot rule a craft out until the resources to do any of that are
+    /// gone. A call that arrives at step 55 is not the feature; the feature is calling it at step 20.</para>
+    ///
+    /// <para>So the early call has to be a judgement rather than a proof, and a judgement has to be
+    /// calibrated before it can honestly be shown. This plays crafts to the end, records the
+    /// confidence at every step alongside what eventually happened, and reports — for each possible
+    /// threshold — how many crafts would be abandoned and how many of those would have cleared.
+    /// The false-positive rate is the number that decides whether this ships at all: a craft binned
+    /// wrongly is a craft the player never learns was winnable.</para>
+    /// </summary>
+    private static void Calibrate(string[] args)
+    {
+        var trials = 60;
+        var index = Array.FindIndex(args, a => a is "--calibrate");
+        if (index >= 0 && index + 1 < args.Length && int.TryParse(args[index + 1], out var parsed))
+            trials = parsed;
+
+        Section($"Dead-craft calibration — {trials:N0} crafts");
+
+        var registry = new ConditionModelRegistry();
+        registry.LoadFrom(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "XIVLauncher", "pluginConfigs", "RedMoonCappuccino", "craftdata"));
+        if (!registry.TryGetAdmissible(CraftBenchmark.ConditionsFlag, out var model, out var why))
+        {
+            Console.WriteLine($"   no admissible model: {why}");
+            return;
+        }
+
+        var recipe = CraftBenchmark.ExpertRecipe;
+        var sim = new CraftSim(recipe, CraftBenchmark.Character);
+        var bound = new QualityBound(sim);
+        var sampler = new ConditionSampler(model);
+
+        var thresholds = new[] { 0.001, 0.006, 0.011, 0.021, 0.051 };
+
+        // For each threshold: crafts whose confidence ever dropped below it, the step it first did,
+        // and how many of those went on to clear anyway.
+        var tripped = new int[thresholds.Length];
+        var trippedStep = new long[thresholds.Length];
+        var trippedButCleared = new int[thresholds.Length];
+        var totalCleared = 0;
+        long stepTotal = 0, failedStepTotal = 0;
+        var failedSteps = 0;
+
+        System.Threading.Tasks.Parallel.For(0, trials, () => (T: new int[thresholds.Length],
+                                                              S: new long[thresholds.Length],
+                                                              C: new int[thresholds.Length], Cleared: 0),
+            (trial, _, local) =>
+            {
+                var rng = new Random(3_000_000 + trial);
+                var policy = new ExpectimaxPolicy(sim, bound, model, 30, OpeningBook.Expert);
+
+                // Fewer samples than the advisor ships with: this asks the question tens of
+                // thousands of times where the advisor asks it once per player action.
+                var probe = new CraftAdvisor(sim, bound, model, 30, OpeningBook.Expert, samples: 200);
+                var state = sim.Initial();
+
+                var firstBelow = new int[thresholds.Length];
+                for (var t = 0; t < thresholds.Length; t++) firstBelow[t] = -1;
+
+                for (var step = 0; step < 80 && !state.IsTerminal; step++)
+                {
+                    var confidence = probe.Confidence(state, 3_000_000 + trial + step * 131);
+                    for (var t = 0; t < thresholds.Length; t++)
+                        if (firstBelow[t] < 0 && confidence < thresholds[t]) firstBelow[t] = step;
+
+                    var action = policy.Choose(state);
+                    if (action == CraftAction.None) break;
+
+                    var spec = CraftActions.Spec(action);
+                    var ok = spec.SuccessRate >= 100 || rng.Next(100) < spec.SuccessRate;
+                    var next = sampler.Next(state.Condition, rng);
+                    var result = sim.Apply(state, action, next, ok);
+                    if (!result.Ok) break;
+                    state = result.State;
+                }
+
+                var cleared = state.Completed && state.Quality >= recipe.RequiredQuality;
+                if (cleared) local.Cleared++;
+                lock (thresholds)
+                {
+                    stepTotal += state.Step;
+                    if (!cleared) { failedStepTotal += state.Step; failedSteps++; }
+                }
+
+                for (var t = 0; t < thresholds.Length; t++)
+                {
+                    if (firstBelow[t] < 0) continue;
+                    local.T[t]++;
+                    local.S[t] += firstBelow[t];
+                    if (cleared) local.C[t]++;
+                }
+
+                return local;
+            },
+            local =>
+            {
+                lock (thresholds)
+                {
+                    totalCleared += local.Cleared;
+                    for (var t = 0; t < thresholds.Length; t++)
+                    {
+                        tripped[t] += local.T[t];
+                        trippedStep[t] += local.S[t];
+                        trippedButCleared[t] += local.C[t];
+                    }
+                }
+            });
+
+        Console.WriteLine($"   {trials:N0} crafts, {totalCleared * 100.0 / trials:0.0}% cleared overall");
+        Console.WriteLine($"   crafts run {stepTotal / (double)trials:0} steps on average; "
+                        + $"the ones that fail run {(failedSteps == 0 ? 0 : failedStepTotal / (double)failedSteps):0}.");
+        Console.WriteLine();
+        Console.WriteLine($"   {"call below",11} {"crafts called",14} {"at step",8} {"of those, cleared",19} {"verdict",10}");
+
+        foreach (var (threshold, t) in thresholds.Select((x, i) => (x, i)))
+        {
+            var n = tripped[t];
+            if (n == 0)
+            {
+                Console.WriteLine($"   {threshold,11:0.###} {"never",14} {"-",8} {"-",19} {"unusable",10}");
+                continue;
+            }
+
+            var wrong = trippedButCleared[t] * 100.0 / n;
+            var verdict = wrong < 1.0 ? "safe" : wrong < 5.0 ? "borderline" : "unsafe";
+            Console.WriteLine($"   {threshold,11:0.###} {n * 100.0 / trials,13:0.0}% {trippedStep[t] / (double)n,8:0} "
+                            + $"{trippedButCleared[t],8:N0} ({wrong,4:0.0}%) {verdict,10}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("   A craft called wrongly is one the player bins without ever learning it was winnable,");
+        Console.WriteLine("   so the false-positive column is the one that decides the threshold — not the coverage.");
+    }
 
     // ── Sweep ─────────────────────────────────────────────────────────────────
 

@@ -178,6 +178,38 @@ public static class CraftActions
 
     public static ActionSpec Spec(CraftAction action) => Table[(int)action];
 
+    /// <summary>
+    /// The action's name as the game writes it, for anything a player reads.
+    ///
+    /// <para>Derived from the enum rather than the client's own sheet on purpose: this is used by
+    /// the harness and the advisor's own tests, neither of which has a game attached. The live UI
+    /// prefers the sheet's localised name where it has one and falls back to this.</para>
+    /// </summary>
+    public static string DisplayName(CraftAction action) => action switch
+    {
+        CraftAction.None => "nothing",
+        CraftAction.ByregotsBlessing => "Byregot's Blessing",
+        CraftAction.WasteNotII => "Waste Not II",
+        CraftAction.MastersMend => "Master's Mend",
+        CraftAction.HeartAndSoul => "Heart and Soul",
+        CraftAction.TricksOfTheTrade => "Tricks of the Trade",
+        _ => Spaced(action.ToString()),
+    };
+
+    /// <summary>Splits a PascalCase name into words, leaving runs of capitals alone.</summary>
+    private static string Spaced(string name)
+    {
+        var builder = new System.Text.StringBuilder(name.Length + 4);
+        for (var i = 0; i < name.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(name[i]) && !char.IsUpper(name[i - 1])) builder.Append(' ');
+            builder.Append(name[i]);
+        }
+
+        return builder.ToString();
+    }
+
+
     /// <summary>Every action except <see cref="CraftAction.None"/>, in enum order.</summary>
     public static IReadOnlyList<CraftAction> All { get; } =
         Enum.GetValues<CraftAction>().Where(a => a != CraftAction.None).ToArray();

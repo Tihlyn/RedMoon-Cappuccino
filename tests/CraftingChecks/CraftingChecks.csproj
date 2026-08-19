@@ -30,6 +30,7 @@
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftAction.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftState.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftBenchmark.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Models\Crafting\CraftAdvice.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftSim.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModel.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\ConditionModelFitter.cs" />
@@ -41,6 +42,7 @@
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\HeuristicPolicy.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DecisionRouter.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DecisionCache.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftAdvisor.cs" />
   </ItemGroup>
 
 </Project>

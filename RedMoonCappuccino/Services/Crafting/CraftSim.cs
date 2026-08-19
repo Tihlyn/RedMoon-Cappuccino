@@ -388,11 +388,19 @@ public sealed class CraftSim
                 break;
 
             case CraftAction.MastersMend:
-                next = next with { Durability = Math.Min(next.Durability + CraftActions.MastersMendRestore, recipe.Durability) };
+                next = next with
+                {
+                    Durability = Math.Min(next.Durability + CraftActions.MastersMendRestore, recipe.Durability),
+                    MendsUsed  = (byte)Math.Min(next.MendsUsed + 1, byte.MaxValue),
+                };
                 break;
 
             case CraftAction.ImmaculateMend:
-                next = next with { Durability = recipe.Durability };
+                next = next with
+                {
+                    Durability = recipe.Durability,
+                    MendsUsed  = (byte)Math.Min(next.MendsUsed + 1, byte.MaxValue),
+                };
                 break;
 
             case CraftAction.TricksOfTheTrade:

@@ -128,6 +128,16 @@ public readonly record struct CraftState
     /// </summary>
     public byte GamblesUsed { get; init; }
 
+    /// <summary>
+    /// Repairs cast so far.
+    ///
+    /// <para>The game imposes no limit, and that is the problem: Master's Mend at 88 CP and
+    /// Immaculate Mend at 112 are the largest CP sinks available, and a policy that values
+    /// durability will keep buying them until the CP that quality needed is gone. Carried here so
+    /// a solver can cap it; the simulator still allows as many as the player can pay for.</para>
+    /// </summary>
+    public byte MendsUsed { get; init; }
+
     public byte CarefulObservationLeft { get; init; }
     public byte HeartAndSoulLeft { get; init; }
     public byte QuickInnovationLeft { get; init; }
@@ -204,6 +214,7 @@ public readonly record struct CraftState
         InnerQuiet = 0,
         BuffTimers = 0,
         GamblesUsed = 0,
+        MendsUsed = 0,
 
         CarefulObservationLeft = CraftActions.CarefulObservationCharges,
         HeartAndSoulLeft       = CraftActions.HeartAndSoulCharges,

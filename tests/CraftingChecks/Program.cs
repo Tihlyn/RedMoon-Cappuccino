@@ -1401,6 +1401,10 @@ public static class Program
         const int Seed = 20260819;
 
         var staticResult = evaluator.Run(() => new StaticPolicy(sim, planned.Actions), Trials, Seed);
+        var router       = evaluator.Run(() => new DecisionRouter(sim, bound, model,
+                                              opening: OpeningBook.Expert), Trials, Seed);
+        var routerGamble = evaluator.Run(() => new DecisionRouter(sim, bound, model, gambleBudget: 3,
+                                              opening: OpeningBook.Expert), Trials, Seed);
         var heuristic    = evaluator.Run(() => new HeuristicPolicy(sim, bound,
                                               opening: OpeningBook.Expert), Trials, Seed);
         var heurGamble   = evaluator.Run(() => new HeuristicPolicy(sim, bound, gambleBudget: 3,
@@ -1411,10 +1415,18 @@ public static class Program
         var gambling     = evaluator.Run(() => new ExpectimaxPolicy(sim, bound, model, gambleBudget: 3,
                                               opening: OpeningBook.Expert), Trials, Seed);
 
-        foreach (var r in new[] { staticResult, heuristic, heurGamble, adaptive, opened, gambling })
+        foreach (var r in new[] { staticResult, heuristic, heurGamble, adaptive, opened, gambling, router, routerGamble })
             Console.WriteLine($"   {r.Policy,-24} clear {r.ClearRate * 100,6:0.0}%   "
                             + $"completed {(double)r.Completed / r.Trials * 100,5:0.0}%   "
                             + $"mean quality {r.MeanQuality,8:0}");
+
+        // One craft, decision by decision, with the owner of each. This is the diagnostic that
+        // four failed evaluators were debugged without.
+        Console.WriteLine();
+        Console.WriteLine("   trace of a single craft:");
+        Console.Write(new DecisionRouter(sim, bound, model, gambleBudget: 3,
+                                         opening: OpeningBook.Expert).Trace(sampler, Seed));
+        Console.WriteLine();
 
         Check($"the fitted model is admissible for flag {Flag}", model.IsAdmissible);
         Check($"every policy finishes {Trials} trials without stalling",

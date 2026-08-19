@@ -38,6 +38,7 @@
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\FrontierSolver.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\CraftPolicy.cs" />
     <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\HeuristicPolicy.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\Crafting\DecisionRouter.cs" />
   </ItemGroup>
 
 </Project>

@@ -144,6 +144,13 @@ public sealed class CraftAdvisor
         }
 
         var shortfall = Math.Max(0, recipe.RequiredQuality - state.Quality);
+
+        // Ranked before anything is decided about the craft's prospects, because nothing below is
+        // allowed to answer with silence. A verdict is information; withholding the move is not.
+        var ranking = policy.RankFrom(state);
+        if (ranking.Best == CraftAction.None)
+            return CraftAdvice.Refusing("No legal action in this position.");
+
         var proved = !bound.CanStillClear(state, recipe) || !bound.CanStillComplete(state, recipe);
 
         // The headline call. A dead craft is invisible to the player while it is still on screen:
@@ -153,15 +160,18 @@ public sealed class CraftAdvisor
             var ceiling = state.Quality + bound.Remaining(state, recipe);
             return new CraftAdvice
             {
-                Recommended = CraftAction.None,
+                Recommended = ranking.Best,
+                Runner = ranking.Runner,
                 Posture = CraftPosture.Dead,
                 ClearChance = 0,
                 Shortfall = shortfall,
+                CostsDelineation = CraftActions.Spec(ranking.Best).CostsDelineation,
                 Verdict = "Stop — this craft cannot clear.",
-                Because = !bound.CanStillComplete(state, recipe)
+                Because = (!bound.CanStillComplete(state, recipe)
                     ? "There is not enough durability left to finish the progress bar."
                     : $"Best case from here is {ceiling:N0}, short of {recipe.RequiredQuality:N0} "
-                      + $"by {recipe.RequiredQuality - ceiling:N0}.",
+                      + $"by {recipe.RequiredQuality - ceiling:N0}.")
+                    + $" Best remaining play is {CraftActions.DisplayName(ranking.Best)}.",
             };
         }
 
@@ -175,21 +185,20 @@ public sealed class CraftAdvisor
         {
             return new CraftAdvice
             {
-                Recommended = CraftAction.None,
+                Recommended = ranking.Best,
+                Runner = ranking.Runner,
                 Posture = CraftPosture.Dead,
                 ClearChance = confidence,
                 Shortfall = shortfall,
-                Verdict = "Almost certainly lost — consider stopping.",
-                Because = confidence <= 0
+                CostsDelineation = CraftActions.Spec(ranking.Best).CostsDelineation,
+                Verdict = $"Almost certainly lost — {CraftActions.DisplayName(ranking.Best)} if you play on.",
+                Because = (confidence <= 0
                     ? $"None of {samples} played-out continuations reached {recipe.RequiredQuality:N0}."
                     : $"{confidence * 100:0.#}% of {samples} played-out continuations reached "
-                      + $"{recipe.RequiredQuality:N0}. Not proof, unlike the call above it.",
+                      + $"{recipe.RequiredQuality:N0}.")
+                    + " An estimate, not the proof above it — play on if you disagree with it.",
             };
         }
-
-        var ranking = policy.RankFrom(state);
-        if (ranking.Best == CraftAction.None)
-            return CraftAdvice.Refusing("No legal action in this position.");
 
         var margin = Math.Max(0, ranking.BestValue - ranking.RunnerValue);
         var posture = confidence < BehindBelow ? CraftPosture.Behind

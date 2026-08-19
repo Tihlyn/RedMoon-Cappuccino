@@ -1738,7 +1738,13 @@ public static class Program
         var spent = sim.Initial() with { Cp = 0, Durability = 5, Quality = 100, Progress = 0 };
         var doomed = Fresh().Advise(spent);
         Check("a spent position is called dead", doomed.Posture == CraftPosture.Dead);
-        Check("the dead call recommends nothing", doomed.Recommended == CraftAction.None);
+        // Deliberately the opposite of what this asserted before. Withholding the move when a craft
+        // looks lost meant a wrong model produced silence for the whole craft rather than a wrong
+        // percentage — which is exactly how a 32% error in the base values hid behind a workaround.
+        // The verdict says the craft is lost; the move is still offered, and the player decides.
+        Check($"the dead call still offers a move ({doomed.Recommended})",
+            doomed.Recommended != CraftAction.None
+            && sim.Legality(spent, doomed.Recommended) == ActionLegality.Usable);
         Check("the dead call says to stop", doomed.Verdict.Contains("Stop", StringComparison.Ordinal));
 
         // ── terminal readings ──

@@ -64,6 +64,43 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
     /// <summary>Action map for the job being played, for icons. Null until a craft opens.</summary>
     public CraftActionMap? Actions => actions;
 
+    /// <summary>Where the game's own Synthesis window sits, so the advice can be put against it.</summary>
+    public System.Numerics.Vector4 CraftWindow { get; private set; }
+
+    /// <summary>The craft as the simulator understands it. Only meaningful while <see cref="Tracking"/>.</summary>
+    public CraftState State => state;
+
+    public bool Tracking => tracking;
+
+    /// <summary>The recipe being crafted, once identified.</summary>
+    public RecipeSpec? Recipe { get; private set; }
+
+    /// <summary>
+    /// The stats this craft is being solved for, read from the character when it started.
+    ///
+    /// <para>Read live rather than configured, so a gear change or a different food is picked up by
+    /// crafting again and nothing has to be kept in sync by hand. Shown in the window because the
+    /// advice is only as good as these: a solver quietly working from the wrong control value gives
+    /// confident, wrong answers, which is exactly how the benchmark for this project spent its first
+    /// ten changes describing a different character.</para>
+    /// </summary>
+    public PlayerSpec? Player { get; private set; }
+
+    /// <summary>
+    /// Plays the craft on the advisor's own recommendations.
+    ///
+    /// <para>A testing affordance, off by default and never the product. The advisor exists to give
+    /// a judgement a player acts on; this exists so a whole sequence can be watched end to end and
+    /// compared against the simulated clear rate without thirty manual keypresses per craft.</para>
+    /// </summary>
+    public bool AutoPlay { get; set; }
+
+    /// <summary>Actions taken by auto mode this craft, so the window can show it is doing something.</summary>
+    public int AutoActions { get; private set; }
+
+    private long lastAutoActionMs;
+    private long lastAdviceMs;
+
     public LiveCraftAdvisor(IDalamudPluginInterface pluginInterface, IFramework framework, IGameGui gameGui,
                             IObjectTable objectTable, IPlayerState playerState, IDataManager dataManager,
                             IGameInteropProvider gameInterop, IPluginLog log)
@@ -122,7 +159,13 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
             }
 
             CraftOpen = true;
+
+            var unit = (AtkUnitBase*)addon.Address;
+            CraftWindow = new System.Numerics.Vector4(
+                unit->X, unit->Y, unit->GetScaledWidth(true), unit->GetScaledHeight(true));
+
             Track((AddonSynthesis*)addon.Address);
+            if (AutoPlay) StepAuto();
         }
         catch (Exception ex)
         {
@@ -135,6 +178,7 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
     {
         CraftOpen = false;
         tracking = false;
+        AutoPlay = false;
         pending = SolverAction.None;
         lastStep = -1;
         Advice = CraftAdvice.Refusing(why);
@@ -239,6 +283,9 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
         state = sim.Initial();
         tracking = true;
         pending = SolverAction.None;
+        Recipe = spec;
+        Player = player;
+        AutoActions = 0;
 
         log.Information($"[CraftAdvisor] Tracking recipe {recipeId}, flag {flag}, "
                       + $"{spec.RequiredQuality}/{spec.MaxQuality} quality required.");
@@ -290,6 +337,42 @@ public sealed unsafe class LiveCraftAdvisor : IDisposable
                   + $"P{progress} Q{quality} D{durability} CP{cp}.");
         return false;
     }
+
+    /// <summary>
+    /// Presses the recommended action, no faster than the client will accept one.
+    ///
+    /// <para>Guarded on the same things the advice is: it does nothing while the advisor is refusing,
+    /// nothing once the craft is called lost, and nothing until the client reports the action as
+    /// usable. It also stops itself the moment the simulated craft stops matching the real one,
+    /// because that is the case where continuing would be acting on a state known to be wrong.</para>
+    /// </summary>
+    private void StepAuto()
+    {
+        if (!tracking || Advice.IsRefusing) return;
+        if (Advice.Recommended == SolverAction.None) return;
+        if (actions == null || !actions.TryGameId(Advice.Recommended, out var gameId)) return;
+
+        var now = Environment.TickCount64;
+        if (now - lastAutoActionMs < AutoIntervalMs) return;
+
+        var manager = ActionManager.Instance();
+        if (manager == null) return;
+        if (manager->GetActionStatus(ActionType.CraftAction, gameId, NoTarget, false, false, null) != 0) return;
+
+        lastAutoActionMs = now;
+        if (manager->UseAction(ActionType.CraftAction, gameId, NoTarget, 0,
+                               ActionManager.UseActionMode.None, 0, null))
+            AutoActions++;
+    }
+
+    /// <summary>
+    /// Gap between auto-played actions. Crafting actions carry an animation lock of roughly two
+    /// seconds and the client silently drops anything sent inside it, which reads as the solver
+    /// skipping steps rather than as a rejected input.
+    /// </summary>
+    private const int AutoIntervalMs = 2200;
+
+    private const ulong NoTarget = 0xE000_0000;
 
     private void Advise()
     {

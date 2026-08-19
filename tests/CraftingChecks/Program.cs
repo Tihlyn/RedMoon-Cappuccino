@@ -2099,7 +2099,8 @@ public static class Program
 
         var players = new (string Label, PlayerSpec Spec)[]
         {
-            ("5909/5610/771", CraftBenchmark.Character),
+            ($"{CraftBenchmark.Character.Craftsmanship}/{CraftBenchmark.Character.Control}/"
+             + $"{CraftBenchmark.Character.MaxCp}", CraftBenchmark.Character),
         };
 
         const int GambleBudget = 30;

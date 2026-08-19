@@ -21,13 +21,17 @@ public static class CraftBenchmark
     /// </summary>
     public static PlayerSpec Character => new()
     {
-        // Chosen to reproduce the base values the client actually reports on this recipe:
-        // 320 progress and 347 quality, read live in game. Stats alone do not determine those —
-        // the recipe's dividers do half the work — so the pair is only meaningful alongside the
-        // ExpertRecipe dividers below, and the two must be changed together.
-        Craftsmanship = 5724,
-        Control = 5616,
-        MaxCp = 771,
+        // From the character sheet, food and potion included. Only meaningful alongside the
+        // ExpertRecipe dividers below — stats alone do not determine what an action is worth, the
+        // recipe's dividers do half the work, and separating the two is what inflated this
+        // benchmark for the whole of its life. Change them together or not at all.
+        //
+        // The plugin's own live read comes in about 150 craftsmanship and 30 control under these,
+        // which is unexplained and tracked separately; it is roughly 2% and does not change any
+        // conclusion drawn here.
+        Craftsmanship = 5876,
+        Control = 5647,
+        MaxCp = 793,
         Level = 100,
         GoodMultiplier = 1.75,
 

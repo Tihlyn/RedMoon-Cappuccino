@@ -2,7 +2,7 @@
   "Author": "Tihlyn",
   "Name": "RedMoonCappuccino",
   "InternalName": "RedMoonCappuccino",
-  "AssemblyVersion": "6.2.0.50",
+  "AssemblyVersion": "6.3.0.0",
   "Description": "Displays market tax info, FC events, and more in a convenient UI.",
   "ApplicableVersion": "any",
   "RepoUrl": "https://github.com/Tihlyn/RedMoon-Cappuccino",

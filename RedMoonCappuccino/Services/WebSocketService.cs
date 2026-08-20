@@ -18,17 +18,32 @@ public class WebSocketService : IDisposable
     private const int ReceiveBufferSize = 1024 * 128;
     private const int MaxMessageSizeBytes = 10 * 1024 * 1024; // 10 MB hard cap per message
 
+    /// <summary>Shortest gap between two uploads of the same roster, so a server retry loop cannot spam it.</summary>
+    private const long RosterUploadCooldownMs = 60000;
+
     private readonly DataService dataService;
     private readonly IPluginLog log;
     private readonly CancellationTokenSource cts = new();
+    private readonly object rosterUploadGate = new();
+    private readonly SemaphoreSlim sendGate = new(1, 1);
     private Task? connectionTask;
     private ClientWebSocket? activeWs;
+    private string? lastUploadedRosterHash;
+    private long lastRosterUploadTick;
     private bool disposed;
 
     public bool IsConnected => activeWs?.State == WebSocketState.Open;
 
     /// Fired on the receive thread when an ACQ_RESULT message arrives.
     public event Action<AcqResultMessage>? OnAcqResult;
+
+    /// <summary>
+    /// Supplies the latest complete free company roster, or null when there is
+    /// nothing to report. Called from the ping and receive threads, so the
+    /// provider must hand back an already-built snapshot and never touch game
+    /// memory itself.
+    /// </summary>
+    public Func<FcRosterSnapshot?>? FcRosterProvider { get; set; }
 
     public WebSocketService(DataService dataService, IPluginLog log, Configuration config)
     {
@@ -121,6 +136,82 @@ public class WebSocketService : IDisposable
         });
     }
 
+    // ── Free company roster ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// The heartbeat, carrying the roster hash when one is available. A failure
+    /// to read the snapshot degrades to a bare ping rather than killing the ping
+    /// loop, which would take the connection down with it.
+    /// </summary>
+    private object BuildPing()
+    {
+        try
+        {
+            if (FcRosterProvider?.Invoke() is { } snapshot)
+                return new { type = "ping", fc = new { id = snapshot.FcId, h = snapshot.Hash, n = snapshot.Count } };
+        }
+        catch (Exception ex)
+        {
+            log.Warning($"[RedMoonCappuccino] Reading FC roster for ping failed: {ex.Message}");
+        }
+
+        return new { type = "ping" };
+    }
+
+    /// <summary>
+    /// Uploads the full roster, in response to the server reporting a hash it
+    /// does not hold. The same hash is not re-sent within the cooldown, so a
+    /// server stuck asking cannot turn this into a flood.
+    /// </summary>
+    private void SendRosterSnapshot(string? reason)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var ws = activeWs;
+                if (ws?.State != WebSocketState.Open) return;
+
+                if (FcRosterProvider?.Invoke() is not { } snapshot)
+                {
+                    log.Debug("[RedMoonCappuccino] Roster requested but no complete snapshot is available yet.");
+                    return;
+                }
+
+                var now = Environment.TickCount64;
+                lock (rosterUploadGate)
+                {
+                    if (snapshot.Hash == lastUploadedRosterHash &&
+                        now - lastRosterUploadTick < RosterUploadCooldownMs)
+                        return;
+
+                    lastUploadedRosterHash = snapshot.Hash;
+                    lastRosterUploadTick   = now;
+                }
+
+                await SendAsync(ws, new
+                {
+                    type       = "fc_roster",
+                    fcId       = snapshot.FcId,
+                    fcName     = snapshot.FcName,
+                    world      = snapshot.World,
+                    worldId    = snapshot.WorldId,
+                    hash       = snapshot.Hash,
+                    n          = snapshot.Count,
+                    reporter   = snapshot.Reporter,
+                    capturedAt = snapshot.CapturedAt.ToString("o"),
+                    m          = snapshot.Members,
+                }, cts.Token);
+
+                log.Information($"[RedMoonCappuccino] Sent FC roster ({snapshot.Count} members, hash {snapshot.Hash}, reason {reason ?? "unspecified"}).");
+            }
+            catch (Exception ex)
+            {
+                log.Warning($"[RedMoonCappuccino] Sending FC roster failed: {ex.Message}");
+            }
+        });
+    }
+
     // ── Connection loop ──────────────────────────────────────────────────────
 
     private async Task RunConnectionLoop()
@@ -180,9 +271,11 @@ public class WebSocketService : IDisposable
             {
                 try
                 {
-                    await Task.Delay(PingIntervalMs, connectionToken);
+                    // Sent before the first delay so the roster hash reaches the
+                    // server on connect rather than 30s later.
                     if (ws.State == WebSocketState.Open)
-                        await SendAsync(ws, new { type = "ping" }, connectionToken);
+                        await SendAsync(ws, BuildPing(), connectionToken);
+                    await Task.Delay(PingIntervalMs, connectionToken);
                 }
                 catch (OperationCanceledException) { break; }
                 catch { break; }
@@ -271,6 +364,17 @@ public class WebSocketService : IDisposable
                 case "pong":
                     break;
 
+                case "fc_roster_request":
+                    var req = JsonSerializer.Deserialize<FcRosterRequestMessage>(text);
+                    SendRosterSnapshot(req?.Reason);
+                    break;
+
+                case "fc_roster_ack":
+                    var rosterAck = JsonSerializer.Deserialize<FcRosterAckMessage>(text);
+                    if (rosterAck is { Accepted: false })
+                        log.Warning($"[RedMoonCappuccino] Server rejected FC roster: {rosterAck.Message ?? "no reason given"}");
+                    break;
+
                 case "error":
                     log.Warning($"[RedMoonCappuccino] Server error: {text}");
                     break;
@@ -286,11 +390,25 @@ public class WebSocketService : IDisposable
         }
     }
 
-    private static async Task SendAsync(ClientWebSocket ws, object payload, CancellationToken ct)
+    /// <summary>
+    /// Serialises every outbound frame. ClientWebSocket allows only one send in
+    /// flight at a time, and pings, image/event/acquisition requests and roster
+    /// uploads all originate on their own tasks.
+    /// </summary>
+    private async Task SendAsync(ClientWebSocket ws, object payload, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(payload);
         var bytes = Encoding.UTF8.GetBytes(json);
-        await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+
+        await sendGate.WaitAsync(ct);
+        try
+        {
+            await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+        }
+        finally
+        {
+            sendGate.Release();
+        }
     }
 
     // ── Disposal ─────────────────────────────────────────────────────────────
@@ -303,5 +421,6 @@ public class WebSocketService : IDisposable
         try { connectionTask?.Wait(TimeSpan.FromSeconds(5)); }
         catch (Exception ex) { log.Warning($"[RedMoonCappuccino] Exception during dispose wait: {ex.Message}"); }
         cts.Dispose();
+        sendGate.Dispose();
     }
 }

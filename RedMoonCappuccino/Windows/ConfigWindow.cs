@@ -66,6 +66,23 @@ public class ConfigWindow : ThemedWindow, IDisposable
             "(toggled on each event in the Events tab).");
 
         ImGui.Spacing();
+        RmcTheme.SectionHeader("Free Company");
+
+        var rosterSync = configuration.FcRosterSync;
+        if (ImGui.Checkbox($"Report {configuration.FcRosterName} roster", ref rosterSync))
+        {
+            configuration.FcRosterSync = rosterSync;
+            configuration.Save();
+        }
+        ImGui.SameLine();
+        ImGuiComponents.HelpMarker(
+            "Keeps the free company member list on the server in sync.\n" +
+            "Only member names are sent, and only while you are logged in\n" +
+            $"as a member of {configuration.FcRosterName}.\n\n" +
+            "The roster is sent once when it changes; every other heartbeat\n" +
+            "carries just a short fingerprint of it.");
+
+        ImGui.Spacing();
         RmcTheme.SectionHeader("Rotation Analyser");
 
         ImGui.TextUnformatted("Gemini API Key");

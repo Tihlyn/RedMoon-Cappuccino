@@ -43,6 +43,7 @@ public sealed class Plugin : IDalamudPlugin
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
     public readonly WebSocketService  WsService;
+    public readonly FreeCompanyRosterService FcRoster;
     public readonly ChatService       ChatService;
     public readonly NotificationService EventNotifications;
     public readonly SubmarineRouteService SubmarineRoutes;
@@ -91,6 +92,13 @@ public sealed class Plugin : IDalamudPlugin
         // Wire image-fetch callback before starting the WS connection so no
         // snapshot is missed.
         DataService.OnImageNeeded = eventId => WsService.RequestImage(eventId);
+
+        // Roster snapshots are built on the framework thread; the websocket
+        // threads only ever read the finished object through this callback.
+        FcRoster = new FreeCompanyRosterService(Framework, ClientState, ObjectTable, GameGui,
+                                                DataManager, Configuration, Log);
+        WsService.FcRosterProvider = () => FcRoster.Current;
+
         WsService.Start();
 
         EventNotifications = new NotificationService(Configuration, DataService, NotificationManager, Framework, Log);
@@ -149,7 +157,7 @@ public sealed class Plugin : IDalamudPlugin
         });
         CommandManager.AddHandler(CommandCraft, new CommandInfo(OnCraftCommand)
         {
-            HelpMessage = "Crafting: advise (expert-recipe advisor) | start | auto | study | quality | stop | actions | probe.",
+            HelpMessage = "WIP for debug only — see /rmccraft help for usage.",
         });
 
         // UI hooks
@@ -197,6 +205,7 @@ public sealed class Plugin : IDalamudPlugin
         EventNotifications.Dispose();
         ChatService.Dispose();
         WsService.Dispose();
+        FcRoster.Dispose();
         DataService.Dispose();
     }
 

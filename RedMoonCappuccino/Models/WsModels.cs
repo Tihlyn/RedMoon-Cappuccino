@@ -161,3 +161,59 @@ public class AcqResultMessage : WsMessage
     [JsonPropertyName("data")]
     public AcqResultData? Data { get; set; }
 }
+
+// ── Free company roster sync ──────────────────────────────────────────────────
+
+/// <summary>
+/// A complete free company roster as read from the game, published by
+/// <see cref="Services.FreeCompanyRosterService"/> and consumed by the websocket
+/// threads. Immutable once built, so it crosses threads without locking.
+/// </summary>
+public sealed class FcRosterSnapshot
+{
+    /// <summary>Free company id as lowercase hex. Sent as a string; it does not fit a JSON number.</summary>
+    public string FcId { get; init; } = string.Empty;
+
+    public string FcName { get; init; } = string.Empty;
+
+    public ushort WorldId { get; init; }
+
+    /// <summary>Home world name, or empty when the sheet lookup failed.</summary>
+    public string World { get; init; } = string.Empty;
+
+    /// <summary>Hash of the member list; see FreeCompanyRosterService.ComputeHash.</summary>
+    public string Hash { get; init; } = string.Empty;
+
+    /// <summary>Member names, ordinal-sorted and de-duplicated.</summary>
+    public IReadOnlyList<string> Members { get; init; } = Array.Empty<string>();
+
+    /// <summary>Name of the character that read the roster.</summary>
+    public string Reporter { get; init; } = string.Empty;
+
+    public DateTime CapturedAt { get; init; }
+
+    public int Count => Members.Count;
+}
+
+/// <summary>Server asking for the full roster because the ping hash did not match its cache.</summary>
+public class FcRosterRequestMessage : WsMessage
+{
+    [JsonPropertyName("fcId")]
+    public string? FcId { get; set; }
+
+    [JsonPropertyName("reason")]
+    public string? Reason { get; set; }
+}
+
+/// <summary>Server confirming which roster hash it now holds.</summary>
+public class FcRosterAckMessage : WsMessage
+{
+    [JsonPropertyName("hash")]
+    public string? Hash { get; set; }
+
+    [JsonPropertyName("accepted")]
+    public bool Accepted { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+}

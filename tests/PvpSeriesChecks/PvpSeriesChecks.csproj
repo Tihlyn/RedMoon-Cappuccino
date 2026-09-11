@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Pins the Series Malmstone arithmetic behind the PvP tab.
+
+    A plain console app, like CraftingChecks: the calculator has no Dalamud dependency, so
+    the level curve, the remaining-EXP figure and the matches-per-outcome rounding can be
+    checked on a machine with no game and no client. It compiles the plugin's own sources
+    directly, so there is no second copy of the numbers to drift.
+
+    Not in RedMoonCappuccino.sln on purpose, so it cannot affect the plugin build.
+    Run it with "dotnet run" from this directory. Exit code is 0 only when every check passes.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>PvpSeriesChecks</AssemblyName>
+    <RootNamespace>Harness</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\RedMoonCappuccino\Models\PvpSeriesModels.cs" />
+    <Compile Include="..\..\RedMoonCappuccino\Services\PvpSeriesCalculator.cs" />
+  </ItemGroup>
+
+</Project>

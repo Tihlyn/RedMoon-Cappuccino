@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -39,11 +40,17 @@ public class MainWindow : ThemedWindow, IDisposable
     private readonly Plugin plugin;
     private readonly DataService dataService;
     private readonly GearPlannerService gearPlannerService;
+    private readonly PvpSeriesService pvpSeries;
     private readonly List<PatchCalendarEntry> upcomingPatches;
     private readonly List<MountGuideEntry> mountGuides;
     private PlannerRunResult? plannerResult;
     private string? plannerSelectedJob;
     private readonly Dictionary<int, uint> plannerIconCache = new();
+
+    // PvP series snapshot: read when the window opens or on an explicit refresh, never per frame.
+    private PvpSeriesSnapshot? pvpSnapshot;
+    private long pvpLastReadTick;
+    private const long PvpRetryMs = 3000;
 
     // Per-event participation state (keyed by event id)
     private readonly Dictionary<string, int> eventRoleIndex = new();
@@ -55,13 +62,15 @@ public class MainWindow : ThemedWindow, IDisposable
     private readonly Dictionary<string, DateTime>     eventSubmitPendingTime = new();
     private readonly Dictionary<string, string>       eventSubmitError     = new();
 
-    public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService)
+    public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService,
+                      PvpSeriesService pvpSeries)
         : base("Red Moon Cappuccino##MainWindow",
                ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         this.plugin      = plugin;
         this.dataService = dataService;
         this.gearPlannerService = gearPlannerService;
+        this.pvpSeries   = pvpSeries;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -78,12 +87,20 @@ public class MainWindow : ThemedWindow, IDisposable
 
     public void Dispose() { }
 
+    /// <summary>Runs on the draw thread whenever the window goes from closed to open.</summary>
+    public override void OnOpen()
+    {
+        base.OnOpen();
+        RefreshPvpSnapshot();
+    }
+
     public override void Draw()
     {
         if (ImGui.BeginTabBar("##mainTabs"))
         {
             DrawOverviewTab();
             DrawGearPlannerTab();
+            DrawPvpTab();
             DrawUsefulLinksTab();
             DrawEventsTab();
             DrawPastEventsTab();
@@ -574,9 +591,11 @@ public class MainWindow : ThemedWindow, IDisposable
         return iconId;
     }
 
-    private void DrawItemIcon(int itemId, float size)
+    private void DrawItemIcon(int itemId, float size) => DrawGameIcon(GetItemIconId(itemId), size);
+
+    /// <summary>Draws a game icon at <paramref name="size"/>, or an equally sized gap while it loads.</summary>
+    private static void DrawGameIcon(uint iconId, float size)
     {
-        var iconId = GetItemIconId(itemId);
         if (iconId != 0 &&
             Plugin.TextureProvider.TryGetFromGameIcon(new GameIconLookup(iconId), out var texture) &&
             texture.TryGetWrap(out var wrap, out _))
@@ -588,6 +607,199 @@ public class MainWindow : ThemedWindow, IDisposable
             ImGui.Dummy(new Vector2(size, size));
         }
     }
+
+    // ── PvP series ───────────────────────────────────────────────────────────
+
+    private void RefreshPvpSnapshot()
+    {
+        pvpSnapshot     = pvpSeries.Capture();
+        pvpLastReadTick = Environment.TickCount64;
+    }
+
+    private void DrawPvpTab()
+    {
+        using var tab = ImRaii.TabItem("PvP");
+        if (!tab) return;
+
+        // The snapshot is taken when the window opens. The one automatic re-read is while
+        // the profile is not there yet — the window auto-opens at login before the server
+        // has populated it — and it is throttled hard. A failed read is not retried on its
+        // own, so a broken signature cannot fill the log.
+        if (pvpSnapshot is { IsAvailable: false, Status: not PvpSeriesStatus.Failed } &&
+            Environment.TickCount64 - pvpLastReadTick >= PvpRetryMs)
+            RefreshPvpSnapshot();
+
+        using var child = ImRaii.Child("##pvpScroll", new Vector2(0, 0), false);
+        if (!child) return;
+
+        ImGui.Spacing();
+
+        DrawGameIcon(PvpSeriesService.PvpIconId, ImGui.GetTextLineHeight());
+        ImGui.SameLine();
+        RmcTheme.SectionHeader("Series Malmstones");
+
+        var snapshot = pvpSnapshot;
+        if (snapshot is not { IsAvailable: true })
+        {
+            var message = snapshot?.Status switch
+            {
+                PvpSeriesStatus.NotLoggedIn      => "Log in to read your PvP profile.",
+                PvpSeriesStatus.ProfileNotLoaded => "Waiting for the game to load your PvP profile...",
+                PvpSeriesStatus.Failed           => "Couldn't read the PvP profile — see the plugin log.",
+                _                                => "No PvP data read yet.",
+            };
+            using (ImRaii.PushColor(ImGuiCol.Text,
+                       snapshot?.Status == PvpSeriesStatus.Failed ? RmcTheme.Error : RmcTheme.TextMuted))
+                ImGui.TextWrapped(message);
+            DrawPvpReadLine(snapshot);
+            return;
+        }
+
+        var plan = pvpSeries.Calculator.Plan(snapshot);
+        DrawPvpProfileTable(snapshot, plan);
+        DrawPvpReadLine(snapshot);
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        RmcTheme.SectionHeader($"Matches to rank {plan.TargetRank}");
+
+        if (plan.TargetReached)
+        {
+            RmcTheme.StatusDot(RmcTheme.Success,
+                $"Rank {plan.TargetRank} reached — every series reward is unlocked.", RmcTheme.Success);
+            return;
+        }
+
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+            ImGui.TextUnformatted(
+                $"{N0(plan.RemainingExp)} EXP to go  ({N0(plan.CurrentTotalExp)} / {N0(plan.TargetTotalExp)})");
+        ImGui.Spacing();
+
+        DrawPvpMatchTable(plan);
+    }
+
+    private static void DrawPvpProfileTable(PvpSeriesSnapshot snapshot, PvpSeriesPlan plan)
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        using var table = ImRaii.Table("##pvpProfile", 2,
+            ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        if (!table) return;
+
+        ImGui.TableSetupColumn("Field", ImGuiTableColumnFlags.WidthFixed, 140f * scale);
+        ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableHeadersRow();
+
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn(); ImGui.TextUnformatted("Series");
+        ImGui.TableNextColumn();
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+            ImGui.TextUnformatted(snapshot.Series > 0 ? snapshot.Series.ToString() : "-");
+
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn(); ImGui.TextUnformatted("Series Level");
+        ImGui.TableNextColumn();
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+            ImGui.TextUnformatted(snapshot.Rank.ToString());
+        if (snapshot.ClaimedRank < snapshot.Rank)
+        {
+            var unclaimed = snapshot.Rank - snapshot.ClaimedRank;
+            ImGui.SameLine();
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextUnformatted($"· {unclaimed} reward{(unclaimed == 1 ? "" : "s")} to claim");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip($"Rewards collected up to level {snapshot.ClaimedRank}. Claim the rest in the PvP Profile window.");
+        }
+
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn(); ImGui.TextUnformatted("Series EXP");
+        ImGui.TableNextColumn();
+        var fraction = plan.ExpToNextLevel > 0
+            ? Math.Clamp(snapshot.Experience / (float)plan.ExpToNextLevel, 0f, 1f)
+            : 0f;
+        ImGui.ProgressBar(fraction, new Vector2(-1, 0),
+            $"{N0(snapshot.Experience)} / {N0(plan.ExpToNextLevel)}");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip($"{N0(plan.ExpToNextLevel - snapshot.Experience)} EXP to level {snapshot.Rank + 1}\n" +
+                             $"{N0(plan.CurrentTotalExp)} / {N0(plan.TargetTotalExp)} total toward rank {plan.TargetRank}");
+
+        DrawPvpCurrencyRow("Wolf Marks",      PvpSeriesService.WolfMarkIconId,      snapshot.WolfMarks);
+        DrawPvpCurrencyRow("Trophy Crystals", PvpSeriesService.TrophyCrystalIconId, snapshot.TrophyCrystals);
+    }
+
+    private static void DrawPvpCurrencyRow(string label, uint iconId, int amount)
+    {
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted(label);
+        ImGui.TableNextColumn();
+        DrawGameIcon(iconId, ImGui.GetFrameHeight());
+        ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Cornflower))
+            ImGui.TextUnformatted(N0(amount));
+    }
+
+    /// <summary>"Read at" timestamp with a refresh button — the one way to re-read by hand.</summary>
+    private void DrawPvpReadLine(PvpSeriesSnapshot? snapshot)
+    {
+        if (ImGuiComponents.IconButton("##pvpRefresh", FontAwesomeIcon.Sync))
+            RefreshPvpSnapshot();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Re-read from the game");
+
+        if (snapshot == null) return;
+        ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
+        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+            ImGui.TextUnformatted($"Read at {snapshot.CapturedAtUtc.ToLocalTime():HH:mm:ss}");
+    }
+
+    private static void DrawPvpMatchTable(PvpSeriesPlan plan)
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        using var table = ImRaii.Table("##pvpMatches", 4,
+            ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        if (!table) return;
+
+        ImGui.TableSetupColumn("Mode",       ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("1st / Win",  ImGuiTableColumnFlags.WidthFixed, 80f * scale);
+        ImGui.TableSetupColumn("2nd",        ImGuiTableColumnFlags.WidthFixed, 80f * scale);
+        ImGui.TableSetupColumn("3rd / Loss", ImGuiTableColumnFlags.WidthFixed, 80f * scale);
+        ImGui.TableHeadersRow();
+
+        foreach (var req in plan.Requirements)
+        {
+            ImGui.TableNextRow();
+
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(req.Mode.Name);
+            if (req.Mode.Note != null && ImGui.IsItemHovered())
+                ImGui.SetTooltip(req.Mode.Note);
+
+            ImGui.TableNextColumn(); DrawPvpMatchCell(req.First,  req.Mode.First);
+            ImGui.TableNextColumn(); DrawPvpMatchCell(req.Second, req.Mode.Second);
+            ImGui.TableNextColumn(); DrawPvpMatchCell(req.Third,  req.Mode.Third);
+        }
+    }
+
+    private static void DrawPvpMatchCell(int? matches, int? expPerMatch)
+    {
+        if (matches is not { } count || expPerMatch is not { } exp)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted("—");
+            return;
+        }
+
+        ImGui.TextUnformatted(count.ToString(CultureInfo.InvariantCulture));
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip($"{N0(exp)} EXP per match\n{count} × {N0(exp)} = {N0((long)count * exp)} EXP");
+    }
+
+    private static string N0(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
     // ── Events ───────────────────────────────────────────────────────────────
 

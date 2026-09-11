@@ -42,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
+    public readonly PvpSeriesService  PvpSeries;
     public readonly WebSocketService  WsService;
     public readonly FreeCompanyRosterService FcRoster;
     public readonly ChatService       ChatService;
@@ -86,6 +87,7 @@ public sealed class Plugin : IDalamudPlugin
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
+        PvpSeries   = new PvpSeriesService(DataManager, ClientState, GameInventory, Log);
         WsService   = new WebSocketService(DataService, Log, Configuration);
         ChatService = new ChatService(Log, Configuration);
 
@@ -113,7 +115,7 @@ public sealed class Plugin : IDalamudPlugin
         CraftAdvisor = new LiveCraftAdvisor(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, GameInterop, Log);
 
         // Windows
-        mainWindow   = new MainWindow(this, DataService, GearPlannerService);
+        mainWindow   = new MainWindow(this, DataService, GearPlannerService, PvpSeries);
         configWindow = new ConfigWindow(this);
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
         chatWindow   = new ChatWindow(ChatService, Configuration);

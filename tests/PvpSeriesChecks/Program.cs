@@ -78,7 +78,24 @@ public static class Program
         Check("past the target stays reached, never negative", past.TargetReached && past.RemainingExp == 0);
         Check("past the table: progress bar denominator is 20,000", past.ExpToNextLevel == 20_000);
 
-        Section("E. Game-sheet shaped curve behaves like the fallback");
+        Section("E. Reward milestones");
+        Check("milestones are 5/10/15/20/25", PvpSeriesCalculator.Milestones.SequenceEqual(new[] { 5, 10, 15, 20, 25 }));
+        Check("fresh series aims at rank 5", PvpSeriesCalculator.NextMilestone(1) == 5);
+        Check("rank 5 exactly aims at rank 10", PvpSeriesCalculator.NextMilestone(5) == 10);
+        Check("rank 17 aims at rank 20", PvpSeriesCalculator.NextMilestone(17) == 20);
+        Check("rank 24 aims at rank 25", PvpSeriesCalculator.NextMilestone(24) == 25);
+        Check("past every milestone stays on rank 25", PvpSeriesCalculator.NextMilestone(31) == 25);
+
+        // Rank 17 + 2,350: rank 20 needs 70,500 total, so 14,150 to go; rank 15 is behind us.
+        var to20 = calc.Plan(mid, 20);
+        Check($"to rank 20: 14,150 remaining (got {to20.RemainingExp})", to20.RemainingExp == 14_150 && !to20.TargetReached);
+        Check("to rank 20: 16 CC wins", to20.Requirements[0].First == 16);
+        var to15 = calc.Plan(mid, 15);
+        Check("rank 15 already reached from rank 17", to15.TargetReached && to15.RemainingExp == 0);
+        Check("milestone plans and the rank-25 plan share the same running total",
+            to20.CurrentTotalExp == plan.CurrentTotalExp && to15.CurrentTotalExp == plan.CurrentTotalExp);
+
+        Section("F. Game-sheet shaped curve behaves like the fallback");
         // The service hands over the PvPSeriesLevel rows as an array indexed by level (0..30).
         var sheetShaped = Enumerable.Range(0, 31).Select(l => PvpSeriesCalculator.FallbackExpToNext[l]).ToArray();
         var fromSheet = new PvpSeriesCalculator(sheetShaped);

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Game.Inventory;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using RedMoonCappuccino.Models;
 
@@ -28,20 +28,18 @@ public sealed unsafe class PvpSeriesService
     /// <summary>Generic PvP content icon, used for the tab header.</summary>
     public const uint PvpIconId = 61806;
 
-    private readonly IClientState   clientState;
-    private readonly IGameInventory gameInventory;
-    private readonly IPluginLog     log;
+    private readonly IClientState clientState;
+    private readonly IPluginLog   log;
 
     public PvpSeriesCalculator Calculator { get; }
 
     /// <summary>True when the level curve came from the game sheet rather than the built-in table.</summary>
     public bool LevelCurveFromGameData { get; }
 
-    public PvpSeriesService(IDataManager dataManager, IClientState clientState, IGameInventory gameInventory, IPluginLog log)
+    public PvpSeriesService(IDataManager dataManager, IClientState clientState, IPluginLog log)
     {
-        this.clientState   = clientState;
-        this.gameInventory = gameInventory;
-        this.log           = log;
+        this.clientState = clientState;
+        this.log         = log;
 
         var curve = LoadLevelCurve(dataManager, log);
         LevelCurveFromGameData = curve != null;
@@ -79,15 +77,17 @@ public sealed unsafe class PvpSeriesService
         }
     }
 
-    private int CountCurrency(uint itemId)
+    /// <summary>
+    /// Asks the game for the count rather than scanning the Currency container: Wolf
+    /// Marks sit in that container but Trophy Crystals do not, and the game's own lookup
+    /// knows where each currency lives (CurrencyAlert and Umbra count the same way).
+    /// Equipped and armoury are skipped — a currency is never in either.
+    /// </summary>
+    private static int CountCurrency(uint itemId)
     {
-        var total = 0;
-        foreach (var item in gameInventory.GetInventoryItems(GameInventoryType.Currency))
-        {
-            if (!item.IsEmpty && item.ItemId == itemId)
-                total += item.Quantity;
-        }
-        return total;
+        var manager = InventoryManager.Instance();
+        if (manager == null) return 0;
+        return manager->GetInventoryItemCount(itemId, isHq: false, checkEquipped: false, checkArmory: false);
     }
 
     /// <summary>

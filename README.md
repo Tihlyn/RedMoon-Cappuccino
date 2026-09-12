@@ -11,7 +11,7 @@ Connects to a WebSocket server at `ws://IP:3100` and displays:
 
 - **Overview tab** — lowest market tax rate and the city offering it, plus upcoming patch highlights for 7.4–8.0.
 - **gear planner tab** — manually triggered progression solver (`solve`) that loads offline JSON gear/math/BiS data and recommends deterministic next upgrades with explanations and alternate paths.
-- **PvP tab** — Series Malmstone tracker read straight from the client: current series level and EXP, Wolf Marks and Trophy Crystals, and how many Crystalline Conflict, Frontline (with or without the daily roulette bonus) and Rival Wings matches, by placing, would reach rank 25. The level curve comes from the game's `PvPSeriesLevel` sheet. It is read once when the window opens (plus a refresh button) — nothing is polled.
+- **PvP tab** — Series Malmstone tracker read straight from the client: current series level and EXP, Wolf Marks and Trophy Crystals, and how many Crystalline Conflict, Frontline (with or without the daily roulette bonus) and Rival Wings matches, by placing, would reach the next reward milestone (rank 5/10/15/20/25, selectable). The level curve comes from the game's `PvPSeriesLevel` sheet. It is read once when the window opens (plus a refresh button) — nothing is polled.
 - **Useful Links tab** — mount guide links in a table layout, plus a Visual Plans link section.
 - **Events tab** — upcoming FC events with expandable details and event images.
 - **Past Events tab** — FC events that ended within the last 24 hours, with their cached images.

@@ -51,6 +51,8 @@ public class MainWindow : ThemedWindow, IDisposable
     private PvpSeriesSnapshot? pvpSnapshot;
     private long pvpLastReadTick;
     private const long PvpRetryMs = 3000;
+    // Set on open so the milestone sub-tabs land on the next reward; a manual refresh keeps the user's pick.
+    private bool pvpSelectNextMilestone;
 
     // Per-event participation state (keyed by event id)
     private readonly Dictionary<string, int> eventRoleIndex = new();
@@ -92,6 +94,7 @@ public class MainWindow : ThemedWindow, IDisposable
     {
         base.OnOpen();
         RefreshPvpSnapshot();
+        pvpSelectNextMilestone = true;
     }
 
     public override void Draw()
@@ -663,21 +666,51 @@ public class MainWindow : ThemedWindow, IDisposable
         ImGui.Separator();
         ImGui.Spacing();
 
-        RmcTheme.SectionHeader($"Matches to rank {plan.TargetRank}");
+        RmcTheme.SectionHeader("Matches to the next reward");
+        DrawPvpMilestoneTabs(snapshot);
+    }
 
-        if (plan.TargetReached)
+    /// <summary>One sub-tab per reward milestone (5/10/15/20/25), each with its own match table.</summary>
+    private void DrawPvpMilestoneTabs(PvpSeriesSnapshot snapshot)
+    {
+        using var bar = ImRaii.TabBar("##pvpMilestones");
+        if (!bar) return;
+
+        // Selection is ImGui's; SetSelected is a one-frame request, so it is asked for
+        // once per window open — the first time a usable snapshot reaches this bar.
+        var select = 0;
+        if (pvpSelectNextMilestone)
         {
-            RmcTheme.StatusDot(RmcTheme.Success,
-                $"Rank {plan.TargetRank} reached — every series reward is unlocked.", RmcTheme.Success);
-            return;
+            select = PvpSeriesCalculator.NextMilestone(snapshot.Rank);
+            pvpSelectNextMilestone = false;
         }
 
-        using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
-            ImGui.TextUnformatted(
-                $"{N0(plan.RemainingExp)} EXP to go  ({N0(plan.CurrentTotalExp)} / {N0(plan.TargetTotalExp)})");
-        ImGui.Spacing();
+        foreach (var milestone in PvpSeriesCalculator.Milestones)
+        {
+            var reached = snapshot.Rank >= milestone;
+            var flags   = milestone == select ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
+            // "###" keeps the tab id stable when the check mark comes and goes.
+            using var item = ImRaii.TabItem($"Rank {milestone}{(reached ? " ✓" : "")}###pvpMilestone{milestone}", flags);
+            if (!item) continue;
 
-        DrawPvpMatchTable(plan);
+            ImGui.Spacing();
+
+            var plan = pvpSeries.Calculator.Plan(snapshot, milestone);
+            if (plan.TargetReached)
+            {
+                RmcTheme.StatusDot(RmcTheme.Success, milestone == PvpSeriesCalculator.TargetRank
+                    ? $"Rank {milestone} reached — every series reward is unlocked."
+                    : $"Rank {milestone} reached.", RmcTheme.Success);
+                continue;
+            }
+
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted(
+                    $"{N0(plan.RemainingExp)} EXP to rank {milestone}  ({N0(plan.CurrentTotalExp)} / {N0(plan.TargetTotalExp)})");
+            ImGui.Spacing();
+
+            DrawPvpMatchTable(plan);
+        }
     }
 
     private static void DrawPvpProfileTable(PvpSeriesSnapshot snapshot, PvpSeriesPlan plan)

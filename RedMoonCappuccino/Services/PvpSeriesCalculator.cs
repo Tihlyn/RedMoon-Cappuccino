@@ -18,6 +18,17 @@ public sealed class PvpSeriesCalculator
     /// <summary>The level that unlocks the last unique series reward.</summary>
     public const int TargetRank = 25;
 
+    /// <summary>Levels that carry a reward milestone, ending at <see cref="TargetRank"/>.</summary>
+    public static readonly IReadOnlyList<int> Milestones = new[] { 5, 10, 15, 20, TargetRank };
+
+    /// <summary>The first milestone above <paramref name="rank"/>; the final one once all are reached.</summary>
+    public static int NextMilestone(int rank)
+    {
+        foreach (var milestone in Milestones)
+            if (milestone > rank) return milestone;
+        return TargetRank;
+    }
+
     /// <summary>
     /// EXP to advance from each level to the next, indexed by level, as the game
     /// tables it: 2,000 for levels 1–4, 3,000 for 5–9, 4,000 for 10–14, 5,500 for

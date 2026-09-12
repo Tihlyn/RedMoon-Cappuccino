@@ -87,7 +87,7 @@ public sealed class Plugin : IDalamudPlugin
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
-        PvpSeries   = new PvpSeriesService(DataManager, ClientState, GameInventory, Log);
+        PvpSeries   = new PvpSeriesService(DataManager, ClientState, Log);
         WsService   = new WebSocketService(DataService, Log, Configuration);
         ChatService = new ChatService(Log, Configuration);
 

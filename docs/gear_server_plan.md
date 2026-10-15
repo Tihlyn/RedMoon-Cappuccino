@@ -141,7 +141,18 @@ How it was built: see `server/README.md`.
   - all required fields are present;
   - known caps are checked against a committed snapshot of xivgear values, taken offline.
 
-### Phase 2 — Stat engine
+### Phase 2 — Stat engine — DONE 2026-10-16
+
+How it was built: `server/src/Rmc.Engine`, gated by `server/tests/Rmc.Engine.Checks`.
+
+- Integer-exact versions of the Allagan Studies / xivgear formulas. Assembly order: gear with capped melds, then base stats and clan, then party bonus, then food computed from the pre-party values.
+- Per-meld report: the value applied and the points lost to the item's cap.
+- Breakpoints for every stat that matters to the role: where the current tier starts, the points wasted inside it, the points to the next tier, and the current and next GCD for speed stats.
+- Parity: all 4,050 compared values across the 135 BiS sets (21 jobs) match xivgear `/fulldata` exactly.
+  - Covers main stats after party bonus, food after caps, crit, DH, det, tenacity, speed and DoT multipliers, main stat, weapon damage, auto-attack, HP, and MP per tick.
+  - Clans are imported per set from the xivgear sheets.
+- Independent check: 126 Balance sets are labelled with a GCD, and the engine's GCD matches every label except one loosely labelled SAM set. That set is allowlisted with the reason.
+- In-game panel parity (2.5b) is wired up (`server/data/reference/ingame/*.json`) and waits on Phase 6, when the plugin can send real panel readings.
 
 - 2.1 Compute final stats: gear + race/clan + food + party bonus.
 - 2.2 Derive crit, direct hit, determination, tenacity, GCD (skill or spell speed, with haste), the damage-over-time speed multiplier, and MP per tick from piety.

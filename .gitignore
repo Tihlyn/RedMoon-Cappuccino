@@ -23,3 +23,6 @@ obj/
 
 # Plugin configuration — contains default server address and API key placeholder
 RedMoonCappuccino/Configuration.cs
+
+# Gear planner compute server: kept local for now, never shipped with the plugin
+server/

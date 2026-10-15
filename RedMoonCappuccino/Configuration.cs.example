@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dalamud.Configuration;
 
 namespace RedMoonCappuccino;
@@ -22,6 +23,46 @@ public class Configuration : IPluginConfiguration
 
     /// <summary>Font scale for live-chat direct-message history. 1.0 = default size.</summary>
     public float ChatDmFontScale { get; set; } = 1.0f;
+
+    // ── Event notifications ───────────────────────────────────────────────────
+
+    /// <summary>Opt-in: show pop-up notifications for new events and event start reminders.</summary>
+    public bool EnableEventNotifications { get; set; } = false;
+
+    /// <summary>Event IDs the user wants a reminder for, 10 minutes before start.</summary>
+    public List<string> EventReminderIds { get; set; } = new();
+
+    /// <summary>Event IDs already seen, so the new-event notification fires only once per event.</summary>
+    public List<string> KnownEventIds { get; set; } = new();
+
+    // ── Free company roster sync ──────────────────────────────────────────────
+
+    /// <summary>Report the free company roster to the server. Only member names are ever sent.</summary>
+    public bool FcRosterSync { get; set; } = true;
+
+    /// <summary>
+    /// Free company the roster is reported for. Nothing is read or sent while the
+    /// logged-in character belongs to any other free company.
+    /// </summary>
+    public string FcRosterName { get; set; } = "Seventh Haven";
+
+    /// <summary>
+    /// Ask the game to reload the member list on a timer. With this off the roster
+    /// only refreshes when the player opens the free company window themselves.
+    /// </summary>
+    public bool FcRosterActiveRefresh { get; set; } = true;
+
+    /// <summary>Minutes between member-list reloads. Floored at 5 to stay well clear of rate limits.</summary>
+    public int FcRosterRefreshMinutes { get; set; } = 15;
+
+    // ── Submersible route planner ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Submarines last read from the free company workshop. Cached because the
+    /// game only exposes them while the player stands in the workshop, and the
+    /// planner is most useful everywhere else.
+    /// </summary>
+    public List<Models.SavedSubmarine> KnownSubmarines { get; set; } = new();
 
     // ── Gemini / Rotation Recorder ────────────────────────────────────────────
 

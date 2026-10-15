@@ -1,0 +1,95 @@
+name: Testing release
+
+on:
+  push:
+    tags: ['testing-*']
+
+permissions:
+  contents: write
+
+# Share the stable release lock so pluginmaster updates cannot overwrite each other.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  testing:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate testing tag
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_NAME -notmatch '^testing-((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$') {
+            throw 'Expected testing-major.minor.patch.revision.'
+          }
+          "TESTING_VERSION=$($Matches[1])" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - uses: ./.github/actions/setup-dalamud
+        with:
+          track: ${{ vars.DALAMUD_TRACK || 'release' }}
+      - name: Prepare configuration
+        shell: pwsh
+        env:
+          RMC_WS_SERVER_ADDRESS: ${{ secrets.RMC_WS_SERVER_ADDRESS }}
+          RMC_CHAT_WS_SERVER_ADDRESS: ${{ secrets.RMC_CHAT_WS_SERVER_ADDRESS }}
+          RMC_GEMINI_API_KEY: ${{ secrets.RMC_GEMINI_API_KEY }}
+        run: ./tools/prepare-config.ps1 -Require
+      - name: Build and check candidate
+        shell: pwsh
+        run: |
+          # The version lives in the tag only; testing builds never change the csproj.
+          dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo "-p:Version=$env:TESTING_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw 'Testing build failed.' }
+          dotnet run --project tests/PvpSeriesChecks -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Checks failed.' }
+      - name: Prepare candidate
+        shell: pwsh
+        run: |
+          $package = 'RedMoonCappuccino/bin/Release/RedMoonCappuccino'
+          Copy-Item "$package/latest.zip" "$env:RUNNER_TEMP/RedMoonCappuccino.zip"
+          $previous = git describe --tags --match 'v*' --abbrev=0 $env:GITHUB_SHA 2>$null
+          $range = if ($LASTEXITCODE -eq 0) { "$previous..$env:GITHUB_SHA" } else { $env:GITHUB_SHA }
+          $notes = git log --reverse --format='- %s (%h)' $range
+          if ($LASTEXITCODE -ne 0) { throw 'Could not generate testing notes.' }
+          $notes | Set-Content "$env:RUNNER_TEMP/testing-notes.md" -Encoding utf8
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: RedMoonCappuccino ${{ env.TESTING_VERSION }} (testing)
+          prerelease: true
+          make_latest: false
+          body_path: ${{ runner.temp }}/testing-notes.md
+          fail_on_unmatched_files: true
+          files: ${{ runner.temp }}/RedMoonCappuccino.zip
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repository-main
+      - name: Update testing channel
+        shell: pwsh
+        working-directory: repository-main
+        run: |
+          $manifest = "$env:GITHUB_WORKSPACE/RedMoonCappuccino/bin/Release/RedMoonCappuccino/RedMoonCappuccino.json"
+          $notes = Get-Content "$env:RUNNER_TEMP/testing-notes.md" -Raw
+          python tools/update_pluginmaster.py --tag $env:GITHUB_REF_NAME --manifest $manifest --changelog $notes
+          if ($LASTEXITCODE -ne 0) { throw 'Testing pluginmaster update failed; stable entry unchanged.' }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pluginmaster.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          git commit -m "chore(testing): publish $env:TESTING_VERSION [skip ci]"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not commit testing metadata.' }
+          git pull --rebase origin main
+          if ($LASTEXITCODE -ne 0) { throw 'Repository changed; resolve the conflict before rerunning.' }
+          git push origin HEAD:main
+          if ($LASTEXITCODE -ne 0) { throw 'Could not push testing metadata.' }

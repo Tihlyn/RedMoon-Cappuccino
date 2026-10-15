@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      dalamud_track:
+        description: Dalamud distribution
+        type: choice
+        options: [release, staging]
+        default: release
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          # net10 for the plugin, net9 for the console check programs.
+          dotnet-version: |
+            10.0.x
+            9.0.x
+      - uses: ./.github/actions/setup-dalamud
+        with:
+          track: ${{ inputs.dalamud_track || vars.DALAMUD_TRACK || 'release' }}
+      - name: Prepare configuration
+        shell: pwsh
+        env:
+          RMC_WS_SERVER_ADDRESS: ${{ secrets.RMC_WS_SERVER_ADDRESS }}
+          RMC_CHAT_WS_SERVER_ADDRESS: ${{ secrets.RMC_CHAT_WS_SERVER_ADDRESS }}
+        run: ./tools/prepare-config.ps1
+      - name: Build
+        run: dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo
+      - name: Checks
+        # CraftingChecks needs a locally recorded craft corpus, so it stays a local-only gate.
+        run: dotnet run --project tests/PvpSeriesChecks -c Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RedMoonCappuccino
+          if-no-files-found: error
+          path: |
+            RedMoonCappuccino/bin/Release/RedMoonCappuccino/latest.zip
+            RedMoonCappuccino/bin/Release/RedMoonCappuccino/RedMoonCappuccino.json

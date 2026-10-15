@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+# Serialize publication and pluginmaster updates; never cancel a release halfway through.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+            9.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate tag
+        run: python tools/update_pluginmaster.py --tag ${{ github.ref_name }} --manifest unused --check-only
+      - uses: ./.github/actions/setup-dalamud
+        with:
+          track: ${{ vars.DALAMUD_TRACK || 'release' }}
+      - name: Prepare configuration
+        shell: pwsh
+        env:
+          RMC_WS_SERVER_ADDRESS: ${{ secrets.RMC_WS_SERVER_ADDRESS }}
+          RMC_CHAT_WS_SERVER_ADDRESS: ${{ secrets.RMC_CHAT_WS_SERVER_ADDRESS }}
+          RMC_GEMINI_API_KEY: ${{ secrets.RMC_GEMINI_API_KEY }}
+        run: ./tools/prepare-config.ps1 -Require
+      - name: Build
+        run: dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo
+      - name: Checks
+        run: dotnet run --project tests/PvpSeriesChecks -c Release
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $package = 'RedMoonCappuccino/bin/Release/RedMoonCappuccino'
+          # pluginmaster's download links expect this asset name.
+          Copy-Item "$package/latest.zip" "$env:RUNNER_TEMP/RedMoonCappuccino.zip"
+          $previous = git describe --tags --match 'v*' --exclude=$env:GITHUB_REF_NAME --abbrev=0 $env:GITHUB_SHA 2>$null
+          $range = if ($LASTEXITCODE -eq 0) { "$previous..$env:GITHUB_SHA" } else { $env:GITHUB_SHA }
+          $notes = git log --reverse --format='- %s (%h)' $range
+          if ($LASTEXITCODE -ne 0) { throw 'Could not generate release notes.' }
+          $notes | Set-Content "$env:RUNNER_TEMP/release-notes.md" -Encoding utf8
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ runner.temp }}/release-notes.md
+          fail_on_unmatched_files: true
+          files: ${{ runner.temp }}/RedMoonCappuccino.zip
+      - name: Check out main for pluginmaster update
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: repository-main
+      - name: Update pluginmaster.json
+        shell: pwsh
+        working-directory: repository-main
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $manifest = "$env:GITHUB_WORKSPACE/RedMoonCappuccino/bin/Release/RedMoonCappuccino/RedMoonCappuccino.json"
+          $current = (Get-Content pluginmaster.json -Raw | ConvertFrom-Json)[0]
+          if ([version]$current.AssemblyVersion -gt [version]$env:GITHUB_REF_NAME.Substring(1)) {
+            Write-Host 'A newer release is already listed; keeping its pluginmaster entry.'
+            exit 0
+          }
+          python tools/update_pluginmaster.py --tag $env:GITHUB_REF_NAME --manifest $manifest --csproj "$env:GITHUB_WORKSPACE/RedMoonCappuccino/RedMoonCappuccino.csproj"
+          if ($LASTEXITCODE -ne 0) { throw 'pluginmaster update failed.' }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pluginmaster.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          git commit -m "chore(release): update pluginmaster for $env:GITHUB_REF_NAME [skip ci]"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not commit pluginmaster.json.' }
+          # Replay only this commit if main advanced during publication; never force push.
+          git pull --rebase origin main
+          if ($LASTEXITCODE -ne 0) { throw 'Could not rebase pluginmaster.json; resolve and rerun the workflow.' }
+          git push origin HEAD:main
+          if ($LASTEXITCODE -ne 0) { throw 'Could not push pluginmaster.json; check branch rules and rerun the workflow.' }

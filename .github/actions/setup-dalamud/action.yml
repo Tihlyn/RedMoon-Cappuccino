@@ -1,0 +1,28 @@
+name: Set up Dalamud
+description: Download the selected Dalamud distribution and expose DALAMUD_HOME
+inputs:
+  track:
+    description: release or staging
+    default: release
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      env:
+        DALAMUD_TRACK: ${{ inputs.track }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $url = switch ($env:DALAMUD_TRACK) {
+          'release' { 'https://goatcorp.github.io/dalamud-distrib/latest.zip' }
+          'staging' { 'https://goatcorp.github.io/dalamud-distrib/stg/latest.zip' }
+          default { throw 'DALAMUD_TRACK must be release or staging.' }
+        }
+        $archive = Join-Path $env:RUNNER_TEMP 'dalamud.zip'
+        $destination = Join-Path $env:RUNNER_TEMP 'dalamud'
+        # latest.zip is mutable: fetch it fresh instead of caching stale libraries.
+        Invoke-WebRequest -Uri $url -OutFile $archive
+        Expand-Archive -LiteralPath $archive -DestinationPath $destination -Force
+        if (!(Test-Path (Join-Path $destination 'Dalamud.dll'))) {
+          throw 'The distribution does not contain Dalamud.dll at its root.'
+        }
+        "DALAMUD_HOME=$destination" >> $env:GITHUB_ENV

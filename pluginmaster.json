@@ -23,13 +23,13 @@
     "AssemblyVersion": "6.3.2.0",
     "DownloadLinkInstall": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
     "DownloadLinkUpdate": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/latest/download/RedMoonCappuccino.zip",
-    "DownloadLinkTesting": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/download/testing-6.6.0.1/RedMoonCappuccino.zip",
+    "DownloadLinkTesting": "https://github.com/Tihlyn/RedMoon-Cappuccino/releases/download/testing-6.6.0.2/RedMoonCappuccino.zip",
     "DownloadCount": 0,
-    "LastUpdate": 1792151917,
+    "LastUpdate": 1792152890,
     "IsHide": false,
     "IsTestingExclusive": false,
-    "TestingAssemblyVersion": "6.6.0.1",
+    "TestingAssemblyVersion": "6.6.0.2",
     "TestingDalamudApiLevel": 15,
-    "TestingChangelog": "- chore: bump pluginmaster.json to v6.3.2.0 (8b44ac6)\r\n- ci: add build, release and testing-release workflows (d364fe3)\r\n- docs: gear server plan, phase 1 sources and phase 2 status (c647aca)\r\n- docs: gear server plan, phase 3 sim engine status (0aab007)\r\n- docs: gear server plan, phase 3 rotation sims for all jobs (83f6374)\r\n- docs: gear server plan, phase 3 fitted profiles done (d545bab)\r\n- docs: gear server plan, phase 4 meld solver done (5bcab45)\r\n- docs: gear server plan, phase 5 upgrade planner done (d7d6e96)\r\n- docs: gear server plan, threading and concurrency (3e0d7ae)\r\n- feat: gear planner server integration (phase 6) (ef1ed39)\r\n- feat(server): commit the gear planner compute server (8ef16a4)\r\n- chore: bump pluginmaster.json to testing-6.6.0.0 (3169fb8)\r\n- ci: remove the legacy tag workflow, restore the stable pluginmaster entry (56d755f)\r\n- chore(testing): publish 6.6.0.0 [skip ci] (a6ca964)\r\n- feat(planner): spinner with elapsed seconds while the server works (a32ec6b)\r\n"
+    "TestingChangelog": "- chore: bump pluginmaster.json to v6.3.2.0 (8b44ac6)\r\n- ci: add build, release and testing-release workflows (d364fe3)\r\n- docs: gear server plan, phase 1 sources and phase 2 status (c647aca)\r\n- docs: gear server plan, phase 3 sim engine status (0aab007)\r\n- docs: gear server plan, phase 3 rotation sims for all jobs (83f6374)\r\n- docs: gear server plan, phase 3 fitted profiles done (d545bab)\r\n- docs: gear server plan, phase 4 meld solver done (5bcab45)\r\n- docs: gear server plan, phase 5 upgrade planner done (d7d6e96)\r\n- docs: gear server plan, threading and concurrency (3e0d7ae)\r\n- feat: gear planner server integration (phase 6) (ef1ed39)\r\n- feat(server): commit the gear planner compute server (8ef16a4)\r\n- chore: bump pluginmaster.json to testing-6.6.0.0 (3169fb8)\r\n- ci: remove the legacy tag workflow, restore the stable pluginmaster entry (56d755f)\r\n- chore(testing): publish 6.6.0.0 [skip ci] (a6ca964)\r\n- feat(planner): spinner with elapsed seconds while the server works (a32ec6b)\r\n- chore(testing): publish 6.6.0.1 [skip ci] (5ae6ef9)\r\n- fix(planner): repair a hand-typed server address, say why it falls back (be44d2a)\r\n"
   }
 ]

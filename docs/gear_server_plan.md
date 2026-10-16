@@ -216,19 +216,34 @@ Design as built:
 - 3.4 Patch-day update: `refresh-potencies`, then `fit-profiles`, then the checks. Rotation changes from the patch notes are code edits in `Sim/Rotations`.
 - 3.5 Calibration: the sims against xivgear (absolute ≤ 2%, relative ≤ 0.3%, speed re-melds ≤ 2%), and the profiles against the sims (≤ 0.1%; MNK ≤ 0.3%).
 
-### Phase 4 — Materia solver
+### Phase 4 — Materia solver — DONE 2026-10-16
 
-- 4.1 For each piece, list the possible ways to fill its free meld slots, keeping one per unique stat result.
-  - Covers normal slots and five-slot crafted overmelds, treated as guaranteed.
-  - Skips options that waste too much past the cap.
-  - Respects locked melds.
-- 4.2 Search slot by slot across the gear, tracking total stats.
-  - At each step, keep only the Pareto front for each GCD tier, and one set per unique stat total.
-  - Score the final front exactly with the damage model.
-  - This replaces xivgear's multi-GB brute force with a search that stays small.
-- 4.3 Options: target GCD, solve food too, keep existing melds, minimum piety.
-- 4.4 Output: melds per slot, the DPS change against the current melds, and a breakpoint summary.
-- 4.5 Test: with empty meld slots on The Balance's BiS gear, the solver must match or beat their melds under our model.
+`server/src/Rmc.Engine/Melds/MeldSolver.cs`: the best materia for a gear set under the fitted profile.
+
+- **Per piece:** every way to fill the free slots, deduplicated by resulting stats and Pareto-pruned.
+  - Normal slots take grade XII.
+  - Five-slot crafted overmelds take XII in the first overmeld slot and XI after, and always succeed.
+  - Gains are capped per item.
+- **Across pieces:** combined one at a time, fewest options first. For every exact speed total, the exact Pareto front of the other damage stats is kept (crit, DH, det, plus tenacity for tanks and piety when a floor is set).
+  - Speed is a key, not a dimension, because more speed isn't always more damage.
+  - The three-stat front uses an O(n log n) sort plus a Fenwick tree.
+- **Last piece:** goes straight into tier vectors. Damage only sees each substat through its tier, so combinations with the same final tiers (food included) are the same set to the model. A tier vector beaten on every stat can't win. The survivors are scored with the fitted profile, in parallel.
+- **Local search:** single- and paired-meld changes polish the winner.
+- **Options:**
+  - target GCD;
+  - keep existing melds (fill only empty slots);
+  - locked slots;
+  - minimum piety;
+  - solve food (current-tier foods for the job's stats);
+  - Fast mode, for bulk ranking in Phase 5. It prunes within one grade XI materia between pieces and costs at most 0.018% against exact on the BiS sets.
+- **Output:** melds per slot, solved and current DPS, GCD, and final stats with their tier breakpoints.
+- **Speed:** exact solves average 252 ms over the 135 BiS sets. The worst case is 8 s on SAM's pentamelded crafted set (16M last-piece combinations); healer sets with several overmelded pieces take 2–4 s. Fast mode averages 125 ms.
+- **Gates** (all pass):
+  - Against the sheets: every BiS set re-melded from empty slots, at its own GCD and unconstrained, matches or beats the sheet's melds under our model (median +0.11%).
+  - Larger unconstrained gains come from sheets that skip overmelds to save materia (SAM "Economy Crafted", +3.4%), or that meld SkS for a 2.45 GCD our GNB sim doesn't reward (+2.8%).
+  - Grade rules hold, and the fast stat path agrees with a full recompute.
+  - Random melds (fixed seeds): starting from random melds, the solver lands on exactly the set it finds from empty slots, beats the random set (random melds lose 2.1% on average, 3.5% at worst) and the sheet. Keep-existing mode leaves kept melds alone, and locked slots come back unchanged.
+  - Options: a piety floor is met and costs DPS (+150 piety ≈ 0.8% on every healer), and food solving never does worse than the sheet's food (AST: +0.12% with the crit food).
 
 ### Phase 5 — Upgrade path scored by DPS
 

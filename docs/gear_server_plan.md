@@ -245,17 +245,41 @@ Design as built:
   - Random melds (fixed seeds): starting from random melds, the solver lands on exactly the set it finds from empty slots, beats the random set (random melds lose 2.1% on average, 3.5% at worst) and the sheet. Keep-existing mode leaves kept melds alone, and locked slots come back unchanged.
   - Options: a piety floor is met and costs DPS (+150 piety ≈ 0.8% on every healer), and food solving never does worse than the sheet's food (AST: +0.12% with the crit food).
 
-### Phase 5 — Upgrade path scored by DPS
+### Phase 5 — Upgrade path scored by DPS — DONE 2026-10-16
 
-- 5.1 Score each step by its DPS gain, with each intermediate set re-melded by a fast greedy pass.
-  - This replaces the hand-tuned weights in `BuildAction`.
-  - Keep the cost terms: tomes, savage books and augments.
-- 5.2 The objective becomes DPS per unit of limited currency. Weekly limits (tome cap, one savage book per fight per week) turn the path into a timeline.
-- 5.3 Output:
-  - current DPS vs BiS DPS (absolute and %);
-  - DPS gain per step;
-  - "re-meld after this step" notes;
-  - an option to craft gear as a step.
+`server/src/Rmc.Engine/Upgrades/UpgradePlanner.cs` replaces the plugin's hand-tuned `BuildAction` weights with DPS.
+
+- **Costs come from the game:**
+  - The snapshot now lists every currency and material that gear costs name, with the exchanges that give them (Thundersteeped Twine for 4 AAC Illustrated III, or 3,000 Sacks of Nuts, or three coins).
+  - Weekly income is a short overlay, `server/data/overlays/weekly.json`: the tomestone cap and one book per savage floor per week. It also names the hunt currency.
+- **Chains per slot:** buy the base piece, then augment it (materials through their book exchange); or buy the target outright. Optionally, a crafted stopgap first.
+- **Drops:** pieces that only drop (normal and alliance raid, ultimate, relic) are listed separately, with their DPS gain if obtained.
+- **Timeline:** week by week, the wallet and weekly income go to the affordable step with the best DPS gain per week of currency.
+  - A currency is saved when a better-valued step that needs it isn't affordable yet. For example, the body's 6 books III before Twine.
+  - A base piece that loses DPS on its own waits until its augment can follow, and is then augmented the same week.
+  - Each new piece is melded on its own (fast). A full re-meld is suggested when it gains at least 0.05%, and the plan ends with a final re-meld.
+- **Toggles (user request):**
+  - `IgnoreWeeklyLimits`, for late in a tier: everything lands in week 0, biggest gain first.
+  - `MaterialsFromHunts`: augment materials are bought with the hunt currency, so books go to gear. With it, BiS lands around weeks 8–12 instead of 17–21; the weapon's 8 books become the bound.
+- **Output:**
+  - current DPS, current DPS re-melded, and target DPS;
+  - per step: week, slot, kind (buy / augment / craft), cost, DPS before and after, melds, and which slots to re-meld;
+  - drop-only pieces, pieces with no DPS gain (stats the job doesn't use), and steps the horizon didn't reach.
+- **Solver work it needed:**
+  - Fast mode is now coarse within each piece too (36-point slack).
+  - It scores only the top 20,000 candidates per food, ranked by a linear proxy.
+  - Exact fronts are O(n log n) for three stats and O(n log² n) for four (tanks, piety floors).
+  - Fast mode stays within 0.021% of exact on the BiS sets, at 65 ms average.
+- **Speed:** a full 26-week plan takes 3–5 s for most jobs. It takes about 17 s for tanks starting from pentamelded crafted gear, which is the extreme case.
+- **Gate:** every job planned from a fresh crafted set to its BiS. Everything passes:
+  - spending never runs ahead of income;
+  - augments follow their base piece, and losing steps are augmented the same week;
+  - every target piece lands or is listed as drop-only or no-gain, nothing is unreached;
+  - the plan ends within 0.1% of the target set;
+  - no-limits ends at the same DPS, all in week 0;
+  - hunt-mode augments spend no books;
+  - planning from the target itself gives nothing.
+- **Not yet in the gate:** crafted stopgaps (`IncludeCrafted`) and a player-supplied wallet.
 
 ### Phase 6 — Plugin integration
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The compute engine: stats now, damage model and solvers in later phases.
+    Pure computation over a game data snapshot; no I/O beyond what the caller hands in,
+    so the server and (later) the plugin's offline mode can share it.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rmc.Engine</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rmc.GameData\Rmc.GameData.csproj" />
+  </ItemGroup>
+
+</Project>

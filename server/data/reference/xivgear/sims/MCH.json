@@ -1,0 +1,28 @@
+{
+  "job": "MCH",
+  "sim": "MCH Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.50 - Relic",
+      "dps": 39355.43
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 38173.93
+    },
+    {
+      "name": "RMC all det",
+      "dps": 38585.01
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 38685.43
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 38359.19,
+      "seconds": 509.49
+    }
+  ]
+}

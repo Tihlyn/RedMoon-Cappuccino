@@ -42,6 +42,9 @@ jobs:
         run: ./tools/prepare-config.ps1 -Require
       - name: Build
         run: dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo
+      - name: Package holds no server files
+        shell: pwsh
+        run: ./tools/check-package.ps1
       - name: Checks
         run: dotnet run --project tests/PvpSeriesChecks -c Release
       - name: Prepare release files

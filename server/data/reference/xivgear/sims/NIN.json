@@ -1,0 +1,27 @@
+{
+  "job": "NIN",
+  "sim": "NIN Sim (xivgear, sheet defaults)",
+  "fightSeconds": 392,
+  "sets": [
+    {
+      "name": "2.12 + Savage Weapon",
+      "dps": 39424.07
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 37840.25
+    },
+    {
+      "name": "RMC all det",
+      "dps": 38621.35
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 38961.58
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 38391.61
+    }
+  ]
+}

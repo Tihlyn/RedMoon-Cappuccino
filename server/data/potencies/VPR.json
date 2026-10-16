@@ -1,0 +1,120 @@
+{
+  "job": "VPR",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Steel Fangs",
+      "actionId": 34606,
+      "label": "Honed Steel Potency",
+      "potency": 300
+    },
+    {
+      "name": "Reaving Fangs",
+      "actionId": 34607,
+      "label": "Honed Reavers Potency",
+      "potency": 300
+    },
+    {
+      "name": "Hunter's Sting",
+      "actionId": 34608,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Swiftskin's Sting",
+      "actionId": 34609,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Vicewinder",
+      "actionId": 34620,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Hunter's Coil",
+      "actionId": 34621,
+      "label": "flank",
+      "potency": 680
+    },
+    {
+      "name": "Swiftskin's Coil",
+      "actionId": 34622,
+      "label": "rear",
+      "potency": 680
+    },
+    {
+      "name": "Uncoiled Fury",
+      "actionId": 34633,
+      "label": "base",
+      "potency": 680
+    },
+    {
+      "name": "Reawaken",
+      "actionId": 34626,
+      "label": "base",
+      "potency": 750
+    },
+    {
+      "name": "Ouroboros",
+      "actionId": 34631,
+      "label": "base",
+      "potency": 1150
+    },
+    {
+      "name": "Death Rattle",
+      "actionId": 34634,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Twinfang Bite",
+      "actionId": 34636,
+      "label": "base",
+      "potency": 120
+    },
+    {
+      "name": "Twinblood Bite",
+      "actionId": 34637,
+      "label": "base",
+      "potency": 120
+    },
+    {
+      "name": "Uncoiled Twinfang",
+      "actionId": 34644,
+      "label": "base",
+      "potency": 120
+    },
+    {
+      "name": "Uncoiled Twinblood",
+      "actionId": 34645,
+      "label": "base",
+      "potency": 120
+    },
+    {
+      "name": "First Legacy",
+      "actionId": 34640,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Second Legacy",
+      "actionId": 34641,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Third Legacy",
+      "actionId": 34642,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Fourth Legacy",
+      "actionId": 34643,
+      "label": "base",
+      "potency": 320
+    }
+  ]
+}

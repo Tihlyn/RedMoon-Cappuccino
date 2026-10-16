@@ -1,0 +1,99 @@
+{
+  "job": "PLD",
+  "sim": "PLD Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.50 DMU Weapon + Relic Shield",
+      "dps": 27557.02,
+      "seconds": 509
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 26417.37,
+      "seconds": 509
+    },
+    {
+      "name": "RMC all det",
+      "dps": 26538.28,
+      "seconds": 509
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 27484.44,
+      "seconds": 509
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 26071.47,
+      "seconds": 508.1
+    },
+    {
+      "name": "RMC all ten",
+      "dps": 27132.13,
+      "seconds": 509
+    }
+  ],
+  "lengthRuns": {
+    "2.50 DMU Weapon + Relic Shield": [
+      [
+        27085.22,
+        419
+      ],
+      [
+        27790.5,
+        439
+      ],
+      [
+        27381.04,
+        459
+      ],
+      [
+        27015.43,
+        479
+      ],
+      [
+        27633.18,
+        499
+      ],
+      [
+        27308.79,
+        519
+      ],
+      [
+        27016.1,
+        539
+      ]
+    ],
+    "RMC all sks": [
+      [
+        26272.3,
+        419.8
+      ],
+      [
+        25884.41,
+        438.9
+      ],
+      [
+        26634.89,
+        458.3
+      ],
+      [
+        26229.72,
+        479.6
+      ],
+      [
+        25897.24,
+        498.55
+      ],
+      [
+        26458.57,
+        520
+      ],
+      [
+        26188.01,
+        539.4
+      ]
+    ]
+  }
+}

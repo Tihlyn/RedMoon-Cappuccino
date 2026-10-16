@@ -1,0 +1,150 @@
+{
+  "job": "SMN",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Ruin III",
+      "actionId": 3579,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Ruin IV",
+      "actionId": 7426,
+      "label": "base",
+      "potency": 520
+    },
+    {
+      "name": "Umbral Impulse",
+      "actionId": 36994,
+      "label": "base",
+      "potency": 640
+    },
+    {
+      "name": "Astral Impulse",
+      "actionId": 25820,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Fountain of Fire",
+      "actionId": 16514,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Summon Ifrit II",
+      "actionId": 25838,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Summon Titan II",
+      "actionId": 25839,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Summon Garuda II",
+      "actionId": 25840,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Ruby Rite",
+      "actionId": 25823,
+      "label": "base",
+      "potency": 620
+    },
+    {
+      "name": "Crimson Cyclone",
+      "actionId": 25835,
+      "label": "base",
+      "potency": 560
+    },
+    {
+      "name": "Crimson Strike",
+      "actionId": 25885,
+      "label": "base",
+      "potency": 560
+    },
+    {
+      "name": "Topaz Rite",
+      "actionId": 25824,
+      "label": "base",
+      "potency": 340
+    },
+    {
+      "name": "Emerald Rite",
+      "actionId": 25825,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Slipstream",
+      "actionId": 25837,
+      "label": "base",
+      "potency": 520
+    },
+    {
+      "name": "Enkindle Solar Bahamut",
+      "actionId": 36998,
+      "label": "base",
+      "potency": 1500
+    },
+    {
+      "name": "Enkindle Bahamut",
+      "actionId": 7429,
+      "label": "base",
+      "potency": 1300
+    },
+    {
+      "name": "Enkindle Phoenix",
+      "actionId": 16516,
+      "label": "base",
+      "potency": 1300
+    },
+    {
+      "name": "Sunflare",
+      "actionId": 36996,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Deathflare",
+      "actionId": 3582,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Searing Flash",
+      "actionId": 36991,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Energy Drain",
+      "actionId": 16508,
+      "label": "base",
+      "potency": 200
+    },
+    {
+      "name": "Necrotize",
+      "actionId": 36990,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Mountain Buster",
+      "actionId": 25836,
+      "label": "base",
+      "potency": 160
+    },
+    {
+      "name": "Slipstream (DoT)",
+      "actionId": 25837,
+      "label": "Potency",
+      "potency": 30
+    }
+  ]
+}

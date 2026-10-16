@@ -1,0 +1,84 @@
+{
+  "job": "DRK",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Hard Slash",
+      "actionId": 3617,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Syphon Strike",
+      "actionId": 3623,
+      "label": "Combo Potency",
+      "potency": 380
+    },
+    {
+      "name": "Souleater",
+      "actionId": 3632,
+      "label": "Combo Potency",
+      "potency": 480
+    },
+    {
+      "name": "Bloodspiller",
+      "actionId": 7392,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Scarlet Delirium",
+      "actionId": 36928,
+      "label": "base",
+      "potency": 620
+    },
+    {
+      "name": "Comeuppance",
+      "actionId": 36929,
+      "label": "base",
+      "potency": 720
+    },
+    {
+      "name": "Torcleaver",
+      "actionId": 36930,
+      "label": "base",
+      "potency": 820
+    },
+    {
+      "name": "Disesteem",
+      "actionId": 36932,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Edge of Shadow",
+      "actionId": 16470,
+      "label": "base",
+      "potency": 460
+    },
+    {
+      "name": "Shadowbringer",
+      "actionId": 25757,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Carve and Spit",
+      "actionId": 3643,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Salt and Darkness",
+      "actionId": 25755,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Salted Earth (DoT)",
+      "actionId": 3639,
+      "label": "base",
+      "potency": 50
+    }
+  ]
+}

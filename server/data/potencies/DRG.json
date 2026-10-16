@@ -1,0 +1,120 @@
+{
+  "job": "DRG",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "True Thrust",
+      "actionId": 75,
+      "label": "base",
+      "potency": 230
+    },
+    {
+      "name": "Raiden Thrust",
+      "actionId": 16479,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Lance Barrage",
+      "actionId": 36954,
+      "label": "Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Heavens' Thrust",
+      "actionId": 25771,
+      "label": "Combo Potency",
+      "potency": 460
+    },
+    {
+      "name": "Fang and Claw",
+      "actionId": 3554,
+      "label": "Flank Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Drakesbane",
+      "actionId": 36952,
+      "label": "base",
+      "potency": 460
+    },
+    {
+      "name": "Spiral Blow",
+      "actionId": 36955,
+      "label": "Combo Potency",
+      "potency": 300
+    },
+    {
+      "name": "Chaotic Spring",
+      "actionId": 25772,
+      "label": "Rear Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Wheeling Thrust",
+      "actionId": 3556,
+      "label": "Rear Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Geirskogul",
+      "actionId": 3555,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Nastrond",
+      "actionId": 7400,
+      "label": "base",
+      "potency": 720
+    },
+    {
+      "name": "Stardiver",
+      "actionId": 16480,
+      "label": "base",
+      "potency": 840
+    },
+    {
+      "name": "Starcross",
+      "actionId": 36956,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "High Jump",
+      "actionId": 16478,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Mirage Dive",
+      "actionId": 7399,
+      "label": "base",
+      "potency": 380
+    },
+    {
+      "name": "Dragonfire Dive",
+      "actionId": 96,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Rise of the Dragon",
+      "actionId": 36953,
+      "label": "base",
+      "potency": 550
+    },
+    {
+      "name": "Wyrmwind Thrust",
+      "actionId": 25773,
+      "label": "base",
+      "potency": 440
+    },
+    {
+      "name": "Chaotic Spring (DoT)",
+      "actionId": 25772,
+      "label": "Potency",
+      "potency": 45
+    }
+  ]
+}

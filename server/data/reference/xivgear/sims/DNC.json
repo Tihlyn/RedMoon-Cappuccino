@@ -1,0 +1,35 @@
+{
+  "job": "DNC",
+  "sim": "DNC Sim (xivgear, sheet defaults: 510s)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "Relic Weapon BiS",
+      "dps": 29092.15
+    },
+    {
+      "name": "Ultimate Weapon BiS",
+      "dps": 28984.71
+    },
+    {
+      "name": "Savage Weapon BiS",
+      "dps": 28912.13
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 28226.97
+    },
+    {
+      "name": "RMC all det",
+      "dps": 28447.73
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 28547.01
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 28312.85
+    }
+  ]
+}

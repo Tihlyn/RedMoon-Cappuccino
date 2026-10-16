@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The compute server the plugin calls: stats, DPS, meld solves and upgrade plans over HTTP.
+    Stateless apart from a result cache; all data is loaded from data/ at startup.
+    Server GC (the Web SDK default) with concurrent collection: heavy requests allocate a lot
+    in short bursts on many threads.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rmc.Server</RootNamespace>
+    <AssemblyName>rmc-server</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rmc.GameData\Rmc.GameData.csproj" />
+    <ProjectReference Include="..\Rmc.Engine\Rmc.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

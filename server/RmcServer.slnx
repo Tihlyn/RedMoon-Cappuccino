@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rmc.Engine/Rmc.Engine.csproj" />
+    <Project Path="src/Rmc.GameData/Rmc.GameData.csproj" />
+    <Project Path="src/Rmc.Server/Rmc.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Rmc.Engine.Checks/Rmc.Engine.Checks.csproj" />
+    <Project Path="tests/Rmc.GameData.Checks/Rmc.GameData.Checks.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Rmc.GameData.Extractor/Rmc.GameData.Extractor.csproj" />
+  </Folder>
+</Solution>

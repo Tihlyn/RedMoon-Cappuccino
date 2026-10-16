@@ -1,0 +1,42 @@
+{
+  "job": "WHM",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Glare III",
+      "actionId": 25859,
+      "label": "base",
+      "potency": 350
+    },
+    {
+      "name": "Glare IV",
+      "actionId": 37009,
+      "label": "base",
+      "potency": 640
+    },
+    {
+      "name": "Dia",
+      "actionId": 16532,
+      "label": "base",
+      "potency": 85
+    },
+    {
+      "name": "Afflatus Misery",
+      "actionId": 16535,
+      "label": "base",
+      "potency": 1400
+    },
+    {
+      "name": "Assize",
+      "actionId": 3571,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Dia (DoT)",
+      "actionId": 16532,
+      "label": "Potency",
+      "potency": 85
+    }
+  ]
+}

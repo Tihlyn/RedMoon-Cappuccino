@@ -1,0 +1,120 @@
+{
+  "job": "RDM",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Jolt III",
+      "actionId": 37004,
+      "label": "base",
+      "potency": 360
+    },
+    {
+      "name": "Verthunder III",
+      "actionId": 25855,
+      "label": "base",
+      "potency": 440
+    },
+    {
+      "name": "Veraero III",
+      "actionId": 25856,
+      "label": "base",
+      "potency": 440
+    },
+    {
+      "name": "Verfire",
+      "actionId": 7510,
+      "label": "base",
+      "potency": 380
+    },
+    {
+      "name": "Verstone",
+      "actionId": 7511,
+      "label": "base",
+      "potency": 380
+    },
+    {
+      "name": "Enchanted Riposte",
+      "actionId": 7527,
+      "label": "base",
+      "potency": 340
+    },
+    {
+      "name": "Enchanted Zwerchhau",
+      "actionId": 7528,
+      "label": "Combo Potency",
+      "potency": 380
+    },
+    {
+      "name": "Enchanted Redoublement",
+      "actionId": 7529,
+      "label": "Combo Potency",
+      "potency": 560
+    },
+    {
+      "name": "Verflare",
+      "actionId": 7525,
+      "label": "base",
+      "potency": 650
+    },
+    {
+      "name": "Verholy",
+      "actionId": 7526,
+      "label": "base",
+      "potency": 650
+    },
+    {
+      "name": "Scorch",
+      "actionId": 16530,
+      "label": "base",
+      "potency": 750
+    },
+    {
+      "name": "Resolution",
+      "actionId": 25858,
+      "label": "base",
+      "potency": 850
+    },
+    {
+      "name": "Grand Impact",
+      "actionId": 37006,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Vice of Thorns",
+      "actionId": 37005,
+      "label": "base",
+      "potency": 950
+    },
+    {
+      "name": "Prefulgence",
+      "actionId": 37007,
+      "label": "base",
+      "potency": 1200
+    },
+    {
+      "name": "Fleche",
+      "actionId": 7517,
+      "label": "base",
+      "potency": 480
+    },
+    {
+      "name": "Contre Sixte",
+      "actionId": 7519,
+      "label": "base",
+      "potency": 420
+    },
+    {
+      "name": "Corps-a-corps",
+      "actionId": 7506,
+      "label": "base",
+      "potency": 130
+    },
+    {
+      "name": "Engagement",
+      "actionId": 16527,
+      "label": "base",
+      "potency": 180
+    }
+  ]
+}

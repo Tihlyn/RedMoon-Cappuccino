@@ -1,0 +1,1047 @@
+{
+  "meta": {
+    "job": "SCH",
+    "level": 100,
+    "sheetName": "7.55 SCH BiS max damage",
+    "partyBonus": 5,
+    "dataPatch": "7.5",
+    "source": {
+      "kind": "xivgear-api",
+      "reference": "https://xivgear.app/?page=sl|a336bb11-552d-4634-b08f-cb3b4657bb61",
+      "importedAtUtc": "2026-10-15T23:19:49.4068935Z",
+      "upstreamTimestamp": 1785379412894
+    }
+  },
+  "sets": [
+    {
+      "name": "2.40",
+      "foodItemId": 49244,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49718,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 49666,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.31",
+      "foodItemId": 49244,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49718,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 49666,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.40",
+      "foodItemId": 49244,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49718,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 52307,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.31",
+      "foodItemId": 49244,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49718,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 52307,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.40",
+      "foodItemId": 49240,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49641,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 51008,
+          "materia": [],
+          "relicStats": {
+            "crit": 447,
+            "sps": 108,
+            "det": 447
+          }
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.31",
+      "foodItemId": 49244,
+      "clanId": 8,
+      "slots": {
+        "WRISTS": {
+          "itemId": 49651,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49656,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49708,
+          "materia": [
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49705,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49579,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49723,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49629,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49707,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49718,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        },
+        "WEAPON": {
+          "itemId": 51008,
+          "materia": [],
+          "relicStats": {
+            "crit": 447,
+            "sps": 447,
+            "det": 108
+          }
+        },
+        "FEET": {
+          "itemId": 49709,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "sps",
+              "grade": 12,
+              "itemId": 41782
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

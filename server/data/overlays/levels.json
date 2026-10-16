@@ -1,0 +1,6 @@
+[
+  { "level": 70, "baseMainStat": 292, "baseSubStat": 364, "hp": 1700, "hpScalarTank": 188, "hpScalarOther": 140, "mainStatPowerModTank": 105, "mainStatPowerModOther": 125 },
+  { "level": 80, "baseMainStat": 340, "baseSubStat": 380, "hp": 2000, "hpScalarTank": 266, "hpScalarOther": 188, "mainStatPowerModTank": 115, "mainStatPowerModOther": 165 },
+  { "level": 90, "baseMainStat": 390, "baseSubStat": 400, "hp": 3000, "hpScalarTank": 346, "hpScalarOther": 243, "mainStatPowerModTank": 156, "mainStatPowerModOther": 195 },
+  { "level": 100, "baseMainStat": 440, "baseSubStat": 420, "hp": 4000, "hpScalarTank": 430, "hpScalarOther": 301, "mainStatPowerModTank": 190, "mainStatPowerModOther": 237 }
+]

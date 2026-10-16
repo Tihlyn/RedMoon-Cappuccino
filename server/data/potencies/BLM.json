@@ -1,0 +1,66 @@
+{
+  "job": "BLM",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Fire IV",
+      "actionId": 3577,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Despair",
+      "actionId": 16505,
+      "label": "base",
+      "potency": 350
+    },
+    {
+      "name": "Flare Star",
+      "actionId": 36989,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Paradox",
+      "actionId": 25797,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Fire III",
+      "actionId": 152,
+      "label": "base",
+      "potency": 290
+    },
+    {
+      "name": "Blizzard III",
+      "actionId": 154,
+      "label": "base",
+      "potency": 290
+    },
+    {
+      "name": "Blizzard IV",
+      "actionId": 3576,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "High Thunder",
+      "actionId": 36986,
+      "label": "base",
+      "potency": 150
+    },
+    {
+      "name": "Xenoglossy",
+      "actionId": 16507,
+      "label": "base",
+      "potency": 890
+    },
+    {
+      "name": "High Thunder (DoT)",
+      "actionId": 36986,
+      "label": "Potency",
+      "potency": 60
+    }
+  ]
+}

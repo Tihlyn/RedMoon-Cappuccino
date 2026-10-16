@@ -1,0 +1,1053 @@
+{
+  "meta": {
+    "job": "DRK",
+    "level": 100,
+    "sheetName": "DRK BiS",
+    "partyBonus": 5,
+    "dataPatch": "7.5",
+    "source": {
+      "kind": "xivgear-static",
+      "reference": "drk/current.json",
+      "importedAtUtc": "2026-10-15T23:19:47.7228178Z",
+      "upstreamTimestamp": 1785275698033
+    }
+  },
+  "sets": [
+    {
+      "name": "2.50 Relic Weapon",
+      "description": "Note: compared to the Savage Weapon set, this set uses a Direct Hit materia where the Savage Weapon set used a Tenacity materia.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 51010,
+          "materia": [],
+          "relicStats": {
+            "crit": 447,
+            "det": 447,
+            "ten": 108
+          }
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49648,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.46 Relic Weapon",
+      "description": "The tenacity meld in this set is intentionally done to improve stat tiering, and yields better damage than replacing it with other stats.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 51010,
+          "materia": [],
+          "relicStats": {
+            "crit": 447,
+            "det": 447,
+            "sks": 108
+          }
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49725,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            },
+            {
+              "stat": "ten",
+              "grade": 12,
+              "itemId": 41774
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.50 Palazzo Weapon",
+      "description": "The best 2.50 set with the Palazzo weapon (from Dancing Mad (Ultimate)).\n\nThe tenacity meld in this set is intentionally done to improve stat tiering, and yields better damage than replacing it with other stats.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 52309,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49648,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "ten",
+              "grade": 12,
+              "itemId": 41774
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.46 Palazzo Weapon",
+      "description": "The best 2.46 set with the Palazzo weapon (from Dancing Mad (Ultimate)).\n\nThe tenacity meld in this set is intentionally done to improve stat tiering, and yields better damage than replacing it with other stats.\n\nThe Augmented Tomestone ring can be used for both 2.46 and 2.50 sets if you have a second raid ring for the 2.50 set with two Direct Hit materia. This Augmented Tomestone Ring plus the raid ring with two Direct Hit materia will be equivalent, stat and damage wise, to the alternate materia placement in the 2.50 set.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 52309,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49725,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "ten",
+              "grade": 12,
+              "itemId": 41774
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            },
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.50 Savage Weapon",
+      "description": "The tenacity meld in this set is intentionally done to improve stat tiering, and yields better damage than replacing it with other stats.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 49668,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49648,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "ten",
+              "grade": 12,
+              "itemId": 41774
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2.46 Savage Weapon",
+      "description": "The tenacity meld in this set is intentionally done to improve stat tiering, and yields better damage than replacing it with other stats.\n\nThe Augmented Tomestone ring can be used for both 2.46 and 2.50 sets if you have a second raid ring for the 2.50 set with two Direct Hit materia. This Augmented Tomestone Ring plus the raid ring with two Direct Hit materia will be equivalent, stat and damage wise, to the alternate materia placement in the 2.50 set.",
+      "foodItemId": 49240,
+      "clanId": 14,
+      "slots": {
+        "WEAPON": {
+          "itemId": 49668,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HEAD": {
+          "itemId": 49680,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "BODY": {
+          "itemId": 49604,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "HANDS": {
+          "itemId": 49682,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "LEGS": {
+          "itemId": 49683,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "FEET": {
+          "itemId": 49607,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "EARS": {
+          "itemId": 49715,
+          "materia": [
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "NECK": {
+          "itemId": 49643,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "dh",
+              "grade": 12,
+              "itemId": 41771
+            }
+          ]
+        },
+        "WRISTS": {
+          "itemId": 49725,
+          "materia": [
+            {
+              "stat": "det",
+              "grade": 12,
+              "itemId": 41773
+            },
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            }
+          ]
+        },
+        "RING_L": {
+          "itemId": 49730,
+          "materia": [
+            {
+              "stat": "crit",
+              "grade": 12,
+              "itemId": 41772
+            },
+            {
+              "stat": "ten",
+              "grade": 12,
+              "itemId": 41774
+            }
+          ]
+        },
+        "RING_R": {
+          "itemId": 49653,
+          "materia": [
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            },
+            {
+              "stat": "sks",
+              "grade": 12,
+              "itemId": 41781
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

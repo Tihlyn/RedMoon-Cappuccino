@@ -1,0 +1,36 @@
+{
+  "job": "AST",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Fall Malefic",
+      "actionId": 25871,
+      "label": "base",
+      "potency": 270
+    },
+    {
+      "name": "Oracle",
+      "actionId": 37029,
+      "label": "base",
+      "potency": 860
+    },
+    {
+      "name": "Stellar Explosion",
+      "actionId": 8324,
+      "label": "base2",
+      "potency": 310
+    },
+    {
+      "name": "Lord of Crowns",
+      "actionId": 7444,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Combust III (DoT)",
+      "actionId": 16554,
+      "label": "Potency",
+      "potency": 70
+    }
+  ]
+}

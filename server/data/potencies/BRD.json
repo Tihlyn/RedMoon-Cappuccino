@@ -1,0 +1,90 @@
+{
+  "job": "BRD",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Burst Shot",
+      "actionId": 16495,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Refulgent Arrow",
+      "actionId": 7409,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Caustic Bite",
+      "actionId": 7406,
+      "label": "base",
+      "potency": 150
+    },
+    {
+      "name": "Stormbite",
+      "actionId": 7407,
+      "label": "base",
+      "potency": 100
+    },
+    {
+      "name": "Iron Jaws",
+      "actionId": 3560,
+      "label": "base",
+      "potency": 100
+    },
+    {
+      "name": "Apex Arrow",
+      "actionId": 16496,
+      "label": "base",
+      "potency": 140
+    },
+    {
+      "name": "Blast Arrow",
+      "actionId": 25784,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Resonant Arrow",
+      "actionId": 36976,
+      "label": "base",
+      "potency": 640
+    },
+    {
+      "name": "Empyreal Arrow",
+      "actionId": 3558,
+      "label": "base",
+      "potency": 260
+    },
+    {
+      "name": "Sidewinder",
+      "actionId": 3562,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Heartbreak Shot",
+      "actionId": 36975,
+      "label": "base",
+      "potency": 180
+    },
+    {
+      "name": "Pitch Perfect",
+      "actionId": 7404,
+      "label": "3 Repertoire Stacks",
+      "potency": 360
+    },
+    {
+      "name": "Caustic Bite (DoT)",
+      "actionId": 7406,
+      "label": "Potency",
+      "potency": 20
+    },
+    {
+      "name": "Stormbite (DoT)",
+      "actionId": 7407,
+      "label": "Potency",
+      "potency": 25
+    }
+  ]
+}

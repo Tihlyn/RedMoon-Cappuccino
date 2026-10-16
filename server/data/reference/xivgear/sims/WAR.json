@@ -1,0 +1,32 @@
+{
+  "job": "WAR",
+  "sim": "WAR Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.5 Relic Weapon",
+      "dps": 27798.76
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 26897.74
+    },
+    {
+      "name": "RMC all det",
+      "dps": 26947.51
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 27753.19
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 27321.01,
+      "seconds": 509.55
+    },
+    {
+      "name": "RMC all ten",
+      "dps": 27511.97
+    }
+  ]
+}

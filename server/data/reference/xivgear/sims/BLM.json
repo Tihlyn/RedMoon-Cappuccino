@@ -1,0 +1,27 @@
+{
+  "job": "BLM",
+  "sim": "BLM Rotation Sim (xivgear, sheet defaults) (BLM: The Balance sheet has no sim; xivgear's blm-sheet-sim attached to the calibration sheet)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.15 GCD High SPS",
+      "dps": 41728.21
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 40759.24
+    },
+    {
+      "name": "RMC all det",
+      "dps": 40832.98
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 40648.6
+    },
+    {
+      "name": "RMC all sps",
+      "dps": 40526.51
+    }
+  ]
+}

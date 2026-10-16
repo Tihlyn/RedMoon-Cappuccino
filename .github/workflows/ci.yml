@@ -38,6 +38,9 @@ jobs:
         run: ./tools/prepare-config.ps1
       - name: Build
         run: dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo
+      - name: Package holds no server files
+        shell: pwsh
+        run: ./tools/check-package.ps1
       - name: Checks
         # CraftingChecks needs a locally recorded craft corpus, so it stays a local-only gate.
         run: dotnet run --project tests/PvpSeriesChecks -c Release

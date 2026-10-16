@@ -1,0 +1,39 @@
+{
+  "job": "DRG",
+  "sim": "DRG Sim (xivgear, sheet defaults, potion, DRG alone)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "Savage BIS",
+      "dps": 39769.84,
+      "seconds": 509.84
+    },
+    {
+      "name": "UMAD weapon BiS",
+      "dps": 39862.13
+    },
+    {
+      "name": "i795 Relic BiS",
+      "dps": 40007.35
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 38145.32,
+      "seconds": 509.84
+    },
+    {
+      "name": "RMC all det",
+      "dps": 39095.01,
+      "seconds": 509.84
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 39090.08,
+      "seconds": 509.84
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 38864.89
+    }
+  ]
+}

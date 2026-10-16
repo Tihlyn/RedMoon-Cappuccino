@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Game data model shared by the compute server, its tools and checks.
+
+    Pure data + formulas: no Lumina, no Dalamud, no network. The extractor fills these types
+    from the game files; everything downstream only ever reads the JSON snapshot.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rmc.GameData</RootNamespace>
+  </PropertyGroup>
+
+</Project>

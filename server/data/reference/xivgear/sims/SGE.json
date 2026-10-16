@@ -1,0 +1,31 @@
+{
+  "job": "SGE",
+  "sim": "SGE Sim (xivgear, sheet defaults)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "2.45",
+      "dps": 25041.61
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 24328.18,
+      "seconds": 719.28
+    },
+    {
+      "name": "RMC all det",
+      "dps": 23952.25,
+      "seconds": 719.28
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 24945.44,
+      "seconds": 719.28
+    },
+    {
+      "name": "RMC all sps",
+      "dps": 24717.84,
+      "seconds": 719.39
+    }
+  ]
+}

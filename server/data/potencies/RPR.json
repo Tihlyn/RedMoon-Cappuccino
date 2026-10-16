@@ -1,0 +1,108 @@
+{
+  "job": "RPR",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Slice",
+      "actionId": 24373,
+      "label": "base",
+      "potency": 420
+    },
+    {
+      "name": "Waxing Slice",
+      "actionId": 24374,
+      "label": "Combo Potency",
+      "potency": 500
+    },
+    {
+      "name": "Infernal Slice",
+      "actionId": 24375,
+      "label": "Combo Potency",
+      "potency": 600
+    },
+    {
+      "name": "Shadow of Death",
+      "actionId": 24378,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Soul Slice",
+      "actionId": 24380,
+      "label": "base",
+      "potency": 520
+    },
+    {
+      "name": "Gibbet",
+      "actionId": 24382,
+      "label": "Flank Enhanced Potency",
+      "potency": 620
+    },
+    {
+      "name": "Gallows",
+      "actionId": 24383,
+      "label": "Rear Enhanced Potency",
+      "potency": 620
+    },
+    {
+      "name": "Executioner's Gibbet",
+      "actionId": 36970,
+      "label": "Flank Enhanced Potency",
+      "potency": 820
+    },
+    {
+      "name": "Executioner's Gallows",
+      "actionId": 36971,
+      "label": "Rear Enhanced Potency",
+      "potency": 820
+    },
+    {
+      "name": "Void Reaping",
+      "actionId": 24395,
+      "label": "Enhanced Void Reaping Potency",
+      "potency": 640
+    },
+    {
+      "name": "Cross Reaping",
+      "actionId": 24396,
+      "label": "Enhanced Cross Reaping Potency",
+      "potency": 640
+    },
+    {
+      "name": "Communio",
+      "actionId": 24398,
+      "label": "base",
+      "potency": 1100
+    },
+    {
+      "name": "Perfectio",
+      "actionId": 36973,
+      "label": "base",
+      "potency": 1300
+    },
+    {
+      "name": "Gluttony",
+      "actionId": 24393,
+      "label": "base",
+      "potency": 560
+    },
+    {
+      "name": "Unveiled Gibbet",
+      "actionId": 24390,
+      "label": "base",
+      "potency": 440
+    },
+    {
+      "name": "Lemure's Slice",
+      "actionId": 24399,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Sacrificium",
+      "actionId": 36969,
+      "label": "base",
+      "potency": 700
+    }
+  ]
+}

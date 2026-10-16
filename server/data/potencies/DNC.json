@@ -1,0 +1,96 @@
+{
+  "job": "DNC",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Cascade",
+      "actionId": 15989,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Fountain",
+      "actionId": 15990,
+      "label": "Combo Potency",
+      "potency": 280
+    },
+    {
+      "name": "Reverse Cascade",
+      "actionId": 15991,
+      "label": "base",
+      "potency": 280
+    },
+    {
+      "name": "Fountainfall",
+      "actionId": 15992,
+      "label": "base",
+      "potency": 340
+    },
+    {
+      "name": "Saber Dance",
+      "actionId": 16005,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Dance of the Dawn",
+      "actionId": 36985,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Starfall Dance",
+      "actionId": 25792,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Last Dance",
+      "actionId": 36983,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Tillana",
+      "actionId": 25790,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Standard Finish",
+      "actionId": 16192,
+      "label": "2 Steps",
+      "potency": 850
+    },
+    {
+      "name": "Technical Finish",
+      "actionId": 16196,
+      "label": "4 Steps",
+      "potency": 1300
+    },
+    {
+      "name": "Finishing Move",
+      "actionId": 36984,
+      "label": "base",
+      "potency": 850
+    },
+    {
+      "name": "Fan Dance",
+      "actionId": 16007,
+      "label": "base",
+      "potency": 180
+    },
+    {
+      "name": "Fan Dance III",
+      "actionId": 16009,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Fan Dance IV",
+      "actionId": 25791,
+      "label": "base",
+      "potency": 460
+    }
+  ]
+}

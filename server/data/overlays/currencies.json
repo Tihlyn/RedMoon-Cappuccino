@@ -1,0 +1,62 @@
+{
+  "_comment": "Regexes on a currency's item name -> source type. Order matters: first match wins. Ultimate weapons also pay in totems; the extractor tells them apart (1 totem per weapon, trial weapons cost 10), so they need no rule here. 'items' rules name gear no shop sells. The extractor reports currencies nothing here matches.",
+  "currencies": [
+    {
+      "match": "^(Allagan|Universal) Tomestone",
+      "type": "Tome"
+    },
+    {
+      "match": "^AAC Illustrated",
+      "type": "Savage"
+    },
+    {
+      "match": "(Solvent|Twine|Glaze|Ester)$",
+      "type": "Savage"
+    },
+    {
+      "match": " Holo[a-z]+$",
+      "type": "Raid"
+    },
+    {
+      "match": "Totem",
+      "type": "Trial"
+    },
+    {
+      "match": "^Everkeep Certificate|Rain$",
+      "type": "AllianceRaid"
+    },
+    {
+      "match": "Demimateria",
+      "type": "AllianceRaid"
+    },
+    {
+      "match": "Arcanite$",
+      "type": "Relic"
+    },
+    {
+      "match": "Obol$|Fixative$|^Aetherspun|^Enlightenment (Silver|Gold) Piece$|^Sanguinite$|^Arcane Amulet$",
+      "type": "FieldOperation"
+    },
+    {
+      "match": "^Khloe's",
+      "type": "WondrousTails"
+    },
+    {
+      "match": "Aetherpool",
+      "type": "Other"
+    },
+    {
+      "match": "^Sack of Nuts$",
+      "type": "Other"
+    },
+    {
+      "match": " Coin$",
+      "type": "Other"
+    },
+    {
+      "match": "Certificate$",
+      "type": "Other"
+    }
+  ],
+  "items": []
+}

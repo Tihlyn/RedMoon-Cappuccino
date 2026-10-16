@@ -1,0 +1,30 @@
+{
+  "job": "SCH",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Broil IV",
+      "actionId": 25865,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Energy Drain",
+      "actionId": 167,
+      "label": "base",
+      "potency": 100
+    },
+    {
+      "name": "Biolysis (DoT)",
+      "actionId": 16540,
+      "label": "Potency",
+      "potency": 85
+    },
+    {
+      "name": "Baneful Impaction (DoT)",
+      "actionId": 37012,
+      "label": "Potency",
+      "potency": 140
+    }
+  ]
+}

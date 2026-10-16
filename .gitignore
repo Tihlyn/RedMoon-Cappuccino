@@ -24,5 +24,6 @@ obj/
 # Plugin configuration — contains default server address and API key placeholder
 RedMoonCappuccino/Configuration.cs
 
-# Gear planner compute server: kept local for now, never shipped with the plugin
-server/
+# Gear planner compute server (server/): committed, built and deployed on its own, never shipped
+# with the plugin. CI builds only RedMoonCappuccino.csproj and checks the zip holds no server
+# assemblies. Its build outputs are ignored in server/.gitignore.

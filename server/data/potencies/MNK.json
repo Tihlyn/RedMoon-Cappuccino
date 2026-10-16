@@ -1,0 +1,78 @@
+{
+  "job": "MNK",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Dragon Kick",
+      "actionId": 74,
+      "label": "base",
+      "potency": 320
+    },
+    {
+      "name": "Leaping Opo",
+      "actionId": 36945,
+      "label": "Opo-opo's Fury Potency",
+      "potency": 460
+    },
+    {
+      "name": "Twin Snakes",
+      "actionId": 61,
+      "label": "base",
+      "potency": 420
+    },
+    {
+      "name": "Rising Raptor",
+      "actionId": 36946,
+      "label": "Raptor's Fury Potency",
+      "potency": 540
+    },
+    {
+      "name": "Demolish",
+      "actionId": 66,
+      "label": "rear",
+      "potency": 420
+    },
+    {
+      "name": "Pouncing Coeurl",
+      "actionId": 36947,
+      "label": "Flank Coeurl's Fury Potency",
+      "potency": 520
+    },
+    {
+      "name": "Elixir Burst",
+      "actionId": 36948,
+      "label": "base",
+      "potency": 900
+    },
+    {
+      "name": "Rising Phoenix",
+      "actionId": 25768,
+      "label": "base",
+      "potency": 900
+    },
+    {
+      "name": "Phantom Rush",
+      "actionId": 25769,
+      "label": "base",
+      "potency": 1500
+    },
+    {
+      "name": "Fire's Reply",
+      "actionId": 36950,
+      "label": "base",
+      "potency": 1400
+    },
+    {
+      "name": "Wind's Reply",
+      "actionId": 36949,
+      "label": "base",
+      "potency": 1040
+    },
+    {
+      "name": "The Forbidden Chakra",
+      "actionId": 3547,
+      "label": "base",
+      "potency": 400
+    }
+  ]
+}

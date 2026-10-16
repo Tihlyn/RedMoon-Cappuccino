@@ -1,0 +1,27 @@
+{
+  "job": "SCH",
+  "sim": "SCH Sim (xivgear, sheet defaults: 510s)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "2.40",
+      "dps": 21324.43
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 20740.57
+    },
+    {
+      "name": "RMC all det",
+      "dps": 20462.13
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 21267.39
+    },
+    {
+      "name": "RMC all sps",
+      "dps": 21162
+    }
+  ]
+}

@@ -51,6 +51,7 @@ jobs:
           # The version lives in the tag only; testing builds never change the csproj.
           dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo "-p:Version=$env:TESTING_VERSION"
           if ($LASTEXITCODE -ne 0) { throw 'Testing build failed.' }
+          ./tools/check-package.ps1
           dotnet run --project tests/PvpSeriesChecks -c Release
           if ($LASTEXITCODE -ne 0) { throw 'Checks failed.' }
       - name: Prepare candidate

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Phase 1's gate, as a runnable program (same convention as tests/CraftingChecks).
+
+    Reads only committed files: the game data snapshot, our BiS sheets and the xivgear
+    reference snapshot. No game install, no network.
+
+    Run from server/ with "dotnet run" on this project; optionally pass a snapshot path.
+    Exit code is 0 only when every check passes.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rmc.GameData.Checks</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Rmc.GameData\Rmc.GameData.csproj" />
+  </ItemGroup>
+
+</Project>

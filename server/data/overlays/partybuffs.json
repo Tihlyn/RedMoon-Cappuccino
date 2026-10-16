@@ -1,0 +1,19 @@
+{
+  "_comment": "Raid buffs (game values), active together for 20s every 120s. A job's own come from its profile (including personal crit/DH windows like Devilment); 'standard' is an optional full-party comp for callers that want one.",
+  "buffs": [
+    { "name": "Dokumori", "damagePercent": 5 },
+    { "name": "Battle Litany", "critRate": 10 },
+    { "name": "Brotherhood", "damagePercent": 5 },
+    { "name": "Arcane Circle", "damagePercent": 3 },
+    { "name": "Searing Light", "damagePercent": 5 },
+    { "name": "Embolden", "damagePercent": 5 },
+    { "name": "Starry Muse", "damagePercent": 5 },
+    { "name": "Technical Finish", "damagePercent": 5 },
+    { "name": "Battle Voice", "directHitRate": 20 },
+    { "name": "Radiant Finale", "damagePercent": 6 },
+    { "name": "Chain Stratagem", "critRate": 10 },
+    { "name": "Divination", "damagePercent": 6 },
+    { "name": "Devilment", "critRate": 20, "directHitRate": 20 }
+  ],
+  "standard": ["Dokumori", "Battle Litany", "Brotherhood", "Arcane Circle", "Searing Light", "Embolden", "Starry Muse", "Technical Finish", "Battle Voice", "Radiant Finale", "Chain Stratagem", "Divination"]
+}

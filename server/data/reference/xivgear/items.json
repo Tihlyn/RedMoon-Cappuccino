@@ -1,0 +1,5122 @@
+[
+  {
+    "id": 49281,
+    "name": "Courtly Lover's Temple Chain of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 414,
+      "vit": 455,
+      "det": 231,
+      "dh": 162
+    },
+    "statsHq": {
+      "str": 460,
+      "vit": 506,
+      "det": 257,
+      "dh": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49282,
+    "name": "Courtly Lover's Cloak of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 657,
+      "vit": 724,
+      "dh": 368,
+      "crit": 257
+    },
+    "statsHq": {
+      "str": 730,
+      "vit": 804,
+      "crit": 286,
+      "dh": 409
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49283,
+    "name": "Courtly Lover's Armguards of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 414,
+      "vit": 455,
+      "crit": 231,
+      "sks": 162
+    },
+    "statsHq": {
+      "str": 460,
+      "vit": 506,
+      "crit": 257,
+      "sks": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49284,
+    "name": "Courtly Lover's Brais of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 657,
+      "vit": 724,
+      "det": 368,
+      "crit": 257
+    },
+    "statsHq": {
+      "str": 730,
+      "vit": 804,
+      "crit": 286,
+      "det": 409
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49285,
+    "name": "Courtly Lover's Boots of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 414,
+      "vit": 455,
+      "crit": 231,
+      "det": 162
+    },
+    "statsHq": {
+      "str": 460,
+      "vit": 506,
+      "crit": 257,
+      "det": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49296,
+    "name": "Courtly Lover's Hood of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 414,
+      "vit": 409,
+      "crit": 231,
+      "sps": 162
+    },
+    "statsHq": {
+      "vit": 455,
+      "crit": 257,
+      "mnd": 460,
+      "sps": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49298,
+    "name": "Courtly Lover's Gloves of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 414,
+      "vit": 409,
+      "crit": 231,
+      "det": 162
+    },
+    "statsHq": {
+      "vit": 455,
+      "crit": 257,
+      "det": 180,
+      "mnd": 460
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49299,
+    "name": "Courtly Lover's Pantaloons of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 657,
+      "vit": 652,
+      "crit": 368,
+      "pie": 257
+    },
+    "statsHq": {
+      "vit": 724,
+      "crit": 409,
+      "mnd": 730,
+      "pie": 286
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49300,
+    "name": "Courtly Lover's Shoes of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 414,
+      "vit": 409,
+      "det": 231,
+      "sps": 162
+    },
+    "statsHq": {
+      "vit": 455,
+      "det": 257,
+      "mnd": 460,
+      "sps": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49307,
+    "name": "Courtly Lover's Earrings of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 326,
+      "vit": 359,
+      "det": 183,
+      "dh": 128
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "det": 203,
+      "dh": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49309,
+    "name": "Courtly Lover's Earrings of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 326,
+      "vit": 323,
+      "pie": 183,
+      "crit": 128
+    },
+    "statsHq": {
+      "vit": 359,
+      "crit": 142,
+      "mnd": 362,
+      "pie": 203
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49312,
+    "name": "Courtly Lover's Choker of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 326,
+      "vit": 359,
+      "crit": 183,
+      "dh": 128
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "crit": 203,
+      "dh": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49314,
+    "name": "Courtly Lover's Choker of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 326,
+      "vit": 323,
+      "det": 183,
+      "crit": 128
+    },
+    "statsHq": {
+      "vit": 359,
+      "crit": 142,
+      "det": 203,
+      "mnd": 362
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49317,
+    "name": "Courtly Lover's Wristlet of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 326,
+      "vit": 359,
+      "crit": 183,
+      "sks": 128
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "crit": 203,
+      "sks": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49322,
+    "name": "Courtly Lover's Ring of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 326,
+      "vit": 359,
+      "dh": 183,
+      "crit": 128
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "crit": 142,
+      "dh": 203
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49324,
+    "name": "Courtly Lover's Ring of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": true,
+    "unique": false,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": true,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 326,
+      "vit": 323,
+      "det": 183,
+      "crit": 128
+    },
+    "statsHq": {
+      "vit": 359,
+      "crit": 142,
+      "det": 203,
+      "mnd": 362
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49439,
+    "name": "Heavyweight Gloves of Striking",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 460,
+      "vit": 506,
+      "dh": 257,
+      "det": 180
+    },
+    "statsHq": {
+      "str": 460,
+      "vit": 506,
+      "dh": 257,
+      "det": 180
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49455,
+    "name": "Heavyweight Breeches of Healing",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 730,
+      "vit": 724,
+      "det": 409,
+      "sps": 286
+    },
+    "statsHq": {
+      "mnd": 730,
+      "vit": 724,
+      "det": 409,
+      "sps": 286
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49463,
+    "name": "Heavyweight Ear Cuff of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 362,
+      "vit": 399,
+      "crit": 203,
+      "sks": 142
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "crit": 203,
+      "sks": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49468,
+    "name": "Heavyweight Neckband of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 362,
+      "vit": 399,
+      "det": 203,
+      "crit": 142
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "det": 203,
+      "crit": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49478,
+    "name": "Heavyweight Ring of Slaying",
+    "itemLevel": 770,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 1,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 362,
+      "vit": 399,
+      "dh": 203,
+      "det": 142
+    },
+    "statsHq": {
+      "str": 362,
+      "vit": 399,
+      "dh": 203,
+      "det": 142
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49494,
+    "name": "Runaway Star Globe",
+    "itemLevel": 775,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 778,
+      "vit": 775,
+      "det": 429,
+      "crit": 300
+    },
+    "statsHq": {
+      "mnd": 778,
+      "vit": 775,
+      "det": 429,
+      "crit": 300
+    },
+    "weapon": {
+      "physicalDamage": 154,
+      "magicalDamage": 154,
+      "physicalDamageHq": 154,
+      "magicalDamageHq": 154,
+      "delayMs": 3200
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49495,
+    "name": "Runaway Blade",
+    "itemLevel": 775,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 778,
+      "vit": 861,
+      "crit": 429,
+      "dh": 300
+    },
+    "statsHq": {
+      "str": 778,
+      "vit": 861,
+      "crit": 429,
+      "dh": 300
+    },
+    "weapon": {
+      "physicalDamage": 154,
+      "magicalDamage": 77,
+      "physicalDamageHq": 154,
+      "magicalDamageHq": 77,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49500,
+    "name": "Runaway Wings",
+    "itemLevel": 775,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 778,
+      "vit": 775,
+      "det": 429,
+      "crit": 300
+    },
+    "statsHq": {
+      "mnd": 778,
+      "vit": 775,
+      "det": 429,
+      "crit": 300
+    },
+    "weapon": {
+      "physicalDamage": 154,
+      "magicalDamage": 154,
+      "physicalDamageHq": 154,
+      "magicalDamageHq": 154,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49552,
+    "name": "Bygone Brass Shirt of Healing",
+    "itemLevel": 780,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 770,
+      "vit": 770,
+      "crit": 418,
+      "det": 293
+    },
+    "statsHq": {
+      "mnd": 770,
+      "vit": 770,
+      "crit": 418,
+      "det": 293
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49564,
+    "name": "Bygone Brass Earrings of Healing",
+    "itemLevel": 780,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 382,
+      "vit": 383,
+      "crit": 207,
+      "det": 145
+    },
+    "statsHq": {
+      "mnd": 382,
+      "vit": 383,
+      "crit": 207,
+      "det": 145
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49574,
+    "name": "Bygone Brass Bracelet of Healing",
+    "itemLevel": 780,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 382,
+      "vit": 383,
+      "det": 207,
+      "sps": 145
+    },
+    "statsHq": {
+      "mnd": 382,
+      "vit": 383,
+      "det": 207,
+      "sps": 145
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49579,
+    "name": "Bygone Brass Ring of Healing",
+    "itemLevel": 780,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 382,
+      "vit": 383,
+      "det": 207,
+      "crit": 145
+    },
+    "statsHq": {
+      "mnd": 382,
+      "vit": 383,
+      "det": 207,
+      "crit": 145
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49604,
+    "name": "Augmented Bygone Brass Coat of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49607,
+    "name": "Augmented Bygone Brass Greaves of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49608,
+    "name": "Augmented Bygone Brass Cap of Maiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49610,
+    "name": "Augmented Bygone Brass Gloves of Maiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49611,
+    "name": "Augmented Bygone Brass Brais of Maiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49613,
+    "name": "Augmented Bygone Brass Cap of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "sks": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "sks": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49614,
+    "name": "Augmented Bygone Brass Jacket of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49617,
+    "name": "Augmented Bygone Brass Sabatons of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49618,
+    "name": "Augmented Bygone Brass Top Hat of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49621,
+    "name": "Augmented Bygone Brass Gaskins of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "statsHq": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49622,
+    "name": "Augmented Bygone Brass Boots of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49624,
+    "name": "Augmented Bygone Brass Jacket of Scouting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "statsHq": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49625,
+    "name": "Augmented Bygone Brass Clawtips of Scouting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49627,
+    "name": "Augmented Bygone Brass Sabatons of Scouting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "dh": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49629,
+    "name": "Augmented Bygone Brass Shirt of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "mnd": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49630,
+    "name": "Augmented Bygone Brass Gloves of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49633,
+    "name": "Augmented Bygone Brass Calot of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "sps": 269,
+      "dh": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "sps": 269,
+      "dh": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49634,
+    "name": "Augmented Bygone Brass Shirt of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 810,
+      "vit": 817,
+      "sps": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "int": 810,
+      "vit": 817,
+      "sps": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49635,
+    "name": "Augmented Bygone Brass Gloves of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49636,
+    "name": "Augmented Bygone Brass Halfslops of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 810,
+      "vit": 817,
+      "dh": 427,
+      "crit": 299
+    },
+    "statsHq": {
+      "int": 810,
+      "vit": 817,
+      "dh": 427,
+      "crit": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49637,
+    "name": "Augmented Bygone Brass Boots of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "crit": 269,
+      "det": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "crit": 269,
+      "det": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49639,
+    "name": "Augmented Bygone Brass Earrings of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "dh": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "dh": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49640,
+    "name": "Augmented Bygone Brass Earrings of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "dh": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "dh": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49641,
+    "name": "Augmented Bygone Brass Earrings of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49642,
+    "name": "Augmented Bygone Brass Earrings of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "sps": 212,
+      "dh": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "sps": 212,
+      "dh": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49643,
+    "name": "Augmented Bygone Brass Choker of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49644,
+    "name": "Augmented Bygone Brass Choker of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49647,
+    "name": "Augmented Bygone Brass Choker of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49648,
+    "name": "Augmented Bygone Brass Bracelet of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49650,
+    "name": "Augmented Bygone Brass Bracelet of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49651,
+    "name": "Augmented Bygone Brass Bracelet of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "sps": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "sps": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49652,
+    "name": "Augmented Bygone Brass Bracelet of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49653,
+    "name": "Augmented Bygone Brass Ring of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "ten": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "ten": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49654,
+    "name": "Augmented Bygone Brass Ring of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49655,
+    "name": "Augmented Bygone Brass Ring of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49656,
+    "name": "Augmented Bygone Brass Ring of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49657,
+    "name": "Augmented Bygone Brass Ring of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49658,
+    "name": "Grand Champion's Falchion",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 605,
+      "vit": 674,
+      "crit": 319,
+      "det": 223
+    },
+    "statsHq": {
+      "str": 605,
+      "vit": 674,
+      "crit": 319,
+      "det": 223
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2240
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49659,
+    "name": "Grand Champion's Baghnakhs",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49660,
+    "name": "Grand Champion's War Axe",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3360
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49661,
+    "name": "Grand Champion's Spear",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49662,
+    "name": "Grand Champion's Longbow",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3040
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49663,
+    "name": "Grand Champion's Cane",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3440
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49664,
+    "name": "Grand Champion's Rod",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "crit": 447,
+      "sps": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "crit": 447,
+      "sps": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3280
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49665,
+    "name": "Grand Champion's Index",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49666,
+    "name": "Grand Champion's Codex",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49667,
+    "name": "Grand Champion's Knives",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49668,
+    "name": "Grand Champion's Guillotine",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49669,
+    "name": "Grand Champion's Pistol",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49670,
+    "name": "Grand Champion's Astrometer",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3200
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49671,
+    "name": "Grand Champion's Blade",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49672,
+    "name": "Grand Champion's Foil",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3440
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49673,
+    "name": "Grand Champion's Sawback",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49674,
+    "name": "Grand Champion's War Quoits",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49675,
+    "name": "Grand Champion's War Scythe",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3200
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49676,
+    "name": "Grand Champion's Syrinxi",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49677,
+    "name": "Grand Champion's Twinfangs",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49678,
+    "name": "Grand Champion's Flat Brush",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49679,
+    "name": "Grand Champion's Kite Shield",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 242,
+      "vit": 269,
+      "crit": 128,
+      "det": 90
+    },
+    "statsHq": {
+      "str": 242,
+      "vit": 269,
+      "crit": 128,
+      "det": 90
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49680,
+    "name": "Grand Champion's Headgear of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49682,
+    "name": "Grand Champion's Gloves of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49683,
+    "name": "Grand Champion's Breeches of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49684,
+    "name": "Grand Champion's Boots of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "sks": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "sks": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49686,
+    "name": "Grand Champion's Jacket of Maiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49689,
+    "name": "Grand Champion's Boots of Maiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49690,
+    "name": "Grand Champion's Goggles of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "dh": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "crit": 269,
+      "dh": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49692,
+    "name": "Grand Champion's Gloves of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49693,
+    "name": "Grand Champion's Hose of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "statsHq": {
+      "str": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49694,
+    "name": "Grand Champion's Sabatons of Striking",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 510,
+      "vit": 572,
+      "sks": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "str": 510,
+      "vit": 572,
+      "sks": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49696,
+    "name": "Grand Champion's Coat of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 810,
+      "vit": 908,
+      "det": 427,
+      "crit": 299
+    },
+    "statsHq": {
+      "dex": 810,
+      "vit": 908,
+      "det": 427,
+      "crit": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49697,
+    "name": "Grand Champion's Gloves of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49700,
+    "name": "Grand Champion's Goggles of Scouting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "statsHq": {
+      "dex": 510,
+      "vit": 572,
+      "crit": 269,
+      "det": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49703,
+    "name": "Grand Champion's Hose of Scouting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "statsHq": {
+      "dex": 810,
+      "vit": 908,
+      "crit": 427,
+      "dh": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49705,
+    "name": "Grand Champion's Headgear of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "statsHq": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49707,
+    "name": "Grand Champion's Gloves of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 510,
+      "vit": 515,
+      "crit": 269,
+      "sps": 188
+    },
+    "statsHq": {
+      "mnd": 510,
+      "vit": 515,
+      "crit": 269,
+      "sps": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49708,
+    "name": "Grand Champion's Breeches of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "mnd": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49709,
+    "name": "Grand Champion's Sabatons of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "mnd": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49710,
+    "name": "Grand Champion's Headgear of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "crit": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49711,
+    "name": "Grand Champion's Coat of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "statsHq": {
+      "int": 810,
+      "vit": 817,
+      "crit": 427,
+      "det": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49712,
+    "name": "Grand Champion's Gloves of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "crit": 269,
+      "dh": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "crit": 269,
+      "dh": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49713,
+    "name": "Grand Champion's Breeches of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 810,
+      "vit": 817,
+      "dh": 427,
+      "sps": 299
+    },
+    "statsHq": {
+      "int": 810,
+      "vit": 817,
+      "dh": 427,
+      "sps": 299
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49714,
+    "name": "Grand Champion's Sabatons of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "statsHq": {
+      "int": 510,
+      "vit": 515,
+      "det": 269,
+      "sps": 188
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49715,
+    "name": "Grand Champion's Ear Cuff of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49717,
+    "name": "Grand Champion's Ear Cuff of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49718,
+    "name": "Grand Champion's Ear Cuff of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "sps": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "sps": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49719,
+    "name": "Grand Champion's Ear Cuff of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49721,
+    "name": "Grand Champion's Neckband of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "sks": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "sks": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49722,
+    "name": "Grand Champion's Neckband of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49723,
+    "name": "Grand Champion's Neckband of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49724,
+    "name": "Grand Champion's Neckband of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "sps": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "sps": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49725,
+    "name": "Grand Champion's Bracelets of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "sks": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "sks": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49726,
+    "name": "Grand Champion's Bracelets of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "crit": 212,
+      "det": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49729,
+    "name": "Grand Champion's Bracelets of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "sps": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "sps": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49730,
+    "name": "Grand Champion's Ring of Fending",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49731,
+    "name": "Grand Champion's Ring of Slaying",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 10,
+    "stats": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "str": 402,
+      "vit": 451,
+      "det": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49732,
+    "name": "Grand Champion's Ring of Aiming",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 12,
+    "stats": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "statsHq": {
+      "dex": 402,
+      "vit": 451,
+      "crit": 212,
+      "dh": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49733,
+    "name": "Grand Champion's Ring of Healing",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "pie": 148
+    },
+    "statsHq": {
+      "mnd": 402,
+      "vit": 406,
+      "crit": 212,
+      "pie": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 49734,
+    "name": "Grand Champion's Ring of Casting",
+    "itemLevel": 790,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 2,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "crit": 148
+    },
+    "statsHq": {
+      "int": 402,
+      "vit": 406,
+      "dh": 212,
+      "crit": 148
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51000,
+    "name": "Phantom Sword Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 605,
+      "vit": 674
+    },
+    "statsHq": {
+      "str": 605,
+      "vit": 674
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2240
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51001,
+    "name": "Phantom Tonfa Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51002,
+    "name": "Phantom War Hammer Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3360
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51003,
+    "name": "Phantom Spear Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51004,
+    "name": "Phantom Harp Bow Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3040
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51007,
+    "name": "Phantom Index Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51008,
+    "name": "Phantom Codex Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51009,
+    "name": "Phantom Knives Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51010,
+    "name": "Phantom Guillotine Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51011,
+    "name": "Phantom Revolver Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51013,
+    "name": "Phantom Blade Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51014,
+    "name": "Phantom Degen Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3440
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51015,
+    "name": "Phantom Gunblade Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51016,
+    "name": "Phantom Fans Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51017,
+    "name": "Phantom War Scythe Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3200
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51019,
+    "name": "Phantom Twinfangs Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51020,
+    "name": "Phantom Round Brush Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 51021,
+    "name": "Phantom Shield Occultum",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 242,
+      "vit": 269
+    },
+    "statsHq": {
+      "str": 242,
+      "vit": 269
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52299,
+    "name": "Palazzo Diamond Sword",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 605,
+      "vit": 674,
+      "crit": 319,
+      "det": 223
+    },
+    "statsHq": {
+      "str": 605,
+      "vit": 674,
+      "crit": 319,
+      "det": 223
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2240
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52300,
+    "name": "Palazzo Diamond Knuckles",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 3,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52301,
+    "name": "Palazzo Diamond Axe",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3360
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52302,
+    "name": "Palazzo Diamond Halberd",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2800
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52303,
+    "name": "Palazzo Diamond Bow",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3040
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52306,
+    "name": "Palazzo Diamond Grimoire",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52307,
+    "name": "Palazzo Diamond Codex",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 6,
+    "stats": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "mnd": 847,
+      "vit": 849,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52308,
+    "name": "Palazzo Diamond Daggers",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2560
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52309,
+    "name": "Palazzo Diamond Greatsword",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52310,
+    "name": "Palazzo Diamond Musketoon",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52313,
+    "name": "Palazzo Diamond Tuck",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 3440
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52315,
+    "name": "Palazzo Diamond Chakrams",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 4,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "det": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3120
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52316,
+    "name": "Palazzo Diamond War Scythe",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 2,
+    "stats": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "str": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 3200
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52318,
+    "name": "Palazzo Diamond Saberfangs",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 11,
+    "stats": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "statsHq": {
+      "dex": 847,
+      "vit": 943,
+      "crit": 447,
+      "det": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 79,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 79,
+      "delayMs": 2640
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52319,
+    "name": "Palazzo Diamond Fan Brush",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 3,
+    "advancedMelding": false,
+    "meldParamIndex": 5,
+    "stats": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "statsHq": {
+      "int": 847,
+      "vit": 849,
+      "dh": 447,
+      "crit": 313
+    },
+    "weapon": {
+      "physicalDamage": 158,
+      "magicalDamage": 158,
+      "physicalDamageHq": 158,
+      "magicalDamageHq": 158,
+      "delayMs": 2960
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  },
+  {
+    "id": 52320,
+    "name": "Palazzo Diamond Shield",
+    "itemLevel": 795,
+    "equipLevel": 0,
+    "slot": "",
+    "capSlot": "",
+    "jobs": [],
+    "canBeHq": false,
+    "unique": true,
+    "crafted": false,
+    "materiaSlots": 0,
+    "advancedMelding": false,
+    "meldParamIndex": 1,
+    "stats": {
+      "str": 242,
+      "vit": 269,
+      "crit": 128,
+      "det": 90
+    },
+    "statsHq": {
+      "str": 242,
+      "vit": 269,
+      "crit": 128,
+      "det": 90
+    },
+    "source": {
+      "type": "Unknown"
+    }
+  }
+]

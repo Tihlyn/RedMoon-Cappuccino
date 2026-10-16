@@ -1,0 +1,12 @@
+{
+  "_comment": "Weekly income the upgrade planner spends, per currency name (as the snapshot's currencies name them). Not in any game sheet: the tomestone weekly cap and one savage book per floor per week. Update when a tier changes. huntCurrency: what hunts pay, which some augment materials can be bought with instead of books.",
+  "tier": "7.5 (AAC Heavyweight)",
+  "perWeek": {
+    "Allagan Tomestone of Mnemonics": 450,
+    "AAC Illustrated: HW Edition I": 1,
+    "AAC Illustrated: HW Edition II": 1,
+    "AAC Illustrated: HW Edition III": 1,
+    "AAC Illustrated: HW Edition IV": 1
+  },
+  "huntCurrency": "Sack of Nuts"
+}

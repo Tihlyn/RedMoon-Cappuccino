@@ -1,0 +1,114 @@
+{
+  "job": "PLD",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Fast Blade",
+      "actionId": 9,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Riot Blade",
+      "actionId": 15,
+      "label": "Combo Potency",
+      "potency": 330
+    },
+    {
+      "name": "Royal Authority",
+      "actionId": 3539,
+      "label": "Combo Potency",
+      "potency": 460
+    },
+    {
+      "name": "Atonement",
+      "actionId": 16460,
+      "label": "base",
+      "potency": 460
+    },
+    {
+      "name": "Supplication",
+      "actionId": 36918,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Sepulchre",
+      "actionId": 36919,
+      "label": "base",
+      "potency": 540
+    },
+    {
+      "name": "Holy Spirit",
+      "actionId": 7384,
+      "label": "Divine Might Potency",
+      "potency": 500
+    },
+    {
+      "name": "Goring Blade",
+      "actionId": 3538,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Confiteor",
+      "actionId": 16459,
+      "label": "Requiescat Potency",
+      "potency": 1000
+    },
+    {
+      "name": "Blade of Faith",
+      "actionId": 25748,
+      "label": "Requiescat Potency",
+      "potency": 760
+    },
+    {
+      "name": "Blade of Truth",
+      "actionId": 25749,
+      "label": "Requiescat Potency",
+      "potency": 880
+    },
+    {
+      "name": "Blade of Valor",
+      "actionId": 25750,
+      "label": "Requiescat Potency",
+      "potency": 1000
+    },
+    {
+      "name": "Imperator",
+      "actionId": 36921,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Blade of Honor",
+      "actionId": 36922,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Expiacion",
+      "actionId": 25747,
+      "label": "base",
+      "potency": 450
+    },
+    {
+      "name": "Circle of Scorn",
+      "actionId": 23,
+      "label": "base",
+      "potency": 140
+    },
+    {
+      "name": "Intervene",
+      "actionId": 16461,
+      "label": "base",
+      "potency": 150
+    },
+    {
+      "name": "Circle of Scorn (DoT)",
+      "actionId": 23,
+      "label": "Potency",
+      "potency": 30
+    }
+  ]
+}

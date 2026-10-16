@@ -1,0 +1,55 @@
+{
+  "job": "AST",
+  "sim": "AST Sim (xivgear, sheet defaults)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "Battlefield 6 | 2.31",
+      "dps": 18602.73
+    },
+    {
+      "name": "Cooking Dinner | 2.43",
+      "dps": 18618.59
+    },
+    {
+      "name": "Phasmophobia | 2.43",
+      "dps": 18677.77
+    },
+    {
+      "name": "Genshin Impact | 2.31",
+      "dps": 18664.32
+    },
+    {
+      "name": "2.32",
+      "dps": 17107.31
+    },
+    {
+      "name": "2.32 - Tome Ring",
+      "dps": 16946.95
+    },
+    {
+      "name": "2.31 - Tome Ring",
+      "dps": 16925.05
+    },
+    {
+      "name": "2.31 - Tome Earring",
+      "dps": 17081.37
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 18003.81
+    },
+    {
+      "name": "RMC all det",
+      "dps": 17933.3
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 18535.42
+    },
+    {
+      "name": "RMC all sps",
+      "dps": 18369.28
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "job": "WHM",
+  "sim": "WHM Sim (xivgear, sheet defaults)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "2.41 SPS Gloves + Savage Ring",
+      "dps": 24255.59,
+      "seconds": 718.29
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 23442.48
+    },
+    {
+      "name": "RMC all det",
+      "dps": 23300.2
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 24134.68
+    },
+    {
+      "name": "RMC all sps",
+      "dps": 24070.02
+    }
+  ]
+}

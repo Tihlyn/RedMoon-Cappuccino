@@ -1,0 +1,78 @@
+{
+  "job": "SAM",
+  "sim": "SAM Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.14 Relic Best-in-Slot",
+      "dps": 43301.97,
+      "seconds": 514.68
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 41720.55,
+      "seconds": 514.68
+    },
+    {
+      "name": "RMC all det",
+      "dps": 42710.6,
+      "seconds": 514.68
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 42753.25,
+      "seconds": 514.68
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 42333.79,
+      "seconds": 503.74
+    }
+  ],
+  "lengthRuns": {
+    "2.14 Relic Best-in-Slot": [
+      [
+        42728.26,
+        420
+      ],
+      [
+        43299.49,
+        440
+      ],
+      [
+        42749.6,
+        460
+      ],
+      [
+        42142.38,
+        480
+      ],
+      [
+        42765.29,
+        500
+      ]
+    ],
+    "RMC all sks": [
+      [
+        41406.25,
+        420
+      ],
+      [
+        41998.24,
+        440
+      ],
+      [
+        41439.54,
+        460
+      ],
+      [
+        40982.57,
+        480
+      ],
+      [
+        42150.24,
+        500
+      ]
+    ]
+  }
+}

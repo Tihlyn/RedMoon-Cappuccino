@@ -1,0 +1,114 @@
+{
+  "job": "SAM",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Gyofu",
+      "actionId": 36963,
+      "label": "base",
+      "potency": 240
+    },
+    {
+      "name": "Jinpu",
+      "actionId": 7478,
+      "label": "Combo Potency",
+      "potency": 300
+    },
+    {
+      "name": "Shifu",
+      "actionId": 7479,
+      "label": "Combo Potency",
+      "potency": 300
+    },
+    {
+      "name": "Yukikaze",
+      "actionId": 7480,
+      "label": "Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Gekko",
+      "actionId": 7481,
+      "label": "Rear Combo Potency",
+      "potency": 420
+    },
+    {
+      "name": "Kasha",
+      "actionId": 7482,
+      "label": "Flank Combo Potency",
+      "potency": 420
+    },
+    {
+      "name": "Higanbana",
+      "actionId": 7489,
+      "label": "base",
+      "potency": 200
+    },
+    {
+      "name": "Midare Setsugekka",
+      "actionId": 7487,
+      "label": "base",
+      "potency": 680
+    },
+    {
+      "name": "Kaeshi: Setsugekka",
+      "actionId": 16486,
+      "label": "base",
+      "potency": 680
+    },
+    {
+      "name": "Tendo Setsugekka",
+      "actionId": 36966,
+      "label": "base",
+      "potency": 1100
+    },
+    {
+      "name": "Tendo Kaeshi Setsugekka",
+      "actionId": 36968,
+      "label": "base",
+      "potency": 1100
+    },
+    {
+      "name": "Ogi Namikiri",
+      "actionId": 25781,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Kaeshi: Namikiri",
+      "actionId": 25782,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Hissatsu: Senei",
+      "actionId": 16481,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Hissatsu: Shinten",
+      "actionId": 7490,
+      "label": "base",
+      "potency": 250
+    },
+    {
+      "name": "Zanshin",
+      "actionId": 36964,
+      "label": "base",
+      "potency": 940
+    },
+    {
+      "name": "Shoha",
+      "actionId": 16487,
+      "label": "base",
+      "potency": 640
+    },
+    {
+      "name": "Higanbana (DoT)",
+      "actionId": 7489,
+      "label": "Potency",
+      "potency": 50
+    }
+  ]
+}

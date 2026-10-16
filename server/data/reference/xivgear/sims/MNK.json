@@ -1,0 +1,31 @@
+{
+  "job": "MNK",
+  "sim": "MNK Sim (xivgear, sheet defaults)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "1.94 - Relic",
+      "dps": 39279.83,
+      "seconds": 719.74
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 37694.82,
+      "seconds": 719.32
+    },
+    {
+      "name": "RMC all det",
+      "dps": 38523.54,
+      "seconds": 719.32
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 38578.73,
+      "seconds": 719.32
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 38609.79
+    }
+  ]
+}

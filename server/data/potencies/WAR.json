@@ -1,0 +1,72 @@
+{
+  "job": "WAR",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Heavy Swing",
+      "actionId": 31,
+      "label": "base",
+      "potency": 240
+    },
+    {
+      "name": "Maim",
+      "actionId": 37,
+      "label": "Combo Potency",
+      "potency": 340
+    },
+    {
+      "name": "Storm's Path",
+      "actionId": 42,
+      "label": "Combo Potency",
+      "potency": 500
+    },
+    {
+      "name": "Storm's Eye",
+      "actionId": 45,
+      "label": "Combo Potency",
+      "potency": 500
+    },
+    {
+      "name": "Fell Cleave",
+      "actionId": 3549,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Inner Chaos",
+      "actionId": 16465,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Primal Rend",
+      "actionId": 25753,
+      "label": "base",
+      "potency": 720
+    },
+    {
+      "name": "Primal Ruination",
+      "actionId": 36925,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Primal Wrath",
+      "actionId": 36924,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Upheaval",
+      "actionId": 7387,
+      "label": "base",
+      "potency": 420
+    },
+    {
+      "name": "Onslaught",
+      "actionId": 7386,
+      "label": "base",
+      "potency": 150
+    }
+  ]
+}

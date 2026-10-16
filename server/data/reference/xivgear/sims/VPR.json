@@ -1,0 +1,27 @@
+{
+  "job": "VPR",
+  "sim": "VPR Sim (xivgear, sheet defaults)",
+  "fightSeconds": 720,
+  "sets": [
+    {
+      "name": "2.12 Savage",
+      "dps": 42419.78
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 40715.65
+    },
+    {
+      "name": "RMC all det",
+      "dps": 41557.06
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 41922.19
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 42239.3
+    }
+  ]
+}

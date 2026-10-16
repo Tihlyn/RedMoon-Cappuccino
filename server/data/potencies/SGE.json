@@ -1,0 +1,30 @@
+{
+  "job": "SGE",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Dosis III",
+      "actionId": 24312,
+      "label": "base",
+      "potency": 380
+    },
+    {
+      "name": "Phlegma III",
+      "actionId": 24313,
+      "label": "base",
+      "potency": 690
+    },
+    {
+      "name": "Psyche",
+      "actionId": 37033,
+      "label": "base",
+      "potency": 690
+    },
+    {
+      "name": "Eukrasian Dosis III (DoT)",
+      "actionId": 24314,
+      "label": "Potency",
+      "potency": 90
+    }
+  ]
+}

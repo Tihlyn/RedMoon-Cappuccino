@@ -1,0 +1,120 @@
+{
+  "job": "PCT",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Fire in Red",
+      "actionId": 34650,
+      "label": "base",
+      "potency": 490
+    },
+    {
+      "name": "Aero in Green",
+      "actionId": 34651,
+      "label": "base",
+      "potency": 530
+    },
+    {
+      "name": "Water in Blue",
+      "actionId": 34652,
+      "label": "base",
+      "potency": 570
+    },
+    {
+      "name": "Blizzard in Cyan",
+      "actionId": 34653,
+      "label": "base",
+      "potency": 860
+    },
+    {
+      "name": "Stone in Yellow",
+      "actionId": 34654,
+      "label": "base",
+      "potency": 900
+    },
+    {
+      "name": "Thunder in Magenta",
+      "actionId": 34655,
+      "label": "base",
+      "potency": 940
+    },
+    {
+      "name": "Holy in White",
+      "actionId": 34662,
+      "label": "base",
+      "potency": 570
+    },
+    {
+      "name": "Comet in Black",
+      "actionId": 34663,
+      "label": "base",
+      "potency": 940
+    },
+    {
+      "name": "Hammer Stamp",
+      "actionId": 34678,
+      "label": "base",
+      "potency": 560
+    },
+    {
+      "name": "Hammer Brush",
+      "actionId": 34679,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Polishing Hammer",
+      "actionId": 34680,
+      "label": "base",
+      "potency": 600
+    },
+    {
+      "name": "Star Prism",
+      "actionId": 34681,
+      "label": "base",
+      "potency": 1100
+    },
+    {
+      "name": "Rainbow Drip",
+      "actionId": 34688,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Pom Muse",
+      "actionId": 34670,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Winged Muse",
+      "actionId": 34671,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Clawed Muse",
+      "actionId": 34672,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Fanged Muse",
+      "actionId": 34673,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Mog of the Ages",
+      "actionId": 34676,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Retribution of the Madeen",
+      "actionId": 34677,
+      "label": "base",
+      "potency": 1100
+    }
+  ]
+}

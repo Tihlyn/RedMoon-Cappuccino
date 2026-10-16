@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Reads the local game install with Lumina and writes the server's game data snapshot;
+    also imports community BiS sheets into our own BiS format.
+
+    Lumina comes from the Dalamud dev build so its sheet definitions match the client the
+    plugin runs against. Override with -p:DalamudLibPath=... on another machine.
+    Lumina 7 needs net10.0.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rmc.GameData.Extractor</RootNamespace>
+    <AssemblyName>rmc-extract</AssemblyName>
+    <DalamudLibPath Condition="'$(DalamudLibPath)' == ''">$(APPDATA)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Rmc.GameData\Rmc.GameData.csproj" />
+    <ProjectReference Include="..\..\src\Rmc.Engine\Rmc.Engine.csproj" />
+    <Reference Include="Lumina">
+      <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
+    </Reference>
+    <Reference Include="Lumina.Excel">
+      <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,102 @@
+{
+  "job": "NIN",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Spinning Edge",
+      "actionId": 2240,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Gust Slash",
+      "actionId": 2242,
+      "label": "Combo Potency",
+      "potency": 400
+    },
+    {
+      "name": "Armor Crush",
+      "actionId": 3563,
+      "label": "Flank Combo Potency",
+      "potency": 500
+    },
+    {
+      "name": "Fleeting Raiju",
+      "actionId": 25778,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Phantom Kamaitachi",
+      "actionId": 25774,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Raiton",
+      "actionId": 2267,
+      "label": "base",
+      "potency": 740
+    },
+    {
+      "name": "Suiton",
+      "actionId": 2271,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Hyosho Ranryu",
+      "actionId": 16492,
+      "label": "base",
+      "potency": 1300
+    },
+    {
+      "name": "Fuma Shuriken",
+      "actionId": 18873,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Raiton",
+      "actionId": 18877,
+      "label": "base",
+      "potency": 740
+    },
+    {
+      "name": "Suiton",
+      "actionId": 18881,
+      "label": "base",
+      "potency": 580
+    },
+    {
+      "name": "Kunai's Bane",
+      "actionId": 36958,
+      "label": "base",
+      "potency": 700
+    },
+    {
+      "name": "Dokumori",
+      "actionId": 36957,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Tenri Jindo",
+      "actionId": 36961,
+      "label": "base",
+      "potency": 1100
+    },
+    {
+      "name": "Bhavacakra",
+      "actionId": 7402,
+      "label": "base",
+      "potency": 400
+    },
+    {
+      "name": "Zesho Meppo",
+      "actionId": 36960,
+      "label": "base",
+      "potency": 700
+    }
+  ]
+}

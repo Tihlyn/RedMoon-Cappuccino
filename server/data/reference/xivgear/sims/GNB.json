@@ -1,0 +1,37 @@
+{
+  "job": "GNB",
+  "sim": "GNB Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.50 - Relic",
+      "dps": 28042.86,
+      "seconds": 509.88
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 27089.91,
+      "seconds": 509.88
+    },
+    {
+      "name": "RMC all det",
+      "dps": 27095.83,
+      "seconds": 509.88
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 27971.69,
+      "seconds": 509.88
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 27500.85,
+      "seconds": 509.43
+    },
+    {
+      "name": "RMC all ten",
+      "dps": 27662.34,
+      "seconds": 509.88
+    }
+  ]
+}

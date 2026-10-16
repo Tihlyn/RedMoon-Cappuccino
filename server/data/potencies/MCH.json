@@ -1,0 +1,72 @@
+{
+  "job": "MCH",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Heated Split Shot",
+      "actionId": 7411,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Heated Slug Shot",
+      "actionId": 7412,
+      "label": "Combo Potency",
+      "potency": 320
+    },
+    {
+      "name": "Heated Clean Shot",
+      "actionId": 7413,
+      "label": "Combo Potency",
+      "potency": 420
+    },
+    {
+      "name": "Drill",
+      "actionId": 16498,
+      "label": "base",
+      "potency": 660
+    },
+    {
+      "name": "Air Anchor",
+      "actionId": 16500,
+      "label": "base",
+      "potency": 660
+    },
+    {
+      "name": "Chain Saw",
+      "actionId": 25788,
+      "label": "base",
+      "potency": 660
+    },
+    {
+      "name": "Excavator",
+      "actionId": 36981,
+      "label": "base",
+      "potency": 660
+    },
+    {
+      "name": "Full Metal Field",
+      "actionId": 36982,
+      "label": "base",
+      "potency": 900
+    },
+    {
+      "name": "Blazing Shot",
+      "actionId": 36978,
+      "label": "base",
+      "potency": 240
+    },
+    {
+      "name": "Double Check",
+      "actionId": 36979,
+      "label": "base",
+      "potency": 180
+    },
+    {
+      "name": "Checkmate",
+      "actionId": 36980,
+      "label": "base",
+      "potency": 180
+    }
+  ]
+}

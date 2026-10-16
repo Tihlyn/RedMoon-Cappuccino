@@ -1,0 +1,37 @@
+{
+  "job": "DRK",
+  "sim": "DRK Sim (xivgear, sheet defaults)",
+  "fightSeconds": 510,
+  "sets": [
+    {
+      "name": "2.50 Relic Weapon",
+      "dps": 27659.16,
+      "seconds": 509.6
+    },
+    {
+      "name": "RMC all crit",
+      "dps": 26719.24,
+      "seconds": 509.6
+    },
+    {
+      "name": "RMC all det",
+      "dps": 26723.54,
+      "seconds": 509.6
+    },
+    {
+      "name": "RMC all dh",
+      "dps": 27588.96,
+      "seconds": 509.6
+    },
+    {
+      "name": "RMC all sks",
+      "dps": 27190.83,
+      "seconds": 509.28
+    },
+    {
+      "name": "RMC all ten",
+      "dps": 27283.1,
+      "seconds": 509.6
+    }
+  ]
+}

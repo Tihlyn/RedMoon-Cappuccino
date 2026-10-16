@@ -1,0 +1,126 @@
+{
+  "job": "GNB",
+  "gameVersion": "2026.10.06.0000.0000",
+  "entries": [
+    {
+      "name": "Keen Edge",
+      "actionId": 16137,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Brutal Shell",
+      "actionId": 16139,
+      "label": "Combo Potency",
+      "potency": 380
+    },
+    {
+      "name": "Solid Barrel",
+      "actionId": 16145,
+      "label": "Combo Potency",
+      "potency": 460
+    },
+    {
+      "name": "Burst Strike",
+      "actionId": 16162,
+      "label": "base",
+      "potency": 420
+    },
+    {
+      "name": "Gnashing Fang",
+      "actionId": 16146,
+      "label": "base",
+      "potency": 440
+    },
+    {
+      "name": "Savage Claw",
+      "actionId": 16147,
+      "label": "base",
+      "potency": 500
+    },
+    {
+      "name": "Wicked Talon",
+      "actionId": 16150,
+      "label": "base",
+      "potency": 560
+    },
+    {
+      "name": "Double Down",
+      "actionId": 25760,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Sonic Break",
+      "actionId": 16153,
+      "label": "base",
+      "potency": 340
+    },
+    {
+      "name": "Reign of Beasts",
+      "actionId": 36937,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Noble Blood",
+      "actionId": 36938,
+      "label": "base",
+      "potency": 900
+    },
+    {
+      "name": "Lion Heart",
+      "actionId": 36939,
+      "label": "base",
+      "potency": 1000
+    },
+    {
+      "name": "Blasting Zone",
+      "actionId": 16165,
+      "label": "base",
+      "potency": 800
+    },
+    {
+      "name": "Bow Shock",
+      "actionId": 16159,
+      "label": "base",
+      "potency": 150
+    },
+    {
+      "name": "Hypervelocity",
+      "actionId": 25759,
+      "label": "base",
+      "potency": 180
+    },
+    {
+      "name": "Jugular Rip",
+      "actionId": 16156,
+      "label": "base",
+      "potency": 220
+    },
+    {
+      "name": "Abdomen Tear",
+      "actionId": 16157,
+      "label": "base",
+      "potency": 260
+    },
+    {
+      "name": "Eye Gouge",
+      "actionId": 16158,
+      "label": "base",
+      "potency": 300
+    },
+    {
+      "name": "Sonic Break (DoT)",
+      "actionId": 16153,
+      "label": "Potency",
+      "potency": 120
+    },
+    {
+      "name": "Bow Shock (DoT)",
+      "actionId": 16159,
+      "label": "Potency",
+      "potency": 60
+    }
+  ]
+}

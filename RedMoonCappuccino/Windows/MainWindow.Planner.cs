@@ -546,21 +546,29 @@ public partial class MainWindow
 
     private static void DrawBreakpointBars(IReadOnlyList<PlannerBreakpoint> breakpoints)
     {
-        var labelWidth = 110f * ImGuiHelpers.GlobalScale;
+        // Stat name with its value below it, the bar beside both: long names ("Determination",
+        // "Spell Speed") would otherwise run into the bar. The label column fits the longest name.
+        var style = ImGui.GetStyle();
+        var labelWidth = BreakpointStats.Max(s => ImGui.CalcTextSize(s.Label).X) + style.ItemSpacing.X * 2;
+        var rowHeight = ImGui.GetTextLineHeight() * 2 + style.ItemSpacing.Y;
         foreach (var (key, label) in BreakpointStats)
         {
             var bp = breakpoints.FirstOrDefault(b => b.Stat == key);
             if (bp == null || bp.NextTier <= bp.TierStart)
                 continue;
 
-            ImGui.TextUnformatted($"{label} {bp.Value:N0}");
+            ImGui.BeginGroup();
+            ImGui.TextUnformatted(label);
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
+                ImGui.TextUnformatted(bp.Value.ToString("N0"));
+            ImGui.EndGroup();
             ImGui.SameLine(labelWidth);
             var span = bp.NextTier - bp.TierStart;
             var toNext = bp.NextTier - bp.Value;
             var overlay = bp.GcdCs is int gcd && bp.NextGcdCs is int nextGcd
                 ? $"GCD {gcd / 100.0:0.00}s · {nextGcd / 100.0:0.00}s at +{toNext}"
                 : $"+{toNext} to next tier";
-            ImGui.ProgressBar((float)(bp.Value - bp.TierStart) / span, new Vector2(-1, 0), overlay);
+            ImGui.ProgressBar((float)(bp.Value - bp.TierStart) / span, new Vector2(-1, rowHeight), overlay);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip($"{bp.Value - bp.TierStart} point(s) past the tier start do nothing until {bp.NextTier:N0}.");
         }

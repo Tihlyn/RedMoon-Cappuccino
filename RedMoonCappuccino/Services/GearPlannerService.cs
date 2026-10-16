@@ -18,7 +18,7 @@ public sealed class GearPlannerService
 
     // Maps EquippedItems container slot indices to the slot-key strings used in BiS JSON.
     // Slot 5 (waist/belt) was removed in Shadowbringers and is intentionally absent.
-    private static readonly IReadOnlyDictionary<int, string> EquipSlotIndexToKey =
+    internal static readonly IReadOnlyDictionary<int, string> EquipSlotIndexToKey =
         new Dictionary<int, string>
         {
             [0]  = "WEAPON",
@@ -186,7 +186,7 @@ public sealed class GearPlannerService
     }
 
     // Maps Lumina BaseParam row IDs to the stat keys used by the planner gear DB.
-    private static readonly IReadOnlyDictionary<uint, string> BaseParamToStatKey =
+    internal static readonly IReadOnlyDictionary<uint, string> BaseParamToStatKey =
         new Dictionary<uint, string>
         {
             [1] = "str", [2] = "dex", [3] = "vit", [4] = "int", [5] = "mnd", [6] = "pie",

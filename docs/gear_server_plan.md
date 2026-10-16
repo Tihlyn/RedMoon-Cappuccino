@@ -312,20 +312,43 @@ The production host is an AMD EPYC 7371 (16 cores, 32 threads) with 128 GB RAM.
   - Light requests (stats, DPS) skip the pool; they're microseconds.
   - Cache results by the request's canonical JSON. The same gear and options give the same answer.
 
-### Phase 6 — Plugin integration
+### Phase 6 — Plugin integration — CODE DONE 2026-10-16 (in-game check pending)
 
-- 6.1 `BuildEquippedMap`: read materia from the equipped items (the materia and materia grade fields; check the exact Dalamud API names first), plus HQ, food and clan. Also read the player's actual stats for the parity check.
-- 6.2 New `PlannerServerClient`:
-  - HTTPS POST with a timeout;
-  - cached by request hash;
-  - the server address comes from the existing configuration;
-  - falls back to the current local solver when the server is unavailable.
-- 6.3 UI in `DrawGearPlannerTab`, kept simple for players, with internals in tooltips:
-  - a header with current DPS vs BiS DPS;
-  - DPS gain on each upgrade step;
-  - a meld panel with suggested melds and breakpoint bars;
-  - a "Solve melds" button.
-- 6.4 Configuration: fight length, party bonus, target GCD.
+- **Server host** (`server/src/Rmc.Server`, ASP.NET Core minimal API):
+  - Endpoints: `GET /v1/meta`, `POST /v1/evaluate`, `/v1/meld-solve`, `/v1/upgrade-plan`, plus `/healthz`.
+  - Gear goes in as the engine's own input: item ids, HQ, melds, food, clan, level, party bonus. No names are sent.
+  - Settings as agreed: Server GC; `ComputePool(32, 4)` in Production; evaluate runs inline outside the pool.
+  - Results are cached by canonical request JSON plus the data version, and identical requests in flight share one computation.
+  - Over 64 queued heavy jobs the server answers 503. Requests are capped at 64 KB.
+  - Every answer carries `patch` and `dataVersion`.
+  - From a non-BiS crafted start, local plans match the offline tool (DRG week 18, or week 8 with hunt materials). 12 concurrent plans took 2.5 s.
+- **Fight length:** profiles are also fitted for 300 s and 720 s (`fit-profiles --seconds N`, into `data/profiles/<N>s/`), and the server picks the closest.
+  - The engine checks cover them; every job is exact except MNK (≤0.19%).
+- **6.1 Capture** (`Services/GearCapture.cs`):
+  - Equipped items: `GameInventoryItem.Materia` (Materia row) and `MateriaGrade` (0-based; sent +1); stat from `Materia.BaseParam`.
+  - HQ from `IsHq`; clan from `IPlayerState.Tribe`; level.
+  - Food from the Well Fed status: its param is the ItemFood row, +10000 when HQ, mapped to the meal item through `ItemAction.Data[1]`.
+  - Panel substats from `IPlayerState.GetAttribute`, skipped while level synced.
+  - Wallet: `InventoryManager.GetTomestoneCount` / `GetInventoryItemCount`, for the currencies `/v1/meta` lists.
+  - Parity is on substats only: the panel's main stat depends on the party's roles at that moment.
+  - With no food, the server computes DPS with the BiS set's food, but checks parity on the gear as worn.
+- **6.2 `PlannerServerClient`** (`Services/PlannerServerClient.cs`):
+  - HTTP(S) POST with a 45 s timeout, and a 32-entry cache by request hash.
+  - The address is `Configuration.PlannerServerAddress`. CI fills it from the optional `RMC_PLANNER_SERVER_ADDRESS` secret; a placeholder means not configured.
+  - Errors are returned, never thrown, and the tab falls back to the local planner.
+  - Checked end to end by compiling the client file into a console harness against a local server: meta, evaluate at three lengths, meld solve with a GCD target, a plan with a wallet, a bad job, a server that's down, the placeholder.
+- **6.3 UI** (`Windows/MainWindow.Planner.cs`, a partial of `MainWindow`):
+  - The header shows DPS now vs BiS, with the GCD, rates, fight length and data version in a tooltip, a "% of BiS damage" bar, and a warning dot when the panel differs.
+  - The upgrade order shows week, item, DPS gain (absolute and %), and cost. Tooltips give melds and re-meld advice.
+  - Collapsible lists cover drop-only upgrades and no-gain pieces.
+  - The meld panel has a "Solve melds" button, now vs suggested melds per slot, and breakpoint bars (points into the tier, points to the next, and GCD for speed stats).
+  - Server results show only when the game job matches the selected job; otherwise the local plan shows, with a hint.
+- **6.4 Options** (a "Planner options" header in the tab, saved in the config): server on/off, fight length (standard, short, long), party bonus 0–5, target GCD, ignore weekly limits, upgrade materials from hunts.
+- **Not yet verified in game:**
+  - materia and grade reading;
+  - the Well Fed param encoding;
+  - tomestone counts;
+  - panel parity (in-game observations can go into `data/reference/ingame/`).
 
 ### Phase 7 — Operations
 

@@ -34,6 +34,7 @@ jobs:
         env:
           RMC_WS_SERVER_ADDRESS: ${{ secrets.RMC_WS_SERVER_ADDRESS }}
           RMC_CHAT_WS_SERVER_ADDRESS: ${{ secrets.RMC_CHAT_WS_SERVER_ADDRESS }}
+          RMC_PLANNER_SERVER_ADDRESS: ${{ secrets.RMC_PLANNER_SERVER_ADDRESS }}
         run: ./tools/prepare-config.ps1
       - name: Build
         run: dotnet build RedMoonCappuccino/RedMoonCappuccino.csproj -c Release -nologo

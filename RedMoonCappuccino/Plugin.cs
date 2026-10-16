@@ -42,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly DataService       DataService;
     public readonly GearPlannerService GearPlannerService;
+    public readonly PlannerServerClient PlannerServer;
     public readonly PvpSeriesService  PvpSeries;
     public readonly WebSocketService  WsService;
     public readonly FreeCompanyRosterService FcRoster;
@@ -87,6 +88,7 @@ public sealed class Plugin : IDalamudPlugin
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
+        PlannerServer = new PlannerServerClient(() => Configuration.PlannerServerAddress);
         PvpSeries   = new PvpSeriesService(DataManager, ClientState, Log);
         WsService   = new WebSocketService(DataService, Log, Configuration);
         ChatService = new ChatService(Log, Configuration);
@@ -115,7 +117,7 @@ public sealed class Plugin : IDalamudPlugin
         CraftAdvisor = new LiveCraftAdvisor(PluginInterface, Framework, GameGui, ObjectTable, PlayerState, DataManager, GameInterop, Log);
 
         // Windows
-        mainWindow   = new MainWindow(this, DataService, GearPlannerService, PvpSeries);
+        mainWindow   = new MainWindow(this, DataService, GearPlannerService, PlannerServer, PvpSeries);
         configWindow = new ConfigWindow(this);
         acquisitionWindow = new AcquisitionWindow(WsService, DataManager);
         chatWindow   = new ChatWindow(ChatService, Configuration);
@@ -209,6 +211,7 @@ public sealed class Plugin : IDalamudPlugin
         WsService.Dispose();
         FcRoster.Dispose();
         DataService.Dispose();
+        PlannerServer.Dispose();
     }
 
     private void OnLogin()

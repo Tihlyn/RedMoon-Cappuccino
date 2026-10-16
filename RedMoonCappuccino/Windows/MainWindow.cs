@@ -21,7 +21,7 @@ using RedMoonCappuccino.UI;
 
 namespace RedMoonCappuccino.Windows;
 
-public class MainWindow : ThemedWindow, IDisposable
+public partial class MainWindow : ThemedWindow, IDisposable
 {
     private static readonly string[] ParticipantRoles = { "tank", "healer", "dps", "blue_mage", "rider", "flex" };
     private static readonly IReadOnlyDictionary<string, string[]> RoleJobs =
@@ -65,13 +65,14 @@ public class MainWindow : ThemedWindow, IDisposable
     private readonly Dictionary<string, string>       eventSubmitError     = new();
 
     public MainWindow(Plugin plugin, DataService dataService, GearPlannerService gearPlannerService,
-                      PvpSeriesService pvpSeries)
+                      PlannerServerClient plannerServer, PvpSeriesService pvpSeries)
         : base("Red Moon Cappuccino##MainWindow",
                ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         this.plugin      = plugin;
         this.dataService = dataService;
         this.gearPlannerService = gearPlannerService;
+        this.plannerServer = plannerServer;
         this.pvpSeries   = pvpSeries;
 
         SizeConstraints = new WindowSizeConstraints
@@ -404,9 +405,14 @@ public class MainWindow : ThemedWindow, IDisposable
 
         ImGui.SameLine();
         if (ImGui.Button("Solve"))
+        {
             plannerResult = gearPlannerService.Solve(plannerSelectedJob);
+            if (plannerResult.IsReady)
+                StartServerPlan(plannerResult.SelectedJob);
+        }
 
         ImGui.Separator();
+        DrawPlannerOptions();
         ImGui.Spacing();
 
         if (plannerResult == null)
@@ -456,6 +462,10 @@ public class MainWindow : ThemedWindow, IDisposable
         }
 
         ImGui.Spacing();
+
+        // DPS-ranked plan from the planner server when it answered; the local plan below otherwise.
+        if (DrawServerPlanner(plannerResult.SelectedJob))
+            return;
 
         if (plannerResult.RecommendedPaths.Count == 0)
         {

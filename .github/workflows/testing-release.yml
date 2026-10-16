@@ -42,6 +42,7 @@ jobs:
         env:
           RMC_WS_SERVER_ADDRESS: ${{ secrets.RMC_WS_SERVER_ADDRESS }}
           RMC_CHAT_WS_SERVER_ADDRESS: ${{ secrets.RMC_CHAT_WS_SERVER_ADDRESS }}
+          RMC_PLANNER_SERVER_ADDRESS: ${{ secrets.RMC_PLANNER_SERVER_ADDRESS }}
           RMC_GEMINI_API_KEY: ${{ secrets.RMC_GEMINI_API_KEY }}
         run: ./tools/prepare-config.ps1 -Require
       - name: Build and check candidate

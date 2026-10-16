@@ -24,6 +24,29 @@ public class Configuration : IPluginConfiguration
     /// <summary>Font scale for live-chat direct-message history. 1.0 = default size.</summary>
     public float ChatDmFontScale { get; set; } = 1.0f;
 
+    // ── Gear planner server ───────────────────────────────────────────────────
+
+    /// <summary>Gear planner compute server (HTTPS). The local planner is used while it's unset or unreachable.</summary>
+    public string PlannerServerAddress { get; set; } = "https://YOUR_PLANNER_SERVER_ADDRESS";
+
+    /// <summary>Ask the planner server for DPS and upgrade plans (off: local stat-based planner only).</summary>
+    public bool PlannerUseServer { get; set; } = true;
+
+    /// <summary>Fight length the DPS figures assume, in seconds; 0 = standard (about 8.5 minutes).</summary>
+    public int PlannerFightSeconds { get; set; } = 0;
+
+    /// <summary>Party bonus to main stats, 0-5 (%): 5 in a full party with every role.</summary>
+    public int PlannerPartyBonus { get; set; } = 5;
+
+    /// <summary>GCD the meld solver must keep, in seconds; 0 = any.</summary>
+    public float PlannerTargetGcd { get; set; } = 0f;
+
+    /// <summary>Plan as if weekly limits were gone (late in a tier, once the weekly lockouts lift).</summary>
+    public bool PlannerIgnoreWeeklyLimits { get; set; } = false;
+
+    /// <summary>Buy upgrade materials with hunt currency (Sacks of Nuts), so books go to gear.</summary>
+    public bool PlannerMaterialsFromHunts { get; set; } = false;
+
     // ── Event notifications ───────────────────────────────────────────────────
 
     /// <summary>Opt-in: show pop-up notifications for new events and event start reminders.</summary>

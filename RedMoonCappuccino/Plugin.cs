@@ -85,10 +85,22 @@ public sealed class Plugin : IDalamudPlugin
             Configuration.Save();
         }
 
+        // The planner server address must be a full URL. A saved value that isn't (empty, the
+        // build placeholder, or a bare host typed by hand) falls back to this build's default.
+        var plannerDefault = new Configuration().PlannerServerAddress;
+        if (!PlannerServerClient.IsUsableAddress(Configuration.PlannerServerAddress) &&
+            PlannerServerClient.IsUsableAddress(plannerDefault) && Configuration.PlannerServerAddress != plannerDefault)
+        {
+            Log.Information($"[RedMoonCappuccino] Planner server address '{Configuration.PlannerServerAddress}' is not a full URL; using {plannerDefault}.");
+            Configuration.PlannerServerAddress = plannerDefault;
+            Configuration.Save();
+        }
+
         // Services
         DataService = new DataService(PluginInterface, Log);
         GearPlannerService = new GearPlannerService(PluginInterface, Log);
         PlannerServer = new PlannerServerClient(() => Configuration.PlannerServerAddress);
+        _ = LogPlannerServerStatusAsync();
         PvpSeries   = new PvpSeriesService(DataManager, ClientState, Log);
         WsService   = new WebSocketService(DataService, Log, Configuration);
         ChatService = new ChatService(Log, Configuration);
@@ -173,6 +185,22 @@ public sealed class Plugin : IDalamudPlugin
         ClientState.Login += OnLogin;
 
         Log.Information("[RedMoonCappuccino] Plugin loaded.");
+    }
+
+    /// <summary>Startup log line for the gear planner server, like the WebSocket connection's.</summary>
+    private async System.Threading.Tasks.Task LogPlannerServerStatusAsync()
+    {
+        if (!PlannerServer.IsConfigured)
+        {
+            Log.Information($"[RedMoonCappuccino] No planner server configured ('{Configuration.PlannerServerAddress}'); the gear planner uses the local estimate.");
+            return;
+        }
+        Log.Information($"[RedMoonCappuccino] Checking planner server {PlannerServer.BaseAddress}...");
+        var health = await PlannerServer.CheckHealthAsync().ConfigureAwait(false);
+        if (health.Value != null)
+            Log.Information($"[RedMoonCappuccino] Planner server reachable: patch {health.Value.Patch}, data {health.Value.DataVersion}, {health.Value.Queued} queued.");
+        else
+            Log.Warning($"[RedMoonCappuccino] Planner server unreachable: {health.Error} The gear planner falls back to the local estimate.");
     }
 
     public void Dispose()

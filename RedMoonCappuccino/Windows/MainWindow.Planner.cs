@@ -30,6 +30,8 @@ public partial class MainWindow
 
     private readonly PlannerServerClient plannerServer;
     private ServerPlannerState? serverPlanner;
+    // Why the last Solve didn't ask the server, shown instead of a silent fallback.
+    private string? serverSkipReason;
 
     private sealed class ServerPlannerState
     {
@@ -62,16 +64,34 @@ public partial class MainWindow
     private void StartServerPlan(string job)
     {
         serverPlanner = null;
-        if (!PlannerServerEnabled)
+        serverSkipReason = null;
+        if (!plugin.Configuration.PlannerUseServer)
             return;
+        if (!plannerServer.IsConfigured)
+        {
+            serverSkipReason = $"No valid planner server address ('{plugin.Configuration.PlannerServerAddress}') — showing the offline estimate.";
+            return;
+        }
 
         var current = gearPlannerService.GetCurrentJob();
         if (!string.Equals(current, job, StringComparison.OrdinalIgnoreCase))
             return;
 
-        var capture = GearCapture.Capture(job, Math.Clamp(plugin.Configuration.PlannerPartyBonus, 0, 5));
+        GearCaptureResult? capture;
+        try
+        {
+            capture = GearCapture.Capture(job, Math.Clamp(plugin.Configuration.PlannerPartyBonus, 0, 5));
+        }
+        catch (Exception e)
+        {
+            Plugin.Log.Warning(e, "[RedMoonCappuccino] Reading the equipped gear for the planner server failed.");
+            capture = null;
+        }
         if (capture == null || capture.Gear.Slots.Count == 0)
+        {
+            serverSkipReason = "Couldn't read your equipped gear — showing the offline estimate.";
             return;
+        }
 
         var state = new ServerPlannerState { Job = job, Capture = capture };
         var options = BuildPlannerOptions();
@@ -83,7 +103,17 @@ public partial class MainWindow
             var wallet = new Dictionary<string, int>(StringComparer.Ordinal);
             var meta = await plannerServer.GetMetaAsync().ConfigureAwait(false);
             if (meta.Value != null)
-                wallet = await Plugin.Framework.RunOnFrameworkThread(() => GearCapture.ReadWallet(meta.Value.Currencies)).ConfigureAwait(false);
+            {
+                // A wallet that can't be read only costs the plan its head start, not the plan.
+                try
+                {
+                    wallet = await Plugin.Framework.RunOnFrameworkThread(() => GearCapture.ReadWallet(meta.Value.Currencies)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.Log.Warning(ex, "[RedMoonCappuccino] Reading the wallet for the planner server failed; planning from zero.");
+                }
+            }
 
             var evaluation = plannerServer.EvaluateAsync(new PlannerEvaluateRequest { Gear = capture.Gear, Panel = capture.Panel, Options = options });
             var plan = plannerServer.PlanUpgradesAsync(new PlannerUpgradePlanRequest
@@ -95,7 +125,18 @@ public partial class MainWindow
             state.Evaluation = e.Value;
             state.Plan = p.Value;
             state.Error = e.Error ?? p.Error ?? meta.Error;
+            if (state.Error != null)
+                Plugin.Log.Warning($"[RedMoonCappuccino] Planner server request for {job} failed: {state.Error}");
         });
+        // Anything unexpected still ends as "unavailable" in the tab, but with a log line saying why.
+        state.Run = state.Run.ContinueWith(t =>
+        {
+            if (t.Exception is { } ex)
+            {
+                state.Error = ex.InnerException?.Message ?? ex.Message;
+                Plugin.Log.Warning(ex, $"[RedMoonCappuccino] Planner server request for {job} failed.");
+            }
+        }, TaskScheduler.Default);
         serverPlanner = state;
     }
 
@@ -197,6 +238,12 @@ public partial class MainWindow
     private bool DrawServerPlanner(string job)
     {
         var state = serverPlanner;
+        if (state == null && serverSkipReason != null)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.Warning))
+                ImGui.TextWrapped(serverSkipReason);
+            return false;
+        }
         if (state == null || !string.Equals(state.Job, job, StringComparison.OrdinalIgnoreCase))
         {
             if (PlannerServerEnabled && !string.Equals(gearPlannerService.GetCurrentJob(), job, StringComparison.OrdinalIgnoreCase))

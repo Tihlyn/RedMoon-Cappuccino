@@ -39,19 +39,33 @@ public sealed class PlannerServerClient : IDisposable
     public PlannerServerClient(Func<string> address) => this.address = address;
 
     /// <summary>The configured address, or null while it's empty or still the build placeholder.</summary>
-    public string? BaseAddress
-    {
-        get
-        {
-            var value = address()?.Trim().TrimEnd('/');
-            if (string.IsNullOrEmpty(value) || value.Contains("YOUR_", StringComparison.Ordinal) ||
-                !Uri.TryCreate(value, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
-                return null;
-            return value;
-        }
-    }
+    public string? BaseAddress => IsUsableAddress(address()) ? address().Trim().TrimEnd('/') : null;
 
     public bool IsConfigured => BaseAddress != null;
+
+    /// <summary>A full http(s) URL (scheme, host, port if not the default), not the build placeholder.</summary>
+    public static bool IsUsableAddress(string? value)
+    {
+        value = value?.Trim().TrimEnd('/');
+        return !string.IsNullOrEmpty(value) && !value.Contains("YOUR_", StringComparison.Ordinal) &&
+               Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp) && !string.IsNullOrEmpty(uri.Host);
+    }
+
+    /// <summary>Startup check: the server's health line, or why it can't be reached.</summary>
+    public async Task<PlannerCall<PlannerHealth>> CheckHealthAsync(CancellationToken ct = default)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        try
+        {
+            return await SendAsync<PlannerHealth>(HttpMethod.Get, "/healthz", null, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return new PlannerCall<PlannerHealth>(null, "Planner server timed out.");
+        }
+    }
 
     public async Task<PlannerCall<PlannerMeta>> GetMetaAsync(CancellationToken ct = default)
     {
@@ -213,6 +227,14 @@ public sealed class PlannerUpgradePlanRequest
 }
 
 // ── Response shapes ──────────────────────────────────────────────────────────
+
+public sealed class PlannerHealth
+{
+    public string Status { get; set; } = string.Empty;
+    public string Patch { get; set; } = string.Empty;
+    public string DataVersion { get; set; } = string.Empty;
+    public int Queued { get; set; }
+}
 
 public sealed class PlannerMeta
 {

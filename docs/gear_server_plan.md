@@ -165,33 +165,44 @@ How it was built: `server/src/Rmc.Engine`, gated by `server/tests/Rmc.Engine.Che
   - (a) for every BiS set, final stats match the committed xivgear snapshot exactly;
   - (b) stats match the in-game attribute panel. We anchor on observed values.
 
-### Phase 3 — Damage model — IN PROGRESS (sim engine done 2026-10-16)
+### Phase 3 — Damage model — IN PROGRESS (rotation sims for all 21 jobs done 2026-10-16)
 
 Direction changed to option (a), at the user's request: our own rotation sims for every job, with the profile counts fitted from them. xivgear becomes a cross-check rather than a dependency.
 
 Done:
 - **Sim engine** (`server/src/Rmc.Engine/Sim`).
-  - Deterministic: each hit counts its expected value.
-  - Timeline in milliseconds; GCD and cast times from the exact speed formula plus haste.
-  - oGCD weaving with up to 100ms of clip; animation locks.
-  - Cooldowns with charges.
-  - Buffs: damage, crit/DH rate, haste, forced crit/DH, stacks.
-  - DoTs snapshot when applied and tick on a 3s grid; auto-attacks run on their own timer.
-  - Potion: medicine is now in the snapshot, and the engine swaps in the potted stats.
-  - Optional party raid buff windows.
-- **Potencies as data.** Rotations name each ability's tooltip potency (action id + label). `rmc-extract refresh-potencies` regenerates `data/potencies/<JOB>.json` from the game, and the sims apply it on load.
-- **First rotation, DRG.**
-  - Against xivgear's DRG sim on all 7 sets (3 BiS plus all-crit/det/DH/SkS variants): absolute -0.56%, worst relative 0.25%.
-  - The gate is relative ≤ 0.3% and absolute ≤ 2%.
-- **Calibration references.**
-  - `rmc-extract calibration-variants` builds the stat-skewed sets.
-  - xivgear's results are collected in the browser (dev-time only) into `server/data/reference/xivgear/sims/`.
-  - Collected so far: AST, BLM (xivgear's BLM sim attached by hand), DNC, DRG.
+  - Deterministic: each hit counts its expected value; random procs count as their expected value.
+  - Timeline in milliseconds; GCD and cast times from the exact speed formula plus haste; fixed recasts (dance steps, mudras, Enshroud).
+  - oGCD weaving with up to 100ms of clip; animation locks; auto-attacks wait out casts.
+  - Cooldowns with charges and cooldown reduction; buffs (damage, crit/DH rate, haste, auto-attack-only haste, forced crit/DH, stacks, custom durations); DoTs snapshot on application and can be re-snapshotted (Iron Jaws).
+  - Gauge- and buff-dependent potencies through a rotation hook; per-action damage multipliers for pets.
+  - Potion swaps in the potted stats; xivgear's healer sims don't drink one, so healer rotations opt out.
+- **Rotations for all 21 combat jobs** (`Sim/Rotations`), one class per job at level 100.
+- **Potencies as data.** `rmc-extract refresh-potencies` regenerates `data/potencies/<JOB>.json` from the game's tooltips for every rotation; all labels resolve.
+- **Calibration against xivgear** (17 jobs with a full xivgear sim): all pass.
+  - Absolute within 2% (worst: WHM -1.76%, SAM -1.74%, GNB -1.43%, NIN +1.38%).
+  - Non-speed re-melds within 0.3% relative.
+  - Speed re-melds within 2%. Where xivgear was also run at seven fight lengths (420–540s), the length-averaged ratio is used instead. This cancels where the last burst falls against the fight's end, which moves single-length results by up to ~3%. PLD, RPR and SAM still value SkS 1.1–1.8% higher than xivgear's scripted sims do:
+    - PLD: xivgear drifts Fight or Flight by about 2s a minute at faster GCDs.
+    - SAM: xivgear swaps to a different hand-written rotation per GCD tier.
+    - RPR: the per-length ability counts match, so the gap is in where the extra GCDs land.
+  - The other 14 jobs agree within 0.9%.
+  - Each job's reference records the length xivgear actually simulated (MNK, RPR, VPR and the healers at 720s; NIN at 392s; scripted sims stop early or late).
+- **Measured from xivgear's sims, recorded in the rotations:**
+  - MCH Automaton Queen hits at 0.91× the machinist's damage per potency.
+  - DRK's Living Shadow at 1.058×.
+  - Leaping Opo always crits.
+  - Ouroboros recasts in 2.0s.
+  - Enhanced Infuriate takes 5s per Fell Cleave or Inner Chaos.
+- **Unvalidated:** BRD, PCT, RDM and SMN have no full rotation sim on xivgear, only a potency-ratio estimate, so their rotations follow the standard openers and loops without a reference.
+- **Tooling:**
+  - `rmc-extract sim --job X [--all] [--timeline] [--lengths …]` compares against the references.
+  - `potencies --find` / `status --find` look up actions and statuses by name, with cast and recast times.
 
 Next:
-- Rotations for the other 20 jobs. Validate each against xivgear where it has a rotation sim; BRD, PCT, RDM and SMN only have a potency-ratio sim there, so they need their own validation.
-- Fit the fast profile model from the sims, for the meld solver.
-- Retire the hand-written profile approach (`data/profiles/DRG.json` was the prototype).
+- Fit the fast profile model from the sims (averaged over several fight lengths), for the meld solver.
+- Retire the hand-written profile approach (`data/profiles/DRG.json` was the prototype; the profile-based calibration check is already removed).
+- Length-averaged references for the remaining jobs (only PLD, RPR and SAM have them).
 
 - 3.1 Interface: `IDamageModel.Evaluate(stats, job, options) → { dps, breakdown }`.
 - 3.2 Potency profiles, one data file per job, versioned by patch. For each GCD tier, the file gives potency per second split by hit type:

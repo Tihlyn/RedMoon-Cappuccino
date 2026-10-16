@@ -165,7 +165,33 @@ How it was built: `server/src/Rmc.Engine`, gated by `server/tests/Rmc.Engine.Che
   - (a) for every BiS set, final stats match the committed xivgear snapshot exactly;
   - (b) stats match the in-game attribute panel. We anchor on observed values.
 
-### Phase 3 — Damage model
+### Phase 3 — Damage model — IN PROGRESS (sim engine done 2026-10-16)
+
+Direction changed to option (a), at the user's request: our own rotation sims for every job, with the profile counts fitted from them. xivgear becomes a cross-check rather than a dependency.
+
+Done:
+- **Sim engine** (`server/src/Rmc.Engine/Sim`).
+  - Deterministic: each hit counts its expected value.
+  - Timeline in milliseconds; GCD and cast times from the exact speed formula plus haste.
+  - oGCD weaving with up to 100ms of clip; animation locks.
+  - Cooldowns with charges.
+  - Buffs: damage, crit/DH rate, haste, forced crit/DH, stacks.
+  - DoTs snapshot when applied and tick on a 3s grid; auto-attacks run on their own timer.
+  - Potion: medicine is now in the snapshot, and the engine swaps in the potted stats.
+  - Optional party raid buff windows.
+- **Potencies as data.** Rotations name each ability's tooltip potency (action id + label). `rmc-extract refresh-potencies` regenerates `data/potencies/<JOB>.json` from the game, and the sims apply it on load.
+- **First rotation, DRG.**
+  - Against xivgear's DRG sim on all 7 sets (3 BiS plus all-crit/det/DH/SkS variants): absolute -0.56%, worst relative 0.25%.
+  - The gate is relative ≤ 0.3% and absolute ≤ 2%.
+- **Calibration references.**
+  - `rmc-extract calibration-variants` builds the stat-skewed sets.
+  - xivgear's results are collected in the browser (dev-time only) into `server/data/reference/xivgear/sims/`.
+  - Collected so far: AST, BLM (xivgear's BLM sim attached by hand), DNC, DRG.
+
+Next:
+- Rotations for the other 20 jobs. Validate each against xivgear where it has a rotation sim; BRD, PCT, RDM and SMN only have a potency-ratio sim there, so they need their own validation.
+- Fit the fast profile model from the sims, for the meld solver.
+- Retire the hand-written profile approach (`data/profiles/DRG.json` was the prototype).
 
 - 3.1 Interface: `IDamageModel.Evaluate(stats, job, options) → { dps, breakdown }`.
 - 3.2 Potency profiles, one data file per job, versioned by patch. For each GCD tier, the file gives potency per second split by hit type:

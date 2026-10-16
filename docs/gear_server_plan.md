@@ -281,6 +281,37 @@ Design as built:
   - planning from the target itself gives nothing.
 - **Not yet in the gate:** crafted stopgaps (`IncludeCrafted`) and a player-supplied wallet.
 
+### Threading and concurrency — DONE 2026-10-16 (before Phase 6)
+
+The production host is an AMD EPYC 7371 (16 cores, 32 threads) with 128 GB RAM.
+
+- **Solver:**
+  - Every stage is parallel: layer expansion in fixed chunks, the per-speed fronts, the last-piece tier pass, scoring, and the local search.
+  - Chunks merge in a fixed order, so results don't depend on thread timing.
+  - States keep their four stat gains inline, with no array each, which cuts millions of allocations per solve.
+  - Exact solves: 242 → 133 ms average over the BiS sets; worst case (SAM pentamelded crafted) 6.6 → 2.7 s. Fast mode: 65 → 21 ms.
+- **Planner:**
+  - Candidate steps are valued in parallel, one thread each.
+  - The per-step re-meld check is a `Polish`, a local search from the current melds, instead of a full solve.
+  - A piece is only judged "no DPS gain" after polishing, because some only pay once the rest is re-melded around them.
+  - The plan ends with one exact solve.
+  - A 26-week plan takes 0.8 s on average, 1.4–2.2 s for the heaviest (tanks from pentamelded crafted gear), down from 3–17 s.
+- **Requests running at once:** `ComputePool` (in `Rmc.Engine`) caps how many heavy jobs run together, gives each an equal share of the threads (passed as `MaxDegreeOfParallelism`), and queues the rest. Plans per minute on the 16-thread dev machine with Server GC (`rmc-extract bench-concurrency`):
+
+  | Jobs at once × threads each | Plans per minute | Average latency |
+  |---|---|---|
+  | 1 × 16 | 91 | 0.7 s |
+  | 2 × 8 | 119 | 0.8 s |
+  | 4 × 4 | 134 | 1.2 s |
+  | 8 × 2 | 136 | 1.7 s |
+  | 16 × 1 | 95 | 2.3 s |
+
+- **Settings for the host:**
+  - Server GC (the ASP.NET Core default).
+  - `ComputePool(32, 4)`: 8 threads per job, a 4-job concurrency limit.
+  - Light requests (stats, DPS) skip the pool; they're microseconds.
+  - Cache results by the request's canonical JSON. The same gear and options give the same answer.
+
 ### Phase 6 — Plugin integration
 
 - 6.1 `BuildEquippedMap`: read materia from the equipped items (the materia and materia grade fields; check the exact Dalamud API names first), plus HQ, food and clan. Also read the player's actual stats for the parity check.

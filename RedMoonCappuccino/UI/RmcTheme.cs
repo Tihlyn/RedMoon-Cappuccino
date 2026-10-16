@@ -235,6 +235,37 @@ public static class RmcTheme
     }
 
     /// <summary>
+    /// A line-height busy spinner: a ring of dots with a bright head that turns about once a
+    /// second, followed by text. For waits whose progress isn't known.
+    /// </summary>
+    public static void Spinner(string text, Vector4? color = null)
+    {
+        const int dots = 8;
+        var s       = ImGuiHelpers.GlobalScale;
+        var lineH   = ImGui.GetTextLineHeight();
+        var ring    = lineH / 2f - 1.5f * s;
+        var dotSize = 1.6f * s;
+        var pos     = ImGui.GetCursorScreenPos();
+        var center  = new Vector2(pos.X + ring + dotSize, pos.Y + lineH / 2f);
+        var tint    = color ?? Cornflower;
+        var head    = (int)(ImGui.GetTime() * dots) % dots;
+
+        var drawList = ImGui.GetWindowDrawList();
+        for (var i = 0; i < dots; i++)
+        {
+            var angle = i * MathF.Tau / dots - MathF.PI / 2f;
+            var age   = (head - i + dots) % dots;  // 0 = head, older dots fade out
+            var point = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ring;
+            drawList.AddCircleFilled(point, dotSize, ImGui.GetColorU32(Fade(tint, 1f - age / (float)dots * 0.85f)));
+        }
+
+        ImGui.Dummy(new Vector2((ring + dotSize) * 2f + 4f * s, lineH));
+        ImGui.SameLine();
+        using (ImRaii.PushColor(ImGuiCol.Text, TextMuted))
+            ImGui.TextUnformatted(text);
+    }
+
+    /// <summary>
     /// Pushes Button / ButtonHovered / ButtonActive derived from one base colour.
     /// Use with the stateful bases (SuccessButton, WarningButton, DangerButton).
     /// </summary>

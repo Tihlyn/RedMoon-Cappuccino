@@ -36,11 +36,13 @@ public partial class MainWindow
         public required string Job { get; init; }
         public required GearCaptureResult Capture { get; init; }
         public Task? Run { get; set; }
+        public long StartedMs { get; } = Environment.TickCount64;
         public PlannerEvaluateResponse? Evaluation { get; set; }
         public PlannerUpgradePlanResponse? Plan { get; set; }
         public string? Error { get; set; }
 
         public Task<PlannerCall<PlannerMeldSolveResponse>>? MeldRun { get; set; }
+        public long MeldStartedMs { get; set; }
         public PlannerMeldSolveResponse? Melds { get; set; }
         public string? MeldError { get; set; }
 
@@ -102,6 +104,7 @@ public partial class MainWindow
         var targetGcd = plugin.Configuration.PlannerTargetGcd;
         state.Melds = null;
         state.MeldError = null;
+        state.MeldStartedMs = Environment.TickCount64;
         state.MeldRun = plannerServer.SolveMeldsAsync(new PlannerMeldSolveRequest
         {
             Gear = state.Capture.Gear,
@@ -206,8 +209,7 @@ public partial class MainWindow
 
         if (state.Pending)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
-                ImGui.TextUnformatted("Asking the planner server…");
+            RmcTheme.Spinner(WaitText("Asking the planner server…", state.StartedMs));
             return false;
         }
 
@@ -414,6 +416,11 @@ public partial class MainWindow
         }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Best materia for your current gear (same pieces, any melds).");
+        if (state.MeldRun != null)
+        {
+            ImGui.SameLine();
+            RmcTheme.Spinner(WaitText("Solving…", state.MeldStartedMs));
+        }
 
         var solved = state.Melds;
         if (state.MeldError != null)
@@ -510,6 +517,13 @@ public partial class MainWindow
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip($"{bp.Value - bp.TierStart} point(s) past the tier start do nothing until {bp.NextTier:N0}.");
         }
+    }
+
+    // "Solving… 3s", and a reassurance once it's taking longer than a solve normally does.
+    private static string WaitText(string label, long startedMs)
+    {
+        var seconds = (Environment.TickCount64 - startedMs) / 1000;
+        return seconds < 10 ? $"{label} {seconds}s" : $"{label} {seconds}s — the server is busy, still waiting";
     }
 
     private static string FormatMelds(IEnumerable<PlannerMeld> melds)

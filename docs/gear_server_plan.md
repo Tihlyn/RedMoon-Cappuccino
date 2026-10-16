@@ -165,7 +165,7 @@ How it was built: `server/src/Rmc.Engine`, gated by `server/tests/Rmc.Engine.Che
   - (a) for every BiS set, final stats match the committed xivgear snapshot exactly;
   - (b) stats match the in-game attribute panel. We anchor on observed values.
 
-### Phase 3 — Damage model — IN PROGRESS (rotation sims for all 21 jobs done 2026-10-16)
+### Phase 3 — Damage model — DONE 2026-10-16
 
 Direction changed to option (a), at the user's request: our own rotation sims for every job, with the profile counts fitted from them. xivgear becomes a cross-check rather than a dependency.
 
@@ -199,27 +199,22 @@ Done:
   - `rmc-extract sim --job X [--all] [--timeline] [--lengths …]` compares against the references.
   - `potencies --find` / `status --find` look up actions and statuses by name, with cast and recast times.
 
-Next:
-- Fit the fast profile model from the sims (averaged over several fight lengths), for the meld solver.
-- Retire the hand-written profile approach (`data/profiles/DRG.json` was the prototype; the profile-based calibration check is already removed).
-- Length-averaged references for the remaining jobs (only PLD, RPR and SAM have them).
+- **Fitted profiles** (`server/data/profiles/<JOB>.json`, `rmc-extract fit-profiles`): the fast model for the meld solver.
+  - **How it works:** a rotation only reacts to time, so the hits it lands depend on speed but not on the other stats. For each speed tier, the fitter runs the sim at five fight lengths (450–570s, to smooth out where the last burst falls) and records every hit's context instead of its damage. The context is potency, attack type, forced crit/DH, potion, and crit/DH rate buffs, with the buff multipliers summed.
+  - **Tiers:** a tier is a run of speed values on which every recast and cast the rotation uses, under each combination of its haste buffs, scales to the same value. That's 39–179 tiers per job, 5.6 MB in total.
+  - **Evaluation:** `FittedProfileModel` applies the exact per-hit formula with the set's own stats (potted stats under the potion).
+  - **Accuracy:** it matches the full sim exactly on every BiS set and re-meld for 20 jobs. MNK differs by up to 0.18%, because its Chakra comes from crits and is fitted at the reference set's crit rate.
+  - **Speed:** 13–80 µs per gear set including the stat computation.
+  - **Gate:** fails if a profile drifts from its sim or was fitted on a different game build than the potencies.
+- The hand-written profile approach (`JobProfile`, `PotencyProfileModel`, the DRG prototype) is retired.
+- Per the user, no multi-length xivgear references for the other jobs. Some of xivgear's hand-written rotations are less optimal than they look, so matching them more closely would pull our numbers down.
 
-- 3.1 Interface: `IDamageModel.Evaluate(stats, job, options) → { dps, breakdown }`.
-- 3.2 Potency profiles, one data file per job, versioned by patch. For each GCD tier, the file gives potency per second split by hit type:
-  - GCD hits;
-  - off-GCD hits;
-  - damage over time;
-  - auto-attacks;
-  - forced crit/DH;
-  - share of potency inside party buff windows.
-
-  Party buffs are modelled as crit and direct-hit rate increases inside their windows. DPS = Σ potency_i × E_i(stats) / duration, with the rounding order from `math.json`.
-- 3.3 Roles:
-  - Tanks: tenacity is included in the damage multiplier.
-  - Healers: the damage profile assumes a healer's damage rotation; piety is only an optional minimum.
-- 3.4 Patch-day update script: copy the potency changes from the patch notes into the job files, bump the version, and rerun the golden tests.
-- 3.5 Calibration: when a job file is created, its DPS ranking of sets must match a reference. Target: relative DPS between sets within 0.3%. Everything shown to the player is a difference, so the absolute value only needs to be close.
-- 3.6 Later and optional: full rotation sims for jobs whose damage depends on GCD speed (SAM, VPR, MNK, BLM, PCT). These would plug in behind the same interface.
+Design as built:
+- 3.1 Interface: `FittedProfileModel.Evaluate(stats, pottedStats) → { dps, gcd, outsideFittedRange }`. The full `Simulation` sits behind it for breakdowns and checks.
+- 3.2 Hit profiles, one data file per job, versioned by patch and game build, generated from the rotation sims (see above) rather than written by hand.
+- 3.3 Roles: tanks get tenacity in the damage formula. Healers use their damage rotation, without a potion as in xivgear's healer sims; piety stays an optional minimum for the solver.
+- 3.4 Patch-day update: `refresh-potencies`, then `fit-profiles`, then the checks. Rotation changes from the patch notes are code edits in `Sim/Rotations`.
+- 3.5 Calibration: the sims against xivgear (absolute ≤ 2%, relative ≤ 0.3%, speed re-melds ≤ 2%), and the profiles against the sims (≤ 0.1%; MNK ≤ 0.3%).
 
 ### Phase 4 — Materia solver
 

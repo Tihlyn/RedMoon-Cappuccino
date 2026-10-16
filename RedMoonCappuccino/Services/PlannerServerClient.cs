@@ -178,6 +178,8 @@ public sealed class PlannerPiece
     public int ItemId { get; set; }
     public bool? Hq { get; set; }
     public List<PlannerMeld> Materia { get; set; } = [];
+    /// <summary>A relic's chosen substats (on top of the item's sheet stats); null for everything else.</summary>
+    public Dictionary<string, int>? RelicStats { get; set; }
 }
 
 public sealed class PlannerMeld

@@ -35,7 +35,14 @@ public static class GearCapture
         (PlayerAttribute.SkillSpeed, "sks"), (PlayerAttribute.SpellSpeed, "sps"), (PlayerAttribute.Tenacity, "ten"), (PlayerAttribute.Piety, "pie"),
     };
 
+    // Substats a relic can carry on top of its sheet stats (BaseParam row ids).
+    private static readonly (uint BaseParam, string Stat)[] RelicSubstats =
+    {
+        (27, "crit"), (22, "dh"), (44, "det"), (45, "sks"), (46, "sps"), (19, "ten"), (6, "pie"),
+    };
+
     private static Dictionary<uint, int>? foodItemByFoodRow;
+    private static readonly HashSet<uint> loggedRelics = new();
     private static Dictionary<string, uint>? itemIdByEnglishName;
 
     public static GearCaptureResult? Capture(string job, int partyBonus)
@@ -63,6 +70,24 @@ public static class GearCapture
                 continue;
 
             var piece = new PlannerPiece { ItemId = (int)item.BaseItemId, Hq = item.IsHq };
+            var sheetRow = itemSheet.GetRowOrDefault(item.BaseItemId);
+
+            // Relics with adjustable substats take no materia: their chosen stats aren't on the
+            // item sheet, so ask the game for the item's actual values and send the difference.
+            // Only meld-less pieces: older relics with slots carry their stats on the sheet, and
+            // the game's value would count their melds twice.
+            if (sheetRow is { MateriaSlotCount: 0 })
+            {
+                piece.RelicStats = ReadRelicStats(item, sheetRow);
+                if (piece.RelicStats != null)
+                {
+                    gear.Slots[slot] = piece;
+                    if (sheetRow?.Name.ExtractText() is { Length: > 0 } relicName)
+                        names[slot] = relicName;
+                    continue;
+                }
+            }
+
             var materia = item.Materia;
             var grades = item.MateriaGrade;
             for (var i = 0; i < materia.Length && i < grades.Length; i++)
@@ -90,6 +115,47 @@ public static class GearCapture
         }
 
         return new GearCaptureResult { Gear = gear, Panel = panel, ItemNames = names };
+    }
+
+    /// <summary>
+    /// A relic's substats above its sheet values, from the game's own per-item stat lookup
+    /// (what the item tooltip shows). Null when the item carries none, so it's handled as normal gear.
+    /// </summary>
+    private static unsafe Dictionary<string, int>? ReadRelicStats(GameInventoryItem item, Lumina.Excel.Sheets.Item? row)
+    {
+        var native = (InventoryItem*)item.Address;
+        if (native == null)
+            return null;
+
+        var extra = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (baseParam, stat) in RelicSubstats)
+        {
+            var actual = (int)InventoryItem.GetParameterValue(baseParam, native, true, item.IsHq, false, false);
+            var onSheet = row != null ? SheetStat(row.Value, baseParam, item.IsHq) : 0;
+            if (actual > onSheet)
+                extra[stat] = actual - onSheet;
+        }
+
+        // Once per item: what was read, so a relic that comes out wrong can be checked in /xllog.
+        if (loggedRelics.Add(item.BaseItemId))
+            Plugin.Log.Information($"[RedMoonCappuccino] Relic {item.BaseItemId} substats: " +
+                (extra.Count > 0 ? string.Join(", ", extra.Select(kv => $"{kv.Key} {kv.Value}")) : "none above the sheet") +
+                $" (materia [{string.Join(",", item.Materia.ToArray())}], grades [{string.Join(",", item.MateriaGrade.ToArray())}]).");
+
+        return extra.Count > 0 ? extra : null;
+    }
+
+    private static int SheetStat(Lumina.Excel.Sheets.Item row, uint baseParam, bool hq)
+    {
+        var total = 0;
+        for (var i = 0; i < row.BaseParam.Count; i++)
+            if (row.BaseParam[i].RowId == baseParam)
+                total += row.BaseParamValue[i];
+        if (hq)
+            for (var i = 0; i < row.BaseParamSpecial.Count; i++)
+                if (row.BaseParamSpecial[i].RowId == baseParam)
+                    total += row.BaseParamValueSpecial[i];
+        return total;
     }
 
     /// <summary>How much of each currency the player holds, for the ones a plan can spend.</summary>

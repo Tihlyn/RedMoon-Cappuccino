@@ -51,7 +51,7 @@
         },
         {
           "version": "7.58",
-          "releaseDate": "2026-10-06",
+          "releaseDate": "2026-11-11",
           "releaseIsProjected": false
         }
       ]
@@ -61,8 +61,8 @@
       "name": "Evercold",
       "expansion": "EC",
       "type": "expansion",
-      "releaseDate": "2027-01-27",
-      "releaseIsProjected": true,
+      "releaseDate": "2027-02-19",
+      "releaseIsProjected": false,
       "projectionBasis": "7.5 (2026-04-28) + 273 days"
     }
   ]

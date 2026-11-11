@@ -24,28 +24,30 @@
     <Compile Include="..\RotationRecorder\RotationFormatter.cs" />
   </ItemGroup>
 
+  <!-- Always, not PreserveNewest: bin/Release is tracked in git, so after a checkout the stale
+       committed copies look as new as their sources and would ship instead of them. -->
   <ItemGroup>
     <Content Include="..\Data\icon.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
     <Content Include="Resources\*.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
     <Content Include="..\resources\gear_db\*.json">
       <Link>Resources\planner\gear_db\%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
     <Content Include="..\resources\math\*.json">
       <Link>Resources\planner\math\%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
     <Content Include="..\resources\bis\*.JSON">
       <Link>Resources\planner\bis\%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
   </ItemGroup>

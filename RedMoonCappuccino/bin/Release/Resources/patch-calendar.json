@@ -1,10 +1,10 @@
 {
   "_meta": {
     "source": "https://ffxiv.consolegameswiki.com/wiki/Patches",
-    "lastUpdated": "2026-05-28",
-    "currentPatch": "7.5",
-    "nextPatch": "7.51",
-    "nextPatchDate": "2026-06-02"
+    "lastUpdated": "2026-11-11",
+    "currentPatch": "7.58",
+    "nextPatch": "8.0",
+    "nextPatchDate": "2027-02-19"
   },
   "patches": [
     {
@@ -51,7 +51,7 @@
         },
         {
           "version": "7.58",
-          "releaseDate": "2026-10-06",
+          "releaseDate": "2026-11-11",
           "releaseIsProjected": false
         }
       ]
@@ -61,9 +61,8 @@
       "name": "Evercold",
       "expansion": "EC",
       "type": "expansion",
-      "releaseDate": "2027-01-27",
-      "releaseIsProjected": true,
-      "projectionBasis": "7.5 (2026-04-28) + 273 days"
+      "releaseDate": "2027-02-19",
+      "releaseIsProjected": false
     }
   ]
 }

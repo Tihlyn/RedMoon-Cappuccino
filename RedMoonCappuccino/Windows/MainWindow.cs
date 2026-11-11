@@ -119,6 +119,10 @@ public partial class MainWindow : ThemedWindow, IDisposable
         using var tab = ImRaii.TabItem("Overview");
         if (!tab) return;
 
+        // The patch calendar can run past the bottom of a small window.
+        using var child = ImRaii.Child("##overviewScroll", new Vector2(0, 0), false);
+        if (!child) return;
+
         ImGui.Spacing();
 
         // Connection status badge
@@ -178,55 +182,7 @@ public partial class MainWindow : ThemedWindow, IDisposable
         ImGui.Separator();
         ImGui.Spacing();
 
-        DrawUpcomingPatchesSection();
-    }
-
-    private void DrawUpcomingPatchesSection()
-    {
-        RmcTheme.SectionHeader("Upcoming Patches (7.4 – 8.0)");
-
-        ImGui.Spacing();
-
-        if (upcomingPatches.Count == 0)
-        {
-            using (ImRaii.PushColor(ImGuiCol.Text, RmcTheme.TextMuted))
-                ImGui.TextUnformatted("No upcoming patch data available.");
-            return;
-        }
-
-        using var table = ImRaii.Table("##upcomingPatchesTable", 5,
-            ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingStretchProp);
-        if (!table) return;
-
-        ImGui.TableSetupColumn("Patch", ImGuiTableColumnFlags.WidthFixed, 70f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthFixed, 110f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Release", ImGuiTableColumnFlags.WidthFixed, 95f * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Note", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableHeadersRow();
-
-        foreach (var patch in upcomingPatches)
-        {
-            ImGui.TableNextRow();
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(patch.Version);
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(patch.Name);
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(patch.Type.Replace('_', ' '));
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(patch.ReleaseDate);
-
-            ImGui.TableNextColumn();
-            var note = patch.ReleaseIsProjected ? "Projected date" : "-";
-            if (!string.IsNullOrWhiteSpace(patch.Note))
-                note = patch.Note;
-            ImGui.TextWrapped(note);
-        }
+        DrawPatchCalendarSection();
     }
 
     private void DrawUsefulLinksTab()
@@ -1178,46 +1134,6 @@ public partial class MainWindow : ThemedWindow, IDisposable
         }
     }
 
-    private static List<PatchCalendarEntry> LoadPatchCalendar()
-    {
-        var path = GetPluginResourcePath("patch-calendar.json");
-        if (path == null) return [];
-        if (!File.Exists(path)) return [];
-
-        try
-        {
-            var root = JsonSerializer.Deserialize<PatchCalendarRoot>(File.ReadAllText(path));
-            var patches = root?.Patches ?? [];
-
-            var result = new List<PatchCalendarEntry>();
-            foreach (var patch in patches.Where(p => p.Version is "7.4" or "7.5" or "8.0"))
-            {
-                result.Add(patch);
-
-                if (patch.SubPatches is { Count: > 0 } && patch.Version is "7.5")
-                {
-                    foreach (var sub in patch.SubPatches)
-                    {
-                        result.Add(new PatchCalendarEntry
-                        {
-                            Version          = sub.Version,
-                            Name             = "-",
-                            Type             = "minor",
-                            ReleaseDate      = sub.ReleaseDate,
-                            ReleaseIsProjected = sub.ReleaseIsProjected,
-                        });
-                    }
-                }
-            }
-            return result;
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.Warning(ex, "Failed to load patch calendar data.");
-            return [];
-        }
-    }
-
     private static List<MountGuideEntry> LoadMountGuides()
     {
         var path = GetPluginResourcePath("links.json");
@@ -1269,48 +1185,6 @@ public partial class MainWindow : ThemedWindow, IDisposable
 
         safeUri = parsedUri;
         return true;
-    }
-
-    private sealed class PatchCalendarRoot
-    {
-        [JsonPropertyName("patches")]
-        public List<PatchCalendarEntry>? Patches { get; set; }
-    }
-
-    private sealed class PatchCalendarEntry
-    {
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = string.Empty;
-
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
-
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
-
-        [JsonPropertyName("releaseDate")]
-        public string ReleaseDate { get; set; } = string.Empty;
-
-        [JsonPropertyName("releaseIsProjected")]
-        public bool ReleaseIsProjected { get; set; }
-
-        [JsonPropertyName("note")]
-        public string? Note { get; set; }
-
-        [JsonPropertyName("subPatches")]
-        public List<SubPatchEntry>? SubPatches { get; set; }
-    }
-
-    private sealed class SubPatchEntry
-    {
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = string.Empty;
-
-        [JsonPropertyName("releaseDate")]
-        public string ReleaseDate { get; set; } = string.Empty;
-
-        [JsonPropertyName("releaseIsProjected")]
-        public bool ReleaseIsProjected { get; set; }
     }
 
     private sealed class LinksRoot

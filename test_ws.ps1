@@ -1,6 +1,6 @@
 param([int[]]$Ids = @(49791, 45971, 19920))
 
-$uri = [Uri]"ws://78.116.140.30:3100"
+$uri = [Uri]"ws://146.59.253.111:3100"
 $ws  = New-Object System.Net.WebSockets.ClientWebSocket
 $ws.ConnectAsync($uri, [System.Threading.CancellationToken]::None).Wait()
 

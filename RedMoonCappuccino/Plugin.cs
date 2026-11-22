@@ -76,12 +76,17 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        // One-time migration: the WS host moved off the decommissioned box.
-        // Only rewrites the exact old address, so custom addresses are left
+        // One-time migration: the WS and chat hosts moved off the decommissioned boxes.
+        // Only rewrites the exact old addresses, so custom addresses are left
         // untouched and the condition is false on every subsequent load.
-        if (Configuration.WsServerAddress == "ws://78.116.140.30:3100")
+        if (Configuration.WsServerAddress is "ws://78.116.140.30:3100" or "ws://51.75.117.220:3100")
         {
-            Configuration.WsServerAddress = "ws://51.75.117.220:3100";
+            Configuration.WsServerAddress = "ws://146.59.253.111:3100";
+            Configuration.Save();
+        }
+        if (Configuration.ChatWsServerAddress == "ws://51.75.117.220:3200")
+        {
+            Configuration.ChatWsServerAddress = "ws://146.59.253.111:3200";
             Configuration.Save();
         }
 
